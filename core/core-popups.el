@@ -59,7 +59,7 @@ is enabled/disabled.'")
         ;;              `doom*delete-popup-window'
         ;;  :autoclose  If non-nil, close popup if ESC is pressed from any buffer.
         shackle-rules
-        '(("^ ?\\*doom:.+\\*$"      :size 40  :modeline t :regexp t)
+        '(("^ ?\\*doom:.+\\*$"      :size 25  :modeline minimal :regexp t :noesc t)
           ("^ ?\\*doom .+\\*$"      :size 10  :noselect t :regexp t)
           ("^ *doom message*"       :size 10  :noselect t :autokill t)
           ("*Metahelp*"             :size 0.5 :autokill t :autoclose t)
