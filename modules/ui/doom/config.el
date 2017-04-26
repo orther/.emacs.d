@@ -4,15 +4,15 @@
   "The color theme currently in use.")
 
 (defvar +doom-font
-  (font-spec :family "Fira Mono" :size 12)
+  (font-spec :family "Iosevka" :size 24)
   "The font currently in use.")
 
 (defvar +doom-variable-pitch-font
-  (font-spec :family "Fira Sans" :size 14)
+  (font-spec :family "Iosevka" :size 26)
   "The font currently in use.")
 
 (defvar +doom-unicode-font
-  (font-spec :family "DejaVu Sans Mono" :size 12)
+  (font-spec :family "Iosevka" :size 24)
   "Fallback font for unicode glyphs.")
 
 

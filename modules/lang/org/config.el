@@ -19,7 +19,7 @@
 (add-hook 'org-mode-hook #'+org|hook)
 
 ;; Custom variables
-(defvar +org-dir (expand-file-name "~/work/org/")
+(defvar +org-dir (expand-file-name "~/docs/org")
   "The directory where org files are kept.")
 (defvaralias 'org-directory '+org-dir)
 

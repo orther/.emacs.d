@@ -15,10 +15,6 @@
        (add-hook! ,modes ',def-name))))
 
 
-;;
-;; Packages
-;;
-
 (def-package! company
   :commands (company-mode global-company-mode company-complete
              company-complete-common company-manual-begin company-grab-line)
@@ -37,21 +33,18 @@
 
   (push #'company-sort-by-occurrence company-transformers)
 
-  (after! yasnippet
-    (nconc company-backends '(company-yasnippet)))
-
   (map! (:map company-active-map
           ;; Don't interfere with `evil-delete-backward-word' in insert mode
           "C-w"        nil
 
           "C-o"        #'company-search-kill-others
-          "C-n"        #'company-select-next
-          "C-p"        #'company-select-previous
+          "C-j"        #'company-select-next
+          "C-k"        #'company-select-previous
           "C-h"        #'company-quickhelp-manual-begin
           "C-S-h"      #'company-show-doc-buffer
           "C-S-s"      #'company-search-candidates
           "C-s"        #'company-filter-candidates
-          "C-SPC"      #'company-complete-common
+          [enter]      #'company-complete-common
           "C-h"        #'company-quickhelp-manual-begin
           [tab]        #'company-complete-common-or-cycle
           [backtab]    #'company-select-previous
@@ -59,8 +52,8 @@
 
         ;; Automatically applies to `company-filter-map'
         (:map company-search-map
-          "C-n"        #'company-search-repeat-forward
-          "C-p"        #'company-search-repeat-backward
+          "C-j"        #'company-search-repeat-forward
+          "C-k"        #'company-search-repeat-backward
           "C-s"        (λ! (company-search-abort) (company-filter-candidates))
           [escape]     #'company-search-abort))
 
@@ -69,22 +62,6 @@
     (map! :map comint-mode-map [tab] #'company-complete))
 
   (global-company-mode +1))
-
-
-(def-package! company-statistics
-  :after company
-  :config
-  (setq company-statistics-file (concat doom-cache-dir "company-stats-cache.el"))
-  (quiet! (company-statistics-mode +1)))
-
-
-;; Looks ugly on OSX without emacs-mac build
-(def-package! company-quickhelp
-  :after company
-  :config
-  (setq company-quickhelp-delay nil)
-  (company-quickhelp-mode +1))
-
 
 (def-package! company-dict
   :commands company-dict
@@ -110,4 +87,3 @@
 (autoload 'company-files "company-files")
 (autoload 'company-gtags "company-gtags")
 (autoload 'company-ispell "company-ispell")
-

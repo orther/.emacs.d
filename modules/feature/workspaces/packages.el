@@ -2,4 +2,3 @@
 ;;; feature/workspaces/packages.el
 
 (package! persp-mode)
-

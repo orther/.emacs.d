@@ -285,20 +285,8 @@
 algorithm is just confusing, like in python or ruby."
     (setq-local evilmi-always-simple-jump t)))
 
-
-(def-package! evil-multiedit
-  :commands (evil-multiedit-match-all
-             evil-multiedit-match-and-next
-             evil-multiedit-match-and-prev
-             evil-multiedit-match-symbol-and-next
-             evil-multiedit-match-symbol-and-prev
-             evil-multiedit-toggle-or-restrict-region
-             evil-multiedit-next
-             evil-multiedit-prev
-             evil-multiedit-abort
-             evil-multiedit-ex-match)
-  :config (evil-multiedit-default-keybinds))
-
+(def-package! evil-mc :demand t
+  :config (global-evil-mc-mode 1))
 
 (def-package! evil-textobj-anyblock
   :commands (evil-numbers/inc-at-pt evil-numbers/dec-at-pt)

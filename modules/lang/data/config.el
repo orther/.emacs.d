@@ -2,7 +2,6 @@
 
 (push '("/sxhkdrc" . conf-mode) auto-mode-alist)
 
-
 (def-package! nxml-mode
   :mode "\\.plist$"
   :config

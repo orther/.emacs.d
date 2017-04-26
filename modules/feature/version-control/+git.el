@@ -4,10 +4,8 @@
   :mode "/\\.?git/?config$"
   :mode "/\\.gitmodules$")
 
-
 (def-package! gitignore-mode
   :mode "/\\.gitignore$")
-
 
 (def-package! git-gutter-fringe
   :commands git-gutter-mode
@@ -27,10 +25,14 @@
     ;; Refreshing git-gutter on ESC
     (advice-add #'evil-force-normal-state :after #'git-gutter)))
 
-
 (def-package! browse-at-remote
   :commands (browse-at-remote browse-at-remote-get-url))
 
+(def-package! gist
+  :commands (gist-list gist-buffer gist-region gist-buffer-private gist-region-private))
+
+(def-package! git-timemachine
+  :commands (git-timemachine git-timemachine-toggle))
 
 (def-package! magit
   :commands magit-status
@@ -41,8 +43,6 @@
         :nv "C-j" nil
         :nv "C-k" nil))
 
-
 (def-package! evil-magit
   :when (featurep! :feature evil)
   :after magit)
-

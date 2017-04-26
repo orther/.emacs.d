@@ -3,7 +3,7 @@
 ;; A centralized keybinds system. Uses `which-key' to preview the available keys
 ;; when using `doom-leader-key' or `doom-localleader-key'.
 
-(defvar doom-leader-key ","
+(defvar doom-leader-key "SPC"
   "The leader prefix key, for global commands.")
 
 (defvar doom-localleader-key "\\"
