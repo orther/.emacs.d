@@ -172,7 +172,12 @@ for :align t on every rule."
                (doom-hide-modeline-mode +1))
               ((and (symbolp modeline)
                     (not (eq modeline 't)))
+<<<<<<< HEAD
                (let ((doom--mode-line (doom-modeline modeline)))
+=======
+               (setq-local doom--modeline-format (doom-modeline modeline))
+               (when doom--modeline-format
+>>>>>>> b2d19eac... Fix disappearing modeline due to loss of state
                  (doom-hide-modeline-mode +1)))))
     ;; show modeline
     (when doom-hide-modeline-mode
