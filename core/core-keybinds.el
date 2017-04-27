@@ -19,7 +19,7 @@
         which-key-sort-uppercase-first nil
         which-key-add-column-padding 1
         which-key-max-display-columns nil
-        which-key-min-display-lines 10
+        which-key-min-display-lines 5
         ;; only pop-up for leader/localleader keys
         which-key-allow-regexps (list (format "^%s" (regexp-quote doom-leader-key))
                                       (format "^%s" (regexp-quote doom-localleader-key))))

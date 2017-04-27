@@ -66,6 +66,7 @@
  "C-M-f"        'doom/toggle-fullscreen
  :m "A-j"       '+hlissner:multi-next-line
  :m "A-k"       '+hlissner:multi-previous-line
+ :nvi "TAB"       'indent-for-tab-command
 
   ;;; <leader> and <localleader>
   :m ";" 'evil-ex
@@ -104,6 +105,7 @@
       :desc "Kill other buffers"       :n "D" 'doom/kill-other-buffers
       :desc "Kill a buffer"            :n "k" 'kill-buffer
       :desc "New empty buffer"         :n "n" 'evil-buffer-new
+      :desc "Pop scratch buffer"       :n "s" '+doom:pop-scratch-buffer
       ;; TODO spacemacs/copy-whole-buffer-to-clipboard y
       ;; TODO spacemacs/paste-whole-file-to-clipboard p
       )
@@ -112,8 +114,7 @@
       :prefix "p"
       :desc "Find file in project"    :n "f" 'counsel-projectile-find-file
       :desc "Run cmd in project root" :n "!" 'projectile-run-shell-command-in-root
-      ;; TODO: needs work, broken - wrong type argument
-      :desc "Toggle project neotree"  :n "t" 'neotree-find-project-root 
+      :desc "Toggle project neotree"  :n "t" '+evil/neotree
       :desc "Switch project"          :n "p" 'counsel-projectile-switch-project
       :desc "Kill project buffers"    :n "k" 'projectile-kill-buffers
       ;; TODO spacemacs/project-shell-pop '
@@ -289,37 +290,8 @@
       :i "C-e" 'doom/forward-to-last-non-comment-or-eol
       :i "C-u" 'doom/backward-kill-to-bol-and-indent
 
-      ;; Restore 'dumb' indentation to the tab key. This rustles a lot of peoples'
-      ;; jimmies, apparently, but it's how I like it.
-      :i "<tab>"     'doom/dumb-indent
-      :i "<backtab>" 'doom/dumb-dedent
-      :i "<C-tab>"   'indent-for-tab-command
-      :i "<A-tab>"   (λ! (insert "\t"))
-      ;; 'smart' indentation for lisp modes
-      (:after lisp-mode
-        (:map lisp-mode-map       :i [remap doom/dumb-indent] 'indent-for-tab-command))
-      (:after elisp-mode
-        (:map emacs-lisp-mode-map :i [remap doom/dumb-indent] 'indent-for-tab-command))
-
-      ;; textmate-esque newline insertion
-      :i [M-return]    'evil-open-below
-      :i [S-M-return]  'evil-open-above
-      ;; Textmate-esque newlines
-      :i [backspace]    'delete-backward-char
-      :i [M-backspace]  'doom/backward-kill-to-bol-and-indent
-      ;; Emacsien motions for insert mode
-      :i "C-b" 'backward-word
-      :i "C-f" 'forward-word
       ;; escape from insert mode (more responsive than using key-chord-define)
       :irv "C-g" 'evil-normal-state
-
-      ;; Highjacks space/backspace to:
-      ;;   a) balance spaces inside brackets/parentheses ( | ) -> (|)
-      ;;   b) delete space-indented blocks intelligently
-      ;;   c) do none of this when inside a string
-      :i "SPC"                          'doom/inflate-space-maybe
-      :i [remap delete-backward-char]   'doom/deflate-space-maybe
-      :i [remap newline]                'doom/newline-and-indent
 
       ;; Make ESC quit all the things
       (:map (minibuffer-local-map

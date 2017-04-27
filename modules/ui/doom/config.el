@@ -8,7 +8,7 @@
   "The font currently in use.")
 
 (defvar +doom-variable-pitch-font
-  (font-spec :family "Iosevka" :size 26)
+  (font-spec :family "Iosevka" :size 24)
   "The font currently in use.")
 
 (defvar +doom-unicode-font
@@ -82,6 +82,7 @@
   (require 'doom-neotree)
   (setq doom-neotree-enable-variable-pitch t
         doom-neotree-file-icons 'simple
+        doom-neotree-enable-file-icons t
         doom-neotree-line-spacing 3)
 
   ;; Add line-highlighting to nlinum

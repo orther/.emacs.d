@@ -21,3 +21,19 @@ use the current window."
       (if text (insert text)))
     (if bang (switch-to-buffer new-buf) (doom-popup-buffer new-buf))))
 
+;;;###autoload
+(defun +doom:pop-scratch-buffer (&optional bang)
+  "Send a region to and pop up the scratch buffer. If BANG, don't use a popup,
+use the current window."
+  (interactive)
+  (let ((mode major-mode)
+        (old-project (doom-project-root))
+        (new-buf (get-buffer-create " *doom:scratch*")))
+    (with-current-buffer new-buf
+      (setq default-directory old-project
+            mode-line-format (doom-modeline 'minimal))
+      (when (and (not (eq major-mode mode))
+                 (functionp mode))
+        (funcall mode)))
+    (if bang (switch-to-buffer new-buf) (doom-popup-buffer new-buf))))
+
