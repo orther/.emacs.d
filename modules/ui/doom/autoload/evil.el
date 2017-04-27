@@ -11,7 +11,7 @@ use the current window."
                 (buffer-substring beg end)))
         (mode major-mode)
         (old-project (doom-project-root))
-        (new-buf (get-buffer-create " *doom:scratch*")))
+        (new-buf (get-buffer-create " *doom-esc:scratch*")))
     (with-current-buffer new-buf
       (setq default-directory old-project
             mode-line-format (doom-modeline 'minimal))
@@ -28,7 +28,7 @@ use the current window."
   (interactive)
   (let ((mode major-mode)
         (old-project (doom-project-root))
-        (new-buf (get-buffer-create " *doom:scratch*")))
+        (new-buf (get-buffer-create " *doom-esc:scratch*")))
     (with-current-buffer new-buf
       (setq default-directory old-project
             mode-line-format (doom-modeline 'minimal))
