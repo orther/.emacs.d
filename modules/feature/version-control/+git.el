@@ -32,7 +32,17 @@
   :commands (gist-list gist-buffer gist-region gist-buffer-private gist-region-private))
 
 (def-package! git-timemachine
-  :commands (git-timemachine git-timemachine-toggle))
+  :commands (git-timemachine git-timemachine-toggle)
+  :config
+  (add-hook! 'git-timemachine-mode-hook #'evil-force-normal-state)
+  (map! :map git-timemachine-mode-map
+        :nv "p" 'git-timemachine-show-previous-revision
+        :nv "n" 'git-timemachine-show-next-revision
+        :nv "g" 'git-timemachine-show-nth-revision
+        :nv "q" 'git-timemachine-quit
+        :nv "w" 'git-timemachine-kill-abbreviated-revision
+        :nv "W" 'git-timemachine-kill-revision
+        :nv "b" 'git-timemachine-blame))
 
 (def-package! magit
   :commands magit-status
