@@ -83,6 +83,7 @@
     (:desc "file"
       :prefix "f"
       :desc "Open file from here"      :n "f" 'counsel-find-file
+      :desc "Sudo open file from here" :n "F" 'doom/sudo-find-file
       :desc "Copy file"                :n "c" 'copy-file
       :desc "Rename file"              :n "R" 'copy-file
       :desc "Delete file"              :n "D" 'delete-file
