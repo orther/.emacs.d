@@ -19,7 +19,7 @@
   :commands (company-mode global-company-mode company-complete
              company-complete-common company-manual-begin company-grab-line)
   :config
-  (setq company-idle-delay nil
+  (setq company-idle-delay 0.2
         company-minimum-prefix-length 2
         company-tooltip-limit 10
         company-dabbrev-downcase nil
@@ -29,7 +29,7 @@
         company-require-match 'never
         company-global-modes '(not eshell-mode comint-mode erc-mode message-mode help-mode)
         company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend)
-        company-backends '(company-capf))
+        company-backends '(company-capf company-dabbrev-code company-gtags company-etags company-keywords company-files company-dabbrev))
 
   (push #'company-sort-by-occurrence company-transformers)
 
@@ -56,6 +56,19 @@
           "C-k"        #'company-search-repeat-backward
           "C-s"        (λ! (company-search-abort) (company-filter-candidates))
           [escape]     #'company-search-abort))
+
+(def-package! company-statistics
+  :after company
+  :config
+  (setq company-statistics-file (concat doom-cache-dir "company-stats-cache.el"))
+  (quiet! (company-statistics-mode +1)))
+
+
+(def-package! company-quickhelp
+  :after company
+  :config
+  (setq company-quickhelp-delay nil)
+  (company-quickhelp-mode +1))
 
   ;; TAB auto-completion in term buffers
   (after! comint

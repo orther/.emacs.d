@@ -41,6 +41,7 @@
 
   :config
   (evil-mode +1)
+  (show-paren-mode +1)
   (evil-select-search-module 'evil-search-module 'evil-search)
 
   (set! :popup
@@ -55,16 +56,6 @@
           evil-insert-state-cursor 'bar
           evil-visual-state-cursor 'hollow))
   (advice-add #'load-theme :after #'+evil*init-cursors)
-
-  ;; highlight matching delimiters where it's important
-  (defun +evil|show-paren-mode-off () (show-paren-mode -1))
-  (add-hook 'evil-insert-state-entry-hook   #'show-paren-mode)
-  (add-hook 'evil-insert-state-exit-hook    #'+evil|show-paren-mode-off)
-  (add-hook 'evil-visual-state-entry-hook   #'show-paren-mode)
-  (add-hook 'evil-visual-state-exit-hook    #'+evil|show-paren-mode-off)
-  (add-hook 'evil-operator-state-entry-hook #'show-paren-mode)
-  (add-hook 'evil-operator-state-exit-hook  #'+evil|show-paren-mode-off)
-  (add-hook 'evil-normal-state-entry-hook   #'+evil|show-paren-mode-off)
 
   (dolist (mode '(tabulated-list-mode view-mode comint-mode term-mode calendar-mode Man-mode grep-mode))
     (evil-set-initial-state mode 'emacs))

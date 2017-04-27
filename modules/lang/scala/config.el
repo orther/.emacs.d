@@ -3,7 +3,8 @@
 (def-package! scala-mode
   :mode "\\.s\\(cala\\|bt\\)$"
   :init
-  (add-hook 'scala-mode-hook #'eldoc-mode)
+  (add-hook 'scala-mode-hook 'scala/configure-ensime)
+  (add-hook 'ensime-mode-hook 'scala/enable-eldoc)
   :config
   ;; disable ensime startup notification
   (setq ensime-startup-snapshot-notification nil)
@@ -13,9 +14,7 @@
     (:leader
       (:desc "mode"
        :prefix "m"
-       :desc "Start ensime"       :n "s" 'ensime)))
-  (add-hook 'scala-mode-hook 'scala/configure-ensime)
-  (add-hook 'ensime-mode-hook 'scala/enable-eldoc))
+       :desc "Start ensime"       :n "s" 'ensime))))
 
 (def-package! sbt-mode :after scala-mode)
 

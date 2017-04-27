@@ -80,7 +80,7 @@
     :desc "Switch to Emacs mode"       :n "|" 'evil-emacs-state
     :desc "Switch to last buffer"      :n "TAB" 'evil-switch-to-windows-last-buffer
 
-    (:desc "File"
+    (:desc "file"
       :prefix "f"
       :desc "Open file from here"      :n "f" 'counsel-find-file
       :desc "Copy file"                :n "c" 'copy-file
@@ -98,7 +98,7 @@
       ;; TODO: spacemacs/copy-and-show-filename y
       )
 
-    (:desc "Buffer"
+    (:desc "buffer"
       :prefix "b"
       :desc "Switch buffer"            :n "b" 'ivy-switch-buffer
       :desc "Kill buffer"              :n "d" 'kill-this-buffer
@@ -110,7 +110,7 @@
       ;; TODO spacemacs/paste-whole-file-to-clipboard p
       )
 
-    (:desc "Project"
+    (:desc "project"
       :prefix "p"
       :desc "Find file in project"    :n "f" 'counsel-projectile-find-file
       :desc "Run cmd in project root" :n "!" 'projectile-run-shell-command-in-root
@@ -120,17 +120,18 @@
       ;; TODO spacemacs/project-shell-pop '
       )
 
-    (:desc "Search"
+    (:desc "search"
       :prefix "s"
-      :desc "IEdit mode"              :n "e" 'iedit-mode)
+      :desc "IEdit mode"              :n "e" 'iedit-mode
+      :desc "Swiper search"           :n "s" 'swiper)
 
-    (:desc "Workspace"
+    (:desc "workspace"
       :prefix "l"
       :desc "Switch to workspace"    :n "l" 'persp-switch
       :desc "Save workspace state"   :n "s" 'persp-save-state-to-file
       :desc "Kill workspace"         :n "d" 'persp-kill)
 
-    (:desc "Window"
+    (:desc "window"
       :prefix "w"
       :desc "Split window vertical"   :n "/" 'split-window-right
       :desc "Split window horizontal" :n "-" 'split-window-below
@@ -149,7 +150,7 @@
       :desc "Toggle maximize window"  :n "m" '+gilbertw1/toggle-maximize-buffer
       )
 
-    (:desc "Jump"
+    (:desc "jump"
       :prefix "j"
       :desc "Dumb jump go"            :n "q" 'dumb-jump-go
       :desc "Dump jump go other"      :n "Q" 'dumb-jump-go-other-window)
@@ -161,12 +162,12 @@
       ;; TODO spacemacs/timemachine-transient-state
       )
 
-   (:desc "Quit"
+   (:desc "quit"
      :prefix "q"
      :desc "Quit"                     :n "q" 'evil-save-and-quit
      :desc "Quit (forget session)"    :n "Q" '+workspace/kill-session-and-quit)
 
-   (:desc "Toggle"
+   (:desc "toggle"
      :prefix "t"
      :desc "Spell check"            :n "s" 'flyspell-mode
      :desc "Line numbers"           :n "l" 'doom/toggle-line-numbers
@@ -176,22 +177,16 @@
      :desc "Impatient mode"         :n "h" '+present/impatient-mode
      :desc "Big mode"               :n "b" '+present/big-mode)
 
-   (:desc "Code tools"
+   (:desc "code"
      :prefix "c"
      :desc "Build"                  :n  "b" '+eval/build
      :desc "Open/Send to REPL"      :nv "r" '+eval/repl
-     :desc "Open debugger"          :n  "R" '+debug/open)
-
-   (:desc "Personal"
-     :prefix "SPC"
-     :desc "Reload theme"           :n "R" 'doom/reset-theme
-     ;; Org notes
-     :desc "Browse project notes"   :n "p"   '+org/browse-notes-for-project
-     :desc "Browse mode notes"      :n "m"   '+org/browse-notes-for-major-mode
-     :desc "Org Capture"            :n "SPC" '+org/capture))
+     :desc "Open debugger"          :n  "R" '+debug/open))
 
 
  ;;; Evil-esque bindings
+ ;;; indent on new line
+ :i "RET" 'evil-ret-and-indent
  ;; Yank to EOL
  :n  "Y"  "y$"
  ;; Repeat in visual mode (buggy)
@@ -207,7 +202,7 @@
  :n  "p"  'evil-paste-after-without-register
  :n  "P"  'evil-paste-before-without-register
  :n  "x"  'evil-delete-char-without-register
- :n  "X"  'evil-backward-delete-char-without-register
+ :n  "X"  'evil-delete-backward-char-without-register
  :n  "d"  'evil-delete-without-register-if-whitespace
  ;; simple motions
  :nv "H"  'evil-first-non-blank
