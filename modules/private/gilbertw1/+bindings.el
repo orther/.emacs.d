@@ -160,6 +160,7 @@
       :prefix "g"
       :desc "Git status"              :n "s" 'magit-status
       :desc "Git blame"               :n "b" 'magit-blame
+      :desc "Git time machine"        :n "t" 'git-timemachine
       ;; TODO spacemacs/timemachine-transient-state
       )
 

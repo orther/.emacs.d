@@ -8,7 +8,7 @@
   "The font currently in use.")
 
 (defvar +doom-variable-pitch-font
-  (font-spec :family "Iosevka" :size 24)
+  (font-spec :family "Iosevka" :size 26)
   "The font currently in use.")
 
 (defvar +doom-unicode-font
@@ -80,7 +80,7 @@
 
   ;; Add file icons to doom-neotree
   (require 'doom-neotree)
-  (setq doom-neotree-enable-variable-pitch t
+  (setq doom-neotree-enable-variable-pitch nil
         doom-neotree-file-icons 'simple
         doom-neotree-enable-file-icons t
         doom-neotree-line-spacing 3)
