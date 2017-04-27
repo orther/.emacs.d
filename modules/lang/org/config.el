@@ -126,7 +126,7 @@
    ;; Behavior
    org-catch-invisible-edits 'show
    org-checkbox-hierarchical-statistics nil
-   org-enforce-todo-checkbox-dependencies t
+   org-enforce-todo-checkbox-dependencies nil
    org-completion-use-ido nil ; Use ivy/counsel for refiling
    org-confirm-elisp-link-function nil
    org-default-priority ?C
