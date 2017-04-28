@@ -42,17 +42,7 @@
  ;; Temporary escape into emacs mode
  [C-escape]    'evil-emacs-state
  :n [C-escape] 'evil-normal-state
- ;; Switching tabs (workspaces)
- "M-1"  (λ! (+workspace/switch-to 0))
- "M-2"  (λ! (+workspace/switch-to 1))
- "M-3"  (λ! (+workspace/switch-to 2))
- "M-4"  (λ! (+workspace/switch-to 3))
- "M-5"  (λ! (+workspace/switch-to 4))
- "M-6"  (λ! (+workspace/switch-to 5))
- "M-7"  (λ! (+workspace/switch-to 6))
- "M-8"  (λ! (+workspace/switch-to 7))
- "M-9"  (λ! (+workspace/switch-to 8))
- "M-0"  '+workspace/switch-to-last
+ "M-0"  '+workspace/switch-to-last ;; TODO: THIS!
 
  "M-r"  '+eval/buffer
  "M-b"  '+eval/build
@@ -79,6 +69,10 @@
     :desc "Find selection in project"  :nv "*" 'counsel-projectile-rg-region-or-symbol
     :desc "Switch to Emacs mode"       :n "|" 'evil-emacs-state
     :desc "Switch to last buffer"      :n "TAB" 'evil-switch-to-windows-last-buffer
+
+    :desc "Switch to window 1"         :n "1" 'winum-select-window-1
+    :desc "Switch to window 2"         :n "2" 'winum-select-window-2
+    :desc "Switch to window 3"         :n "3" 'winum-select-window-3
 
     (:desc "file"
       :prefix "f"
@@ -118,6 +112,7 @@
       :desc "Toggle project neotree"  :n "t" '+evil/neotree
       :desc "Switch project"          :n "p" 'counsel-projectile-switch-project
       :desc "Kill project buffers"    :n "k" 'projectile-kill-buffers
+      :desc "Recent project files"    :n "r" 'projectile-recentf
       ;; TODO spacemacs/project-shell-pop '
       )
 

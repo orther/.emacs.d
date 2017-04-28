@@ -11,6 +11,7 @@
        eval
        debug
        search
+       editor
 
        :completion
        company
@@ -22,6 +23,7 @@
        doom-modeline
        doom-quit
        hl-todo
+       window
       
        :tools
        eshell

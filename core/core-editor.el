@@ -198,7 +198,13 @@
   :config
   (setq wgrep-auto-save-buffer t)
   (advice-add #'wgrep-abort-changes :after #'doom/popup-close)
-  (advice-add #'wgrep-finish-edit :after #'doom/popup-close))
+  (advice-add #'wgrep-finish-edit :after #'doom/popup-close)
+  (map! :map wgrep-mode-map
+        (:desc "wgrep mode actions"
+         :prefix ","
+         :desc "finish edit"                 :n "s" 'wgrep-finish-edit
+         :desc "discard edit"                :n "d" 'wgrep-abort-changes
+         :desc "exit wgrep"                  :n "x" 'wgrep-exit)))
 
 (provide 'core-editor)
 ;;; core-editor.el ends here

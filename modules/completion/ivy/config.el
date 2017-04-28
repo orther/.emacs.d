@@ -13,6 +13,7 @@
         ;; highlight til EOL
         ivy-format-function #'ivy-format-function-line)
 
+
   (after! magit      (setq magit-completing-read-function #'ivy-completing-read))
   (after! yasnippet  (push #'+ivy-yas-prompt yas-prompt-functions))
 
@@ -27,6 +28,12 @@
         "C-l" #'ivy-alt-done
         "C-k" #'ivy-previous-line
         "C-j" #'ivy-next-line)
+
+  (map! :map ivy-occur-grep-mode-map
+        (:desc "ivy occur actions"
+         :prefix ","
+         :desc "switch to ivy wgrep mode"    :n "," 'ivy-wgrep-change-to-wgrep-mode
+         :desc "switch to ivy wgrep mode"    :n "w" 'ivy-wgrep-change-to-wgrep-mode))
 
   (map! :map ivy-mode-map
         [remap describe-face]             #'counsel-describe-face
@@ -51,12 +58,7 @@
 
   (set! :popup "^\\*ivy-occur counsel-ag" :size 25 :regexp t :autokill t)
 
-  (require 'counsel-projectile)
-
-  (add-hook! 'doom-popup-mode-hook
-    (when (eq major-mode 'ivy-occur-grep-mode)
-      (ivy-wgrep-change-to-wgrep-mode))))
-
+  (require 'counsel-projectile))
 
 ;; Used by `counsel-M-x'
 (def-package! smex
