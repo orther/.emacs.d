@@ -73,9 +73,6 @@
       (ignore (bury-buffer))))
 (add-hook 'kill-buffer-query-functions #'doom|dont-kill-scratch-buffer)
 
-;; enabled by default in Emacs 25+. No thanks.
-(electric-indent-mode -1)
-
 (defun doom*delete-trailing-whitespace (orig-fn &rest args)
   "Don't affect trailing whitespace on current line."
   (let ((spaces (1- (current-column)))

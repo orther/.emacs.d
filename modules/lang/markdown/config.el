@@ -11,11 +11,6 @@
         markdown-gfm-additional-languages '("sh"))
 
   :config
-  (add-hook! markdown-mode
-    (auto-fill-mode +1)
-    (setq line-spacing 2
-          fill-column 80))
-
   (sp-local-pair
    '(markdown-mode gfm-mode)
    "\`\`\`" "\`\`\`" :post-handlers '(("||\n" "RET")))
