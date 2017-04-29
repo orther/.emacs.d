@@ -63,31 +63,31 @@
   (:leader
     ;; common
     :desc "Counsel M-x"                :nv ":" 'counsel-M-x
-    :desc "Run shell command"          :n "!" 'shell-command
-    :desc "Find file in project"       :n "/" 'counsel-projectile-rg
-    :desc "Find file from here"        :n "?" 'counsel-rg
+    :desc "Run shell command"          :nv "!" 'shell-command
+    :desc "Find file in project"       :nv "/" 'counsel-projectile-rg
+    :desc "Find file from here"        :nv "?" 'counsel-rg
     :desc "Find selection in project"  :nv "*" 'counsel-projectile-rg-region-or-symbol
     :desc "Switch to Emacs mode"       :n "|" 'evil-emacs-state
-    :desc "Switch to last buffer"      :n "TAB" 'evil-switch-to-windows-last-buffer
+    :desc "Switch to last buffer"      :nv "TAB" 'evil-switch-to-windows-last-buffer
 
-    :desc "Switch to window 1"         :n "1" 'winum-select-window-1
-    :desc "Switch to window 2"         :n "2" 'winum-select-window-2
-    :desc "Switch to window 3"         :n "3" 'winum-select-window-3
+    :desc "Switch to window 1"         :nv "1" 'winum-select-window-1
+    :desc "Switch to window 2"         :nv "2" 'winum-select-window-2
+    :desc "Switch to window 3"         :nv "3" 'winum-select-window-3
 
     (:desc "file"
       :prefix "f"
-      :desc "Open file from here"      :n "f" 'counsel-find-file
-      :desc "Sudo open file from here" :n "F" 'doom/sudo-find-file
-      :desc "Copy file"                :n "c" 'copy-file
-      :desc "Rename file"              :n "R" 'copy-file
-      :desc "Delete file"              :n "D" 'delete-file
+      :desc "Open file from here"      :nv "f" 'counsel-find-file
+      :desc "Sudo open file from here" :nv "F" 'doom/sudo-find-file
+      :desc "Copy file"                :nv "c" 'copy-file
+      :desc "Rename file"              :nv "R" 'copy-file
+      :desc "Delete file"              :nv "D" 'delete-file
       ;; TODO: spacemacs/sudo-edit
-      :desc "Recent files"             :n "r"  'counsel-recentf
-      :desc "Neotree toggle"           :n "t"  'neotree-toggle ;; TODO: neesd work
-      :desc "Save buffer"              :n "s"  'save-buffer
-      :desc "Save all buffers"         :n "S"  'evil-write-all
-      :desc "Counsel bookmark"         :n "b"  'counsel-bookmark
-      :desc "Remote ssh tramp"         :n "i"  (lambda ()
+      :desc "Recent files"             :nv "r"  'counsel-recentf
+      :desc "Neotree toggle"           :nv "t"  'neotree-toggle ;; TODO: neesd work
+      :desc "Save buffer"              :nv "s"  'save-buffer
+      :desc "Save all buffers"         :nv "S"  'evil-write-all
+      :desc "Counsel bookmark"         :nv "b"  'counsel-bookmark
+      :desc "Remote ssh tramp"         :nv "i"  (lambda ()
                                                  (interactive)
                                                  (counsel-find-file "/ssh:"))
       ;; TODO: spacemacs/copy-and-show-filename y
@@ -95,90 +95,95 @@
 
     (:desc "buffer"
       :prefix "b"
-      :desc "Switch buffer"            :n "b" 'ivy-switch-buffer
-      :desc "Kill buffer"              :n "d" 'kill-this-buffer
-      :desc "Kill other buffers"       :n "D" 'doom/kill-other-buffers
-      :desc "Kill a buffer"            :n "k" 'kill-buffer
-      :desc "New empty buffer"         :n "n" 'evil-buffer-new
-      :desc "Pop scratch buffer"       :n "s" '+doom:pop-scratch-buffer
+      :desc "Switch buffer"            :nv "b" 'ivy-switch-buffer
+      :desc "Kill buffer"              :nv "d" 'kill-this-buffer
+      :desc "Kill other buffers"       :nv "D" 'doom/kill-other-buffers
+      :desc "Kill a buffer"            :nv "k" 'kill-buffer
+      :desc "New empty buffer"         :nv "n" 'evil-buffer-new
+      :desc "Pop scratch buffer"       :nv "s" '+doom:pop-scratch-buffer
       ;; TODO spacemacs/copy-whole-buffer-to-clipboard y
       ;; TODO spacemacs/paste-whole-file-to-clipboard p
       )
 
     (:desc "project"
       :prefix "p"
-      :desc "Find file in project"    :n "f" 'counsel-projectile-find-file
-      :desc "Run cmd in project root" :n "!" 'projectile-run-shell-command-in-root
-      :desc "Toggle project neotree"  :n "t" '+evil/neotree
-      :desc "Switch project"          :n "p" 'counsel-projectile-switch-project
-      :desc "Kill project buffers"    :n "k" 'projectile-kill-buffers
-      :desc "Recent project files"    :n "r" 'projectile-recentf
+      :desc "Find file in project"    :nv "f" 'counsel-projectile-find-file
+      :desc "Run cmd in project root" :nv "!" 'projectile-run-shell-command-in-root
+      :desc "Toggle project neotree"  :nv "t" '+evil/neotree
+      :desc "Switch project"          :nv "p" 'counsel-projectile-switch-project
+      :desc "Kill project buffers"    :nv "k" 'projectile-kill-buffers
+      :desc "Recent project files"    :nv "r" 'projectile-recentf
       ;; TODO spacemacs/project-shell-pop '
       )
 
     (:desc "search"
       :prefix "s"
-      :desc "IEdit mode"              :n "e" 'iedit-mode
-      :desc "Swiper search"           :n "s" 'swiper)
+      :desc "IEdit mode"              :nv "e" 'iedit-mode
+      :desc "Swiper search"           :nv "s" 'swiper)
 
     (:desc "workspace"
       :prefix "l"
-      :desc "Switch to workspace"    :n "l" 'persp-switch
-      :desc "Save workspace state"   :n "s" 'persp-save-state-to-file
-      :desc "Kill workspace"         :n "d" 'persp-kill)
+      :desc "Switch to workspace"    :nv "l" 'persp-switch
+      :desc "Save workspace state"   :nv "s" 'persp-save-state-to-file
+      :desc "Kill workspace"         :nv "d" 'persp-kill)
 
     (:desc "window"
       :prefix "w"
-      :desc "Split window vertical"   :n "/" 'split-window-right
-      :desc "Split window horizontal" :n "-" 'split-window-below
-      :desc "Balance windows"         :n "=" 'balance-windows
-      :desc "Delete window"           :n "d" 'delete-window
-      :desc "Window left"             :n "h" 'evil-window-left
-      :desc "Window down"             :n "j" 'evil-window-down
-      :desc "Window right"            :n "l" 'evil-window-right
-      :desc "Window up"               :n "k" 'evil-window-up
-      :desc "Move window left"        :n "H" 'evil-window-move-far-left
-      :desc "Move window down"        :n "J" 'evil-window-move-very-bottom
-      :desc "Move window right"       :n "L" 'evil-window-move-far-right
-      :desc "Move window up"          :n "K" 'evil-window-move-very-top
-      :desc "Winner undo"             :n "u" 'winner-undo
-      :desc "Winner redo"             :n "U" 'winner-redo
-      :desc "Toggle maximize window"  :n "m" '+gilbertw1/toggle-maximize-buffer
+      :desc "Split window vertical"   :nv "/" 'split-window-right
+      :desc "Split window horizontal" :nv "-" 'split-window-below
+      :desc "Balance windows"         :nv "=" 'balance-windows
+      :desc "Delete window"           :nv "d" 'delete-window
+      :desc "Window left"             :nv "h" 'evil-window-left
+      :desc "Window down"             :nv "j" 'evil-window-down
+      :desc "Window right"            :nv "l" 'evil-window-right
+      :desc "Window up"               :nv "k" 'evil-window-up
+      :desc "Move window left"        :nv "H" 'evil-window-move-far-left
+      :desc "Move window down"        :nv "J" 'evil-window-move-very-bottom
+      :desc "Move window right"       :nv "L" 'evil-window-move-far-right
+      :desc "Move window up"          :nv "K" 'evil-window-move-very-top
+      :desc "Winner undo"             :nv "u" 'winner-undo
+      :desc "Winner redo"             :nv "U" 'winner-redo
+      :desc "Toggle maximize window"  :nv "m" '+gilbertw1/toggle-maximize-buffer
       )
 
     (:desc "jump"
       :prefix "j"
-      :desc "Dumb jump go"            :n "q" 'dumb-jump-go
-      :desc "Dump jump go other"      :n "Q" 'dumb-jump-go-other-window)
+      :desc "Dumb jump go"            :nv "q" 'dumb-jump-go
+      :desc "Dump jump go other"      :nv "Q" 'dumb-jump-go-other-window)
 
     (:desc "git"
       :prefix "g"
-      :desc "Git status"              :n "s" 'magit-status
-      :desc "Git blame"               :n "b" 'magit-blame
-      :desc "Git time machine"        :n "t" 'git-timemachine
-      ;; TODO spacemacs/timemachine-transient-state
-      )
+      :desc "Git status"              :nv "s" 'magit-status
+      :desc "Git blame"               :nv "b" 'magit-blame
+      :desc "Git time machine"        :nv "t" 'git-timemachine
+      (:desc "gist"
+        :prefix "g"
+        :desc "Gist from buffer"         :nv "b" 'gist-buffer
+        :desc "Private gist from buffer" :nv "B" 'gist-buffer-private
+        :desc "Gist from region"         :nv "r" 'gist-region
+        :desc "Private gist from region" :nv "R" 'gist-region-private
+        :desc "List gists"               :nv "l" 'gist-list))
 
    (:desc "quit"
      :prefix "q"
-     :desc "Quit"                     :n "q" 'evil-save-and-quit
-     :desc "Quit (forget session)"    :n "Q" '+workspace/kill-session-and-quit)
+     :desc "Quit"                     :nv "q" 'evil-save-and-quit
+     :desc "Quit (forget session)"    :nv "Q" '+workspace/kill-session-and-quit)
 
    (:desc "toggle"
      :prefix "t"
-     :desc "Spell check"            :n "s" 'flyspell-mode
-     :desc "Line numbers"           :n "l" 'doom/toggle-line-numbers
-     :desc "Fullscreen"             :n "f" 'doom/toggle-fullscreen
-     :desc "Indent guides"          :n "i" 'highlight-indentation-mode
-     :desc "Indent guides (column)" :n "I" 'highlight-indentation-current-column-mode
-     :desc "Impatient mode"         :n "h" '+present/impatient-mode
-     :desc "Big mode"               :n "b" '+present/big-mode)
+     :desc "Spell check"              :nv "s" 'flyspell-mode
+     :desc "Line numbers"             :nv "l" 'doom/toggle-line-numbers
+     :desc "Fullscreen"               :nv "f" 'doom/toggle-fullscreen
+     :desc "Indent guides"            :nv "i" 'highlight-indentation-mode
+     :desc "Indent guides (column)"   :nv "I" 'highlight-indentation-current-column-mode
+     :desc "Impatient mode"           :nv "h" '+present/impatient-mode
+     :desc "Big mode"                 :nv "b" '+present/big-mode)
 
    (:desc "code"
      :prefix "c"
-     :desc "Build"                  :n  "b" '+eval/build
-     :desc "Open/Send to REPL"      :nv "r" '+eval/repl
-     :desc "Open debugger"          :n  "R" '+debug/open))
+     :desc "Build"                    :nv  "b" '+eval/build
+     :desc "Open/Send to REPL"        :nv "r" '+eval/repl
+     :desc "Open debugger"            :nv  "R" '+debug/open))
 
 
  ;;; Evil-esque bindings

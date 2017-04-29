@@ -287,5 +287,17 @@ using `doom-fetch'."
       (error "There were errors. Aborting."))
     (mapc #'doom-bootstrap ids)))
 
+
+(defmacro doom|advise-commands (advice-name commands class &rest body)
+  "Apply advice named ADVICE-NAME to multiple COMMANDS.
+  The body of the advice is in BODY."
+  `(progn
+     ,@(mapcar (lambda (command)
+                 `(defadvice ,command
+                      (,class ,(intern (format "%S-%s" command advice-name))
+                              activate)
+                    ,@body))
+               commands)))
+
 (provide 'core-lib)
 ;;; core-lib.el ends here

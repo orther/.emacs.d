@@ -1,5 +1,6 @@
 ;;; feature/editor/config.el
 
-(def-package! aggressive-indent :demand t
+(def-package! clean-aindent-mode :demand t
   :config
-  (global-aggressive-indent-mode 1))
+  (clean-aindent-mode t)
+  (define-key global-map (kbd "RET") 'newline-and-indent))
