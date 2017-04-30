@@ -125,6 +125,7 @@
       :prefix "l"
       :desc "Switch to workspace"    :nv "l" 'persp-switch
       :desc "Save workspace state"   :nv "s" 'persp-save-state-to-file
+      :desc "Switch last workspace"  :nv "TAB" '+workspace-switch-last
       :desc "Kill workspace"         :nv "d" 'persp-kill)
 
     (:desc "window"
@@ -171,14 +172,12 @@
 
    (:desc "toggle"
      :prefix "t"
+     :desc "Text size increase"       :nv "+" 'text-scale-increase
+     :desc "Text size decrease"       :nv "+" 'text-scale-decrease
      :desc "Spell check"              :nv "s" 'flyspell-mode
      :desc "Line numbers"             :nv "l" 'doom/toggle-line-numbers
-     :desc "Fullscreen"               :nv "f" 'doom/toggle-fullscreen
      :desc "Indent guides"            :nv "i" 'highlight-indentation-mode
-     :desc "Indent guides (column)"   :nv "I" 'highlight-indentation-current-column-mode
-     :desc "Impatient mode"           :nv "h" '+present/impatient-mode
-     :desc "Big mode"                 :nv "b" '+present/big-mode)
-
+     :desc "Indent guides (column)"   :nv "I" 'highlight-indentation-current-column-mode)
    (:desc "code"
      :prefix "c"
      :desc "Build"                    :nv  "b" '+eval/build

@@ -1,5 +1,8 @@
 ;;; feature/workspaces/config.el
 
+(defvar +workspaces-last-persp nil
+  "A variable that contains the last accessed perspective")
+
 (def-package! persp-mode :demand t
   :config
   (setq wg-morph-on nil
@@ -11,23 +14,12 @@
         persp-auto-save-opt 1
         persp-save-dir (concat doom-cache-dir "workspaces/"))
 
- (with-eval-after-load "persp-mode"
-  (with-eval-after-load "ivy"
-    (add-hook 'ivy-ignore-buffers
-              #'(lambda (b)
-                  (when persp-mode
-                    (let ((persp (get-current-persp)))
-                      (if persp
-                          (not (persp-contain-buffer-p b persp))
-                        nil)))))
+  (defun +workspaces*track-last-persp (switch-fun &rest args)
+    (let ((before-persp (safe-persp-name (get-current-persp)))
+          (after-persp (apply switch-fun args)))
+      (when (not (string= before-persp after-persp))
+        (setq +workspaces-last-persp before-persp))))
 
-    (setq ivy-sort-functions-alist
-          (append ivy-sort-functions-alist
-                  '((persp-kill-buffer   . nil)
-                    (persp-remove-buffer . nil)
-                    (persp-add-buffer    . nil)
-                    (persp-switch        . nil)
-                    (persp-window-switch . nil)
-                    (persp-frame-switch . nil)))))) 
-
+  (advice-add #'persp-switch :around #'+workspaces*track-last-persp)
+  
   (add-hook 'after-init-hook #'(lambda () (persp-mode 1))))

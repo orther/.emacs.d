@@ -1,4 +1,4 @@
-;;; feature/evil/packages.el
+;;; feature/search/autoload.el
 
 ;;;###autoload
 (defun counsel-projectile-rg-initial (&optional value)
