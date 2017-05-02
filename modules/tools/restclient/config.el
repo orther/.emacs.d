@@ -15,4 +15,5 @@
          :desc "Send http request other"     :n "S" 'restclient-http-send-current-stay-in-window
          :desc "Send http request raw"       :n "r" 'restclient-http-send-current-raw
          :desc "Copy curl command"           :n "c" 'restclient-copy-curl-command))))
-  (add-hook 'restclient-mode-hook #'+restclient|keymap-setup))
+  (add-hook 'restclient-mode-hook #'+restclient|keymap-setup)
+  (add-hook! 'restclient-mode-hook #'nlinum-mode))

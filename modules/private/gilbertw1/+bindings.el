@@ -9,6 +9,8 @@
               (command-remapping 'projectile-find-file)
             (command-remapping 'find-file))))))
 
+(define-key input-decode-map [?\C-i] [C-i])
+
 (map!
  ;; Essential
  "M-x"    'execute-extended-command
@@ -79,8 +81,11 @@
       :desc "Open file from here"      :nv "f" 'counsel-find-file
       :desc "Sudo open file from here" :nv "F" 'doom/sudo-find-file
       :desc "Copy file"                :nv "c" 'copy-file
-      :desc "Rename file"              :nv "R" 'copy-file
-      :desc "Delete file"              :nv "D" 'delete-file
+      :desc "Copy current file"        :nv "C" '+gdoom/copy-file
+      :desc "Rename current file"      :nv "R" '+gdoom/rename-current-buffer-file
+      :desc "Delete file"              :nv "d" '+gdoom/delete-file-confirm
+      :desc "Delete current file"      :nv "D" '+gdoom/delete-current-buffer-file
+      :desc "Sudo edit file"           :nv "E" '+gdoom/sudo-edit
       ;; TODO: spacemacs/sudo-edit
       :desc "Recent files"             :nv "r"  'counsel-recentf
       :desc "Neotree toggle"           :nv "t"  'neotree-toggle ;; TODO: neesd work
@@ -113,12 +118,13 @@
       :desc "Switch project"          :nv "p" 'counsel-projectile-switch-project
       :desc "Kill project buffers"    :nv "k" 'projectile-kill-buffers
       :desc "Recent project files"    :nv "r" 'projectile-recentf
+      :desc "Invalidate cache"        :nv "I" 'projectile-invalidate-cache
       ;; TODO spacemacs/project-shell-pop '
       )
 
     (:desc "search"
       :prefix "s"
-      :desc "IEdit mode"              :nv "e" 'iedit-mode
+      :desc "IEdit mode"              :nv "e" 'evil-iedit-state/iedit-mode
       :desc "Swiper search"           :nv "s" 'swiper)
 
     (:desc "workspace"
@@ -144,13 +150,16 @@
       :desc "Move window up"          :nv "K" 'evil-window-move-very-top
       :desc "Winner undo"             :nv "u" 'winner-undo
       :desc "Winner redo"             :nv "U" 'winner-redo
-      :desc "Toggle maximize window"  :nv "m" '+gilbertw1/toggle-maximize-buffer
+      :desc "Toggle maximize window"  :nv "m" '+gdoom/toggle-maximize-buffer
       )
 
     (:desc "jump"
       :prefix "j"
       :desc "Dumb jump go"            :nv "q" 'dumb-jump-go
-      :desc "Dump jump go other"      :nv "Q" 'dumb-jump-go-other-window)
+      :desc "Dump jump go other"      :nv "Q" 'dumb-jump-go-other-window
+      :desc "Avy go to line"          :nv "l" 'avy-goto-line
+      :desc "Avy go to word"          :nv "w" 'avy-goto-word-0
+      :desc "Avy go to char"          :nv "j" 'evil-avy-goto-word-or-subword-1)
 
     (:desc "git"
       :prefix "g"
@@ -210,6 +219,7 @@
  :nv "L"  'evil-last-non-blank
  ;; search avy goto
  :nv "C-f"  'evil-avy-goto-word-or-subword-1
+ :nv "/" 'swiper
 
  (:map evil-window-map ; prefix "C-w"
    ;; Navigation
@@ -262,6 +272,8 @@
  :v  "s"   'evil-surround-region
  :o  "S"   'evil-surround-edit
  :o  "S"   'evil-Surround-edit
+ ;; evil-forward
+ :niv "<C-i>" 'evil-jump-forward
 
  ;; help-mode
  (:map help-mode-map

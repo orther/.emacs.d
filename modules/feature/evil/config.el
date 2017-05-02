@@ -295,8 +295,8 @@ algorithm is just confusing, like in python or ruby."
 (def-package! evil-snipe :demand t
   :init
   (setq evil-snipe-smart-case t
-        evil-snipe-scope 'line
-        evil-snipe-repeat-scope 'visible
+        evil-snipe-scope 'visible
+        evil-snipe-repeat-scope 'buffer
         evil-snipe-override-evil-repeat-keys nil
         evil-snipe-char-fold t
         evil-snipe-aliases '((?\[ "[[{(]")
@@ -304,8 +304,9 @@ algorithm is just confusing, like in python or ruby."
                              (?\; "[;:]")))
 
   :config
-  ;; (evil-snipe-mode +1)
   (evil-snipe-override-mode +1)
+  ;; turn off evil snipe override in magit buffer
+  (add-hook 'magit-mode-hook 'turn-off-evil-snipe-override-mode)
   ;; Switch to evil-easymotion/avy after first snipe
   (map! :map evil-snipe-parent-transient-map
         "C-;" (λ! (require 'evil-easymotion)
@@ -376,13 +377,13 @@ algorithm is just confusing, like in python or ruby."
     (map! :Lm "\\\\"     'evil-window-prev
           :Lm "RET"      'neotree-enter
           :Lm "<return>" 'neotree-enter
-          :Lm "ESC ESC"  'neotree-hide
+          :Lm "L"        'neotree-enter
+          :Lm "l"        'neotree-quick-look
+          :Lm "ESC"      'neotree-hide
           :Lm [return]   'neotree-enter
           :Lm "q"        'neotree-hide
-          :Lm "J"        'neotree-select-next-sibling-node
-          :Lm "K"        'neotree-select-previous-sibling-node
-          :Lm "H"        'neotree-select-up-node
-          :Lm "L"        'neotree-select-down-node
+          :Lm "k"        'neotree-previous-line
+          :Lm "j"        'neotree-next-line
           :Lm "v"        'neotree-enter-vertical-split
           :Lm "s"        'neotree-enter-horizontal-split
           :Lm "c"        'neotree-create-node
@@ -391,3 +392,10 @@ algorithm is just confusing, like in python or ruby."
           :Lm "r"        'neotree-rename-node
           :Lm "R"        'neotree-change-root)))
 
+(def-package! evil-iedit-state
+  :commands (evil-iedit-state evil-iedit-state/iedit-mode)
+  :init
+  (progn
+    (setq iedit-current-symbol-default t
+          iedit-only-at-symbol-boundaries t
+          iedit-toggle-key-default nil)))

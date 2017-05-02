@@ -5,12 +5,7 @@
 * Experiment with more emacsy kebindings
 * mine spacemacs funcs: ```layers/+distributions/spacemacs-base/funcs.el```
 * allow undo of auto indent on paste
-
-<br>
-
-### Neotree
-
-* Vim Based Keybindings
+* spacemacs/check-large-file
 
 <br>
 
@@ -20,12 +15,16 @@
 
 <br>
 
-### Ivy
+### IEdit Mode
 
-* Keybindings for ivy-occur + wgrep mode
+* Highlight lines (expanding)
 
 <br>
 
-### Perspectives
+### Eyebrowse
 
-* Quick switch last perspective
+* Integrate into bmacs + play nice with perspectives
+
+### Projectile
+
+* properly invalidate cache on create/delete/rename/copy files

@@ -17,4 +17,5 @@
 (package! evil-snipe)
 (package! evil-surround)
 (package! evil-visualstar)
+(package! evil-iedit-state)
 (package! neotree)

@@ -29,7 +29,7 @@
         company-require-match 'never
         company-global-modes '(not eshell-mode comint-mode erc-mode message-mode help-mode)
         company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend)
-        company-backends '(company-capf company-dabbrev-code company-gtags company-etags company-keywords company-files company-dabbrev))
+        company-backends '(company-capf company-dabbrev-code company-gtags company-etags company-keywords company-files company-dabbrev company-yasnippet))
 
   (push #'company-sort-by-occurrence company-transformers)
 
