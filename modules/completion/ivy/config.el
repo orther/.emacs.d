@@ -27,7 +27,8 @@
         "C-h" (kbd "DEL")
         "C-l" #'ivy-alt-done
         "C-k" #'ivy-previous-line
-        "C-j" #'ivy-next-line)
+        "C-j" #'ivy-next-line
+        "<C-return>" #'ivy-immediate-done)
 
   (map! :map ivy-occur-grep-mode-map
         (:desc "ivy occur actions"
@@ -38,8 +39,6 @@
   (map! :map ivy-mode-map
         [remap describe-face]             #'counsel-describe-face
         [remap find-file]                 #'counsel-find-file
-        [remap switch-to-buffer]          #'+ivy/switch-buffer
-        [remap persp-switch-to-buffer]    #'+ivy/switch-workspace-buffer
         [remap recentf]                   #'counsel-recentf
         [remap imenu]                     #'counsel-imenu
         [remap bookmark-jump]             #'counsel-bookmark

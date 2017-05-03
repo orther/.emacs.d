@@ -28,14 +28,6 @@
         ;; Allow nested snippets
         yas-triggers-in-field t)
 
-  ;; Allows project-specific snippets
-  (defun +snippets|enable-project-modes (mode &rest _)
-    "Enable snippets for project modes."
-    (if (symbol-value mode)
-        (yas-activate-extra-mode mode)
-      (yas-deactivate-extra-mode mode)))
-  (add-hook 'doom-project-hook #'+snippets|enable-project-modes)
-
   ;; fix an error caused by smartparens interfering with yasnippet bindings
   (advice-add #'yas-expand :before #'sp-remove-active-pair-overlay)
 

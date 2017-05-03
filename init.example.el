@@ -2,7 +2,10 @@
 
 (require 'core (concat user-emacs-directory "core/core"))
 
-(doom! :feature
+(doom! :core
+       gdoom
+
+       :feature
        evil
        jump
        syntax-checker
@@ -12,6 +15,7 @@
        debug
        search
        editor
+       snippet
 
        :completion
        company

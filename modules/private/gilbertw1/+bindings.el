@@ -100,7 +100,7 @@
 
     (:desc "buffer"
       :prefix "b"
-      :desc "Switch buffer"            :nv "b" 'ivy-switch-buffer
+      :desc "Switch buffer"            :nv "b" 'persp-switch-to-buffer
       :desc "Kill buffer"              :nv "d" 'kill-this-buffer
       :desc "Kill other buffers"       :nv "D" 'doom/kill-other-buffers
       :desc "Kill a buffer"            :nv "k" 'kill-buffer
