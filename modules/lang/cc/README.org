@@ -1,0 +1,29 @@
+* C/C++/Obj-C
+
+I use C/C++ mostly for developing games. To that end, this module leverages the
+[[https://github.com/Sarcasm/irony-mode][irony plugin]] for auto-completion, eldoc documentation and syntax checking (with
+flycheck).
+
+Though it provides Objective-C support, I don't use it except to inspect
+generated glue code for iOS mobile apps.
+
++ Snippets ([[https://github.com/hlissner/emacs-snippets/tree/master/c-mode][c-mode]], [[https://github.com/hlissner/emacs-snippets/tree/master/c++-mode][c++-mode]])
++ File templates ([[../../feature/file-templates/templates/c-mode][c-mode]], [[../../feature/file-templates/templates/c++-mode][c++-mode]])
+
+** Installation
+~irony-server~ is required to use irony-mode's features auto-completion (among
+other things).
+
+To install it, run ~M-x irony-install-server~, which requires ~cmake~ and
+~libclang~.
+
+*** MacOS
+#+BEGIN_SRC sh :tangle (if (doom-system-os 'macos) "yes")
+brew install cmake
+brew install llvm  # 1gb+ installer: may take a while!
+#+END_SRC
+
+*** Arch Linux
+#+BEGIN_SRC sh :tangle (if (doom-system-os 'arch) "yes")
+sudo pacman --needed --noconfirm -S clang cmake
+#+END_SRC
