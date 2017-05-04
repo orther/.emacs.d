@@ -5,21 +5,18 @@
 * Experiment with more emacsy kebindings
 * mine spacemacs funcs: ```layers/+distributions/spacemacs-base/funcs.el```
 * allow undo of auto indent on paste
-* spacemacs/check-large-file
 
-<br>
+### Term
+
+* pop project term (show/hide -- like scratch buffer)
 
 ### Magit
 
 * Maybe fullscreen?
 
-<br>
-
 ### IEdit Mode
 
 * Highlight lines (expanding)
-
-<br>
 
 ### Eyebrowse
 

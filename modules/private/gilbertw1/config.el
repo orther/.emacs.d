@@ -5,3 +5,7 @@
 
 (defvar +gilbertw1-dir
   (file-name-directory load-file-name))
+
+;; projectile ignore directories
+(setq projectile-globally-ignored-directories '("target" ".ensime_cache" ".fingerprint" "project/target"))
+(setq grep-find-ignored-directories '("target" ".ensime_cache" ".fingerprint"))

@@ -19,9 +19,16 @@
 
   (ivy-mode +1)
 
+
+  (ivy-set-actions
+    'counsel-bookmark
+    '(("d" bookmark-delete "delete")
+      ("e" bookmark-rename "edit")
+      ("w" bookmark-set    "overwrite")))
+
   (map! :map ivy-minibuffer-map
         [escape] #'keyboard-escape-quit
-        "C-y" #'evil-paste-from-register
+        "C-y" #'yank
         "C-w" #'backward-kill-word
         "C-u" #'backward-kill-sentence
         "C-h" (kbd "DEL")
