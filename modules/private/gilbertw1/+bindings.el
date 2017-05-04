@@ -42,8 +42,8 @@
  :e "C-k" 'evil-window-up
  :e "C-l" 'evil-window-right
  ;; Temporary escape into emacs mode
- [C-escape]    'evil-emacs-state
- :n [C-escape] 'evil-normal-state
+ :e [C-escape] 'evil-normal-state
+ :n [C-escape] 'evil-emacs-state
  "M-0"  '+workspace/switch-to-last ;; TODO: THIS!
 
  "M-r"  '+eval/buffer
