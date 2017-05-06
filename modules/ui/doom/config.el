@@ -85,14 +85,14 @@
     (add-hook '+workspaces-load-session-hook #'+doom|restore-bright-buffers))
 
   ;; Add file icons to doom-neotree
-  (require 'doom-neotree)
-  (setq doom-neotree-enable-variable-pitch nil
+  (doom-themes-neotree-config)
+  (setq doom-neotree-enable-variable-pitch t
         doom-neotree-file-icons 'simple
         doom-neotree-enable-file-icons t
         doom-neotree-line-spacing 3)
 
   ;; Add line-highlighting to nlinum
-  (require 'doom-nlinum))
+  (doom-themes-nlinum-config))
 
 
 ;; Flashes the line around the cursor after any motion command that might
