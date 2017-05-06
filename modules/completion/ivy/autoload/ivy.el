@@ -65,29 +65,18 @@ limit to buffers in the current workspace."
   (+ivy/switch-buffer other-window-p t))
 
 ;;;###autoload
-(defun +ivy/counsel-ag-occur ()
-  "Invoke the search+replace wgrep buffer on the current ag search results."
+(defun +ivy/kill-ring ()
+  "Search through the kill ring with `ivy'."
   (interactive)
   (require 'wgrep)
   (call-interactively 'ivy-occur))
 
 ;;;###autoload
-<<<<<<< HEAD
-(defun +ivy-yas-prompt (prompt choices &optional display-fn)
-  (yas-completing-prompt prompt choices display-fn #'ivy-completing-read))
-
-;;;###autoload
-(defun +ivy/todos ()
-  (interactive)
-  ;; TODO Make nicer
-  (counsel-rg "TODO" (doom-project-root)))
-=======
 (defun +ivy/tasks ()
   "Search through all TODO/FIXME tags in the current project using
 `counsel-rg'."
   (interactive)
   (counsel-rg "\\(TODO|FIXME\\)\\s" (doom-project-root) "--case-sensitive -w"))
->>>>>>> 434a5efe... completion/ivy: switch from ag to ripgrep
 
 ;;;###autoload
 (defun +ivy*counsel-ag-function (string base-cmd extra-ag-args)
@@ -119,8 +108,6 @@ interferes with my custom :[ar]g ex command `+ivy:file-search'."
             (split-string (shell-command-to-string ag-cmd) "\n" t)
           (counsel--async-command ag-cmd)
           nil)))))
-<<<<<<< HEAD
-=======
 
 ;;;###autoload
 (defun +ivy/wgrep-occur ()
@@ -151,4 +138,3 @@ interferes with my custom :[ar]g ex command `+ivy:file-search'."
 ;;;###autoload
 (defun +ivy-yas-prompt (prompt choices &optional display-fn)
   (yas-completing-prompt prompt choices display-fn #'ivy-completing-read))
->>>>>>> 434a5efe... completion/ivy: switch from ag to ripgrep
