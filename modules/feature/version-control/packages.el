@@ -2,8 +2,9 @@
 ;;; feature/version-control/packages.el
 
 ;;; +git
-(package! browse-at-remote)
 (package! git-gutter-fringe)
+(package! git-link)
+(package! git-timemachine)
 (package! gitconfig-mode)
 (package! gitignore-mode)
 (package! git-timemachine)
