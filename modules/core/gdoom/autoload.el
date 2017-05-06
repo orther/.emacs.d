@@ -129,17 +129,3 @@ FILENAME is deleted using `+gdoom/delete-file' function.."
                 (insert (format "|sudo:%s" (or last-ssh-hostname "localhost"))))
               (buffer-string)))
            (t (concat "/sudo:root@localhost:" fname))))))
-
-;;;###autoload
-(defun +gdoom/check-large-file ()
-  (let* ((filename (buffer-file-name))
-         (size (nth 7 (file-attributes filename))))
-    (when (and
-           (not (memq major-mode +gdoom/large-file-modes-list))
-           size (> size (* 1024 1024 +gdoom/large-file-size))
-           (y-or-n-p (format (concat "%s is a large file, open literally to "
-                                     "avoid performance issues?")
-                             filename)))
-      (setq buffer-read-only t)
-      (buffer-disable-undo)
-      (fundamental-mode))))
