@@ -6,6 +6,10 @@
 * mine spacemacs funcs: ```layers/+distributions/spacemacs-base/funcs.el```
 * allow undo of auto indent on paste
 
+### Files
+
+* Copy filename to clipboard (SPC f y)
+
 ### Term
 
 * pop project term (show/hide -- like scratch buffer)

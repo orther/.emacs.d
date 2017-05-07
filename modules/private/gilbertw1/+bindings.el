@@ -37,14 +37,15 @@
  ;"C-h"    'evil-window-left
  ;"C-l"    'evil-window-right
  ;; Basic escape keys for emacs mode
- :e "C-h" 'evil-window-left
- :e "C-j" 'evil-window-down
- :e "C-k" 'evil-window-up
- :e "C-l" 'evil-window-right
+; :e "C-h" 'evil-window-left
+; :e "C-j" 'evil-window-down
+; :e "C-k" 'evil-window-up
+; :e "C-l" 'evil-window-right
  ;; Temporary escape into emacs mode
  :e [C-escape] 'evil-normal-state
  :n [C-escape] 'evil-emacs-state
  "M-0"  '+workspace/switch-to-last ;; TODO: THIS!
+ :e "M-w" 'kill-ring-save
 
  "M-r"  '+eval/buffer
  "M-b"  '+eval/build
@@ -71,10 +72,6 @@
     :desc "Find selection in project"  :nv "*" 'counsel-projectile-rg-region-or-symbol
     :desc "Switch to Emacs mode"       :n "|" 'evil-emacs-state
     :desc "Switch to last buffer"      :nv "TAB" 'evil-switch-to-windows-last-buffer
-
-    :desc "Switch to window 1"         :nv "1" 'winum-select-window-1
-    :desc "Switch to window 2"         :nv "2" 'winum-select-window-2
-    :desc "Switch to window 3"         :nv "3" 'winum-select-window-3
 
     (:desc "file"
       :prefix "f"
@@ -151,8 +148,8 @@
       :desc "Move window up"          :nv "K" 'evil-window-move-very-top
       :desc "Winner undo"             :nv "u" 'winner-undo
       :desc "Winner redo"             :nv "U" 'winner-redo
-      :desc "Toggle maximize window"  :nv "m" '+gdoom/toggle-maximize-buffer
-      )
+      :desc "Avy window"              :nv "w" 'ace-window
+      :desc "Toggle maximize window"  :nv "m" 'doom/window-zoom)
 
     (:desc "jump"
       :prefix "j"

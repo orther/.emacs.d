@@ -342,8 +342,13 @@ algorithm is just confusing, like in python or ruby."
   (setq neo-create-file-auto-open t
         neo-auto-indent-point nil
         neo-mode-line-type 'none
-        neo-window-width 25
+        neo-window-width 32
+        neo-smart-open t
+        neo-dont-be-alone t
+        neo-persist-show nil
+        neo-show-hidden-files t
         neo-show-updir-line nil
+        neo-modern-sidebar t
         neo-theme 'nerd ; fallback
         neo-banner-message nil
         neo-show-hidden-files nil
@@ -359,7 +364,12 @@ algorithm is just confusing, like in python or ruby."
           "~$"
           "^#.*#$"))
 
+  (defvar +evil/neotree-opening-file nil)
+  (defvar +evil/neotree-entering-dired nil)
+
   (set! :evil-state 'neotree-mode 'motion)
+  (add-hook 'neo-enter-hook #'+evil/neo-hide-on-enter)
+  (advice-add 'neo-buffer--execute :before #'+evil/before-neobuffer-execute)
 
   (push neo-buffer-name winner-boring-buffers)
 
@@ -376,11 +386,12 @@ algorithm is just confusing, like in python or ruby."
   (defun +evil|neotree-init-keymap (&rest _)
     (map! :Lm "\\\\"     'evil-window-prev
           :Lm "RET"      'neotree-enter
+          :Lm "TAB"      'neotree-stretch-toggle
           :Lm "<return>" 'neotree-enter
+          :Lm "h"        '+evil/neotree-collapse-or-up
           :Lm "L"        'neotree-enter
-          :Lm "l"        'neotree-quick-look
+          :Lm "l"        '+evil/neotree-expand-or-open
           :Lm "ESC"      'neotree-hide
-          :Lm [return]   'neotree-enter
           :Lm "q"        'neotree-hide
           :Lm "k"        'neotree-previous-line
           :Lm "j"        'neotree-next-line
