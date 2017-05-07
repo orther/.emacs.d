@@ -23,8 +23,8 @@
   (add-hook 'focus-in-hook #'git-gutter:update-all-windows)
 
   (after! evil
-    ;; Refreshing git-gutter on ESC
-    (advice-add #'evil-force-normal-state :after #'git-gutter)))
+    ;; Refresh git-gutter on ESC
+    (add-hook '+evil-esc-hook #'git-gutter)))
 
 (def-package! gist
   :commands (gist-list gist-buffer gist-region gist-buffer-private gist-region-private))
