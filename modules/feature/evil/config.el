@@ -302,7 +302,10 @@ algorithm is just confusing, like in python or ruby."
     (setq-local evilmi-always-simple-jump t)))
 
 (def-package! evil-mc :demand t
-  :config (global-evil-mc-mode 1))
+  :config 
+  (global-evil-mc-mode 1)
+  (setq evil-mc-custom-known-commands
+    '((doom/deflate-space-maybe . ((:default . evil-mc-execute-default-evil-delete))))))
 
 (def-package! evil-textobj-anyblock
   :commands (evil-numbers/inc-at-pt evil-numbers/dec-at-pt)
