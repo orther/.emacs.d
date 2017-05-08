@@ -53,6 +53,7 @@
         "M-v" #'yank
         "M-z" #'undo
         "C-r" #'evil-paste-from-register
+        "C-h" (kbd "DEL")
         "C-k" #'ivy-previous-line
         "C-j" #'ivy-next-line
         "C-l" #'ivy-alt-done

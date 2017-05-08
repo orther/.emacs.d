@@ -29,3 +29,8 @@
 ### Projectile
 
 * properly invalidate cache on create/delete/rename/copy files
+
+### Restclinet
+
+* automatically enable mode for *.rest
+
