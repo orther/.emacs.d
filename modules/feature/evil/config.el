@@ -318,7 +318,18 @@ algorithm is just confusing, like in python or ruby."
   :config 
   (global-evil-mc-mode 1)
   (setq evil-mc-custom-known-commands
-    '((doom/deflate-space-maybe . ((:default . evil-mc-execute-default-evil-delete))))))
+    '((doom/deflate-space-maybe . ((:default . evil-mc-execute-default-evil-delete)))))
+  
+  ;; If I switch to insert mode, chances are I want to start editing.
+  (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors)
+
+  ;; undo cursors on ESC
+  (defun +evil|escape-multiple-cursors ()
+    "Undo cursors and freeze them again (for next time)."
+    (when (evil-mc-has-cursors-p)
+      (evil-mc-undo-all-cursors)
+      (evil-mc-pause-cursors)))
+  (add-hook '+evil-esc-hook #'+evil|escape-multiple-cursors))
 
 (def-package! evil-textobj-anyblock
   :commands (evil-numbers/inc-at-pt evil-numbers/dec-at-pt)
