@@ -15,7 +15,7 @@
        debug
        search
        editor
-       snippet
+       snippets
 
        :completion
        company
@@ -27,17 +27,15 @@
        doom-modeline
        doom-quit
        hl-todo
-       window
       
        :tools
-       dired           ; making dired pretty [functional]
-       electric-indent ; smarter, keyword-based electric-indent
-       eshell          ; a consistent, cross-platform shell (WIP)
-       gist            ; manage & create gists
-       macos           ; macos-specific commands
-       rotate-text     ; cycle region at point between text candidates
-       tmux            ; an API for interacting with tmux
-       upload          ; map local to remote projects via ssh/ftp
+       dired
+       gist
+       term
+       eshell
+
+       :app
+       present
 
        :lang
        assembly
