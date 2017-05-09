@@ -72,6 +72,7 @@
     :desc "Find selection in project"  :nv "*" 'counsel-projectile-rg-region-or-symbol
     :desc "Switch to Emacs mode"       :n "|" 'evil-emacs-state
     :desc "Switch to last buffer"      :nv "TAB" 'evil-switch-to-windows-last-buffer
+    :desc "Ace window"                 :nv "W" 'ace-window
 
     (:desc "file"
       :prefix "f"
@@ -92,7 +93,7 @@
       :desc "Remote ssh tramp"         :nv "i"  (lambda ()
                                                  (interactive)
                                                  (counsel-find-file "/ssh:"))
-      ;; TODO: spacemacs/copy-and-show-filename y
+      :desc "Show and copy filename"   :nv "y" '+gdoom/show-and-copy-buffer-filename
       )
 
     (:desc "buffer"
@@ -148,7 +149,7 @@
       :desc "Move window up"          :nv "K" 'evil-window-move-very-top
       :desc "Winner undo"             :nv "u" 'winner-undo
       :desc "Winner redo"             :nv "U" 'winner-redo
-      :desc "Avy window"              :nv "w" 'ace-window
+      :desc "Ace window"              :nv "w" 'ace-window
       :desc "Toggle maximize window"  :nv "m" 'doom/window-zoom)
 
     (:desc "jump"

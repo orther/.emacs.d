@@ -318,7 +318,16 @@ algorithm is just confusing, like in python or ruby."
   :config 
   (global-evil-mc-mode 1)
   (setq evil-mc-custom-known-commands
-    '((doom/deflate-space-maybe . ((:default . evil-mc-execute-default-evil-delete)))))
+    '((doom/deflate-space-maybe . ((:default . evil-mc-execute-default-evil-delete)))
+      (evil-change-without-register . ((:default . evil-mc-execute-default-evil-change)))
+      (evil-change-line-without-register . ((:default . evil-mc-execute-default-evil-change-line)))
+      (evil-delete-without-register . ((:default . evil-mc-execute-default-evil-delete)))
+      (evil-delete-without-register-if-whitespace . ((:default . evil-mc-execute-default-evil-delete)))
+      (evil-delete-char-without-register . ((:default . evil-mc-execute-default-evil-delete)))
+      (evil-delete-backward-char-without-register . ((:default . evil-mc-execute-default-evil-delete)))
+      (evil-delete-line-without-register . ((:default . evil-mc-execute-default-evil-delete)))
+      (evil-paste-after-witout-register . ((:default . evil-mc-execute-default-evil-paste)))
+      (evil-paste-before-witout-register . ((:default . evil-mc-execute-default-evil-paste)))))
   
   ;; If I switch to insert mode, chances are I want to start editing.
   (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors)
@@ -327,8 +336,7 @@ algorithm is just confusing, like in python or ruby."
   (defun +evil|escape-multiple-cursors ()
     "Undo cursors and freeze them again (for next time)."
     (when (evil-mc-has-cursors-p)
-      (evil-mc-undo-all-cursors)
-      (evil-mc-pause-cursors)))
+      (evil-mc-undo-all-cursors)))
   (add-hook '+evil-esc-hook #'+evil|escape-multiple-cursors))
 
 (def-package! evil-textobj-anyblock
