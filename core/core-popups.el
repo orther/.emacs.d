@@ -59,6 +59,7 @@ is enabled/disabled.'")
         ;;              `doom*delete-popup-window'
         ;;  :autoclose  If non-nil, close popup if ESC is pressed from any buffer.
         shackle-rules
+        ;; BMACS: doom-esc matcher for escapable popups
         '(("^ ?\\*doom-esc:.+\\*$"  :size 25  :modeline minimal :regexp t)
           ("^ ?\\*doom:.+\\*$"      :size 25  :modeline minimal :regexp t :noesc t)
           ("^ ?\\*doom .+\\*$"      :size 10  :noselect t :regexp t)

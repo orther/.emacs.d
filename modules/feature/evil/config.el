@@ -431,6 +431,7 @@ algorithm is just confusing, like in python or ruby."
   (defvar +evil/neotree-entering-dired nil)
 
   (set! :evil-state 'neotree-mode 'motion)
+  ;; BMACS - Hide neotree on enter file
   (add-hook 'neo-enter-hook #'+evil/neo-hide-on-enter)
   (advice-add 'neo-buffer--execute :before #'+evil/before-neobuffer-execute)
 

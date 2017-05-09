@@ -2,7 +2,8 @@
 
 (def-package! restclient
   :commands restclient-mode
-  :mode ("\\.http$" . restclient-mode)
+  ;; BMACS - restclinet-mode for .rest files
+  :mode ("\\.\\(http\\|rest\\)$" . restclient-mode)
   :config
   (set! :popup "*HTTP Response*" :size 30 :select t :noesc t :autokill t)
   (map! :mode restclient-mode

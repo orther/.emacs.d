@@ -5,6 +5,7 @@
   (interactive)
   (call-interactively 'multi-term))
 
+;; BMACS - term popup modeled after scratch buffer popup
 ;;;###autoload
 (defun +term/popup ()
   (interactive)
@@ -20,6 +21,7 @@
         (with-current-buffer buffer
           (rename-buffer "*doom-esc:term*"))))))
 
+;; BMACS - term popup in project root
 ;;;###autoload
 (defun +term/project-popup ()
   (interactive)

@@ -10,7 +10,6 @@
 (after! evil
   (fset 'evil-visual-update-x-selection 'ignore))
 
-
 (cond
  (IS-MAC 
    (unless window-system
