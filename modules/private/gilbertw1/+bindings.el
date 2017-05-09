@@ -73,6 +73,7 @@
     :desc "Switch to Emacs mode"       :n "|" 'evil-emacs-state
     :desc "Switch to last buffer"      :nv "TAB" 'evil-switch-to-windows-last-buffer
     :desc "Ace window"                 :nv "W" 'ace-window
+    :desc "Pop terminal"               :nv "'" '+term/popup
 
     (:desc "file"
       :prefix "f"
@@ -84,9 +85,8 @@
       :desc "Delete file"              :nv "d" '+gdoom/delete-file-confirm
       :desc "Delete current file"      :nv "D" '+gdoom/delete-current-buffer-file
       :desc "Sudo edit file"           :nv "E" '+gdoom/sudo-edit
-      ;; TODO: spacemacs/sudo-edit
       :desc "Recent files"             :nv "r"  'counsel-recentf
-      :desc "Neotree toggle"           :nv "t"  'neotree-toggle ;; TODO: neesd work
+      :desc "Neotree toggle"           :nv "t"  'neotree-toggle
       :desc "Save buffer"              :nv "s"  'save-buffer
       :desc "Save all buffers"         :nv "S"  'evil-write-all
       :desc "Counsel bookmark"         :nv "b"  'counsel-bookmark
@@ -111,15 +111,14 @@
 
     (:desc "project"
       :prefix "p"
-      :desc "Find file in project"    :nv "f" 'counsel-projectile-find-file
-      :desc "Run cmd in project root" :nv "!" 'projectile-run-shell-command-in-root
-      :desc "Toggle project neotree"  :nv "t" '+evil/neotree
-      :desc "Switch project"          :nv "p" 'counsel-projectile-switch-project
-      :desc "Kill project buffers"    :nv "k" 'projectile-kill-buffers
-      :desc "Recent project files"    :nv "r" 'projectile-recentf
-      :desc "Invalidate cache"        :nv "I" 'projectile-invalidate-cache
-      ;; TODO spacemacs/project-shell-pop '
-      )
+      :desc "Find file in project"     :nv "f" 'counsel-projectile-find-file
+      :desc "Run cmd in project root"  :nv "!" 'projectile-run-shell-command-in-root
+      :desc "Toggle project neotree"   :nv "t" '+evil/neotree
+      :desc "Switch project"           :nv "p" 'counsel-projectile-switch-project
+      :desc "Kill project buffers"     :nv "k" 'projectile-kill-buffers
+      :desc "Recent project files"     :nv "r" 'projectile-recentf
+      :desc "Invalidate cache"         :nv "I" 'projectile-invalidate-cache
+      :desc "Pop term in project root" :nv "'" '+term/project-popup)
 
     (:desc "search"
       :prefix "s"
