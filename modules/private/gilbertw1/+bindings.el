@@ -218,6 +218,8 @@
  ;; search avy goto
  :nv "C-f"  'evil-avy-goto-word-or-subword-1
  :nv "/" 'swiper
+ ;; evil commentary
+ :nv "gc" 'evil-commentary
 
  (:map evil-window-map ; prefix "C-w"
    ;; Navigation
