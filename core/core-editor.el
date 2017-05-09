@@ -192,7 +192,8 @@ sake."
 (def-package! avy
   :commands (avy-goto-char-2 avy-goto-line)
   :config
-  (setq avy-all-windows nil
+  ;; BMACS - enable avy across all windows
+  (setq avy-all-windows 'all-frames
         avy-background t))
 
 (def-package! command-log-mode
