@@ -7,12 +7,10 @@
   (add-hook 'ensime-mode-hook 'scala/enable-eldoc)
   :config
   (setq scala-indent:align-parameters t)
-  (map! :map scala-mode-map
-    :niv "TAB" 'ensime-company-complete-or-indent
-    (:leader
-      (:desc "mode"
-       :prefix "m"
-       :desc "Start ensime"       :n "s" 'ensime))))
+  (map! :mode scala-mode
+        :niv "TAB" 'ensime-company-complete-or-indent
+        :localleader
+        :desc "Start ensime"  :n "s" 'ensime))
 
 (def-package! sbt-mode :after scala-mode)
 
