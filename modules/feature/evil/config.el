@@ -192,7 +192,9 @@ across windows."
   :defer 1
   :commands evilem-define
   :config
-  (let ((prefix "g SPC"))
+  ;;BMACS - change easymotion prefix to g
+  (map! :nv "gw" nil)
+  (let ((prefix "g"))
     (evilem-default-keybindings prefix)
     (evilem-define (kbd (concat prefix " n")) #'evil-ex-search-next)
     (evilem-define (kbd (concat prefix " N")) #'evil-ex-search-previous)
