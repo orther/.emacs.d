@@ -2,6 +2,22 @@
 
 (eval-when-compile (require 'subr-x))
 
+;;;###autoload
+(defun +evil/visual-indent ()
+  "vnoremap < <gv"
+  (interactive)
+  (evil-shift-right (region-beginning) (region-end))
+  (evil-normal-state)
+  (evil-visual-restore))
+
+;;;###autoload
+(defun +evil/visual-dedent ()
+  "vnoremap > >gv"
+  (interactive)
+  (evil-shift-left (region-beginning) (region-end))
+  (evil-normal-state)
+  (evil-visual-restore))
+
 ;;;###autoload (autoload 'evil-delete-char-without-register "feature/evil/autoload/evil" nil t)
 (evil-define-operator evil-delete-char-without-register (beg end type reg)
   "delete character without yanking unless in visual mode"

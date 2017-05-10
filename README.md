@@ -3,7 +3,7 @@ Bryan's emacs (based on the absolutely amazing [emacs configuration by hlissner]
 ## Installation
 
 ```bash
-git clone https://github.com/hlissner/.emacs.d ~/.emacs.d
+git clone https://github.com/gilbertw1/bmacs ~/.emacs.d
 cd ~/.emacs.d
 cp init.example.el init.el  # maybe edit init.el
 make install

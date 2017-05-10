@@ -42,9 +42,9 @@
             [backspace]     #'+snippets/delete-backward-char
             [delete]        #'+snippets/delete-forward-char-or-field)
 
+          ;; BMACS - don't expand on region; M-SPC yas expand
           (:map yas-minor-mode-map
-            :i "<tab>" yas-maybe-expand
-            :v "<tab>" #'+snippets/expand-on-region))
+            :i "M-SPC" yas-maybe-expand))
 
     ;; Exit snippets on ESC in normal mode
     (add-hook '+evil-esc-hook #'yas-exit-all-snippets)
