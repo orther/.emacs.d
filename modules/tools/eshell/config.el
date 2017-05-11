@@ -28,6 +28,7 @@
   (set! :popup "^\\*eshell:popup\\*$" :regexp t :size 25)
   (set! :evil-state 'eshell-mode 'insert)
 
+  (require 'em-term)
   ;; Visual commands require a proper terminal. Eshell can't handle that, so it
   ;; delegates these commands to a term buffer.
   (setq eshell-visual-commands

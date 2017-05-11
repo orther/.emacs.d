@@ -25,18 +25,15 @@
       (indent-region beg end nil)))
 
 (gdoom|advise-commands
- "indent" (yank yank-pop evil-paste-before evil-paste-after) around
- "If current mode is not one of gdoom-indent-sensitive-modes
- indent yanked text (with universal arg don't indent)."
- (evil-start-undo-step)
- ad-do-it
- (if (and (not (equal '(4) (ad-get-arg 0)))
-          (not (member major-mode gdoom-indent-sensitive-modes))
-          (derived-mode-p 'prog-mode))
-     (let ((transient-mark-mode nil)
-           (save-undo buffer-undo-list))
-       (gdoom|yank-advised-indent-function (region-beginning)
-                                               (region-end))))
- (evil-end-undo-step))
-
-
+  "indent" (yank yank-pop evil-paste-before evil-paste-after) around
+  "If current mode is not one of gdoom-indent-sensitive-modes
+  indent yanked text (with universal arg don't indent)."
+  ad-do-it
+  (evil-with-single-undo
+    (if (and (not (equal '(4) (ad-get-arg 0)))
+             (not (member major-mode gdoom-indent-sensitive-modes))
+             (derived-mode-p 'prog-mode))
+        (let ((transient-mark-mode nil)
+              (save-undo buffer-undo-list))
+          (gdoom|yank-advised-indent-function (region-beginning)
+                                                (region-end))))))

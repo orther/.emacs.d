@@ -20,21 +20,6 @@
       (unless (eq major-mode 'eshell-mode) (eshell-mode)))
     (doom-popup-buffer buf)))
 
-;;;###autoload
-(defun +eshell/tab ()
-  "Open eshell in a separate workspace. Requires the (:feature workspaces)
-module to be loaded."
-  (interactive)
-  (unless (featurep! :feature workspaces)
-    (user-error ":feature workspaces is required, but disabled"))
-  (unless (+workspace-get "eshell" t)
-    (+workspace/new "eshell"))
-  (if-let (buf (cl-find-if (lambda (it) (string-match-p "^\\*eshell" (buffer-name (window-buffer it))))
-                           (doom-visible-windows)))
-      (select-window (get-buffer-window buf))
-    (+eshell/run))
-  (doom/workspace-display))
-
 (defun +eshell--outside-prompt-p (&optional offset)
   (< (point) eshell-last-output-end))
 

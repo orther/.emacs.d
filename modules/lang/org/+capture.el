@@ -55,8 +55,6 @@
   (defun +org|capture-finalize ()
     "Closes the frame once org-capture is done."
     (when (equal "org-capture" (frame-parameter nil 'name))
-      (when (and (featurep 'persp-mode) persp-mode)
-        (+workspace/delete (+workspace-current-name)))
       (delete-frame)))
   (add-hook 'org-capture-after-finalize-hook '+org|capture-finalize))
 
