@@ -37,10 +37,15 @@
 (load! +notebook)
 (load! +babel)
 
-
 ;;
 ;; Config
 ;;
+(defun evil-org-eol-call (fun)
+  "Go to end of line and call provided function.
+FUN function callback"
+  (end-of-line)
+  (funcall fun)
+  (evil-append nil))
 
 (defun +org|hook ()
   "Run everytime `org-mode' is enabled."
@@ -276,6 +281,25 @@
           :v  "M-i" "S/"
           :v  "M-`" "S+"
 
+          ;; Evil-org
+          :niv "M-h" 'org-metaright
+          :niv "M-k" 'org-metaup
+          :niv "M-j" 'org-metadown
+          :niv "M-L" 'org-shiftmetaright
+          :niv "M-H" 'org-shiftmetaleft
+          :niv "M-K" 'org-shiftmetaup
+          :niv "M-J" 'org-shiftmetadown
+          :niv "M-o" '(lambda () (interactive)
+                         (evil-org-eol-call
+                          '(lambda()
+                             (org-insert-heading)
+                             (org-metaright))))
+          :niv "M-t" '(lambda () (interactive)
+                         (evil-org-eol-call
+                          '(lambda()
+                             (org-insert-todo-heading nil)
+                             (org-metaright))))
+
           (:localleader
            :n  "RET" #'org-archive-subtree
            :n  "SPC" #'+org/toggle-checkbox
@@ -386,4 +410,3 @@
             (while (re-search-forward org-outline-regexp-bol nil t)
               (decompose-region (match-beginning 0) (match-end 0)))
             (font-lock-fontify-buffer)))))))
-

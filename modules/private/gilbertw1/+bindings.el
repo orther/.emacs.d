@@ -11,6 +11,9 @@
 
 (define-key input-decode-map [?\C-i] [C-i])
 
+(setq doom-leader-key "SPC")
+(setq doom-localleader-key "SPC m")
+
 (map!
  ;; Essential
  "M-x"    #'execute-extended-command
@@ -113,6 +116,7 @@
       :desc "Kill project buffers"     :nv "k" #'projectile-kill-buffers
       :desc "Recent project files"     :nv "r" #'projectile-recentf
       :desc "Invalidate cache"         :nv "I" #'projectile-invalidate-cache
+      :desc "List project tasks"       :nv "t" #'+ivy/tasks
       :desc "Pop term in project root" :nv "'" #'+term/project-popup)
 
     (:desc "search"
@@ -212,7 +216,7 @@
  :nv "H"  #'evil-first-non-blank
  :nv "L"  #'evil-last-non-blank
  ;; search avy goto
- :nv "C-f"  #'evil-avy-goto-word-or-subword-1
+ :nv "C-f"  #'avy-goto-char-2
  :nv "/" #'swiper
  ;; evil commentary
  :nv "gc" #'evil-commentary
