@@ -69,7 +69,7 @@
     :desc "Find file from here"        :nv "?" #'counsel-rg
     :desc "Find selection in project"  :nv "*" #'counsel-projectile-rg-region-or-symbol
     :desc "Switch to Emacs mode"       :n "|" #'evil-emacs-state
-    :desc "Switch to last buffer"      :nv "TAB" #'evil-switch-to-windows-last-buffer
+    :desc "Switch to last buffer"      :nv "TAB" #'+gdoom/alternate-buffer
     :desc "Ace window"                 :nv "W" #'ace-window
     :desc "Pop terminal"               :nv "'" #'+term/popup
 
