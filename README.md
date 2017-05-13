@@ -9,19 +9,20 @@
 ![git-gutter](git-gutter.png)
 
 ## Mode-line
-![search](search.png)
+![mode-line](ml.png)
 
-![evil-substitute](subst.png)
+![search](ml-search.png)
 
-![macro](macro.png)
+![evil-substitute](ml-subst.png)
 
-![version](version.png)
+![macro](ml-macro.png)
+
+![version](ml-version.png)
+
+![error indicator](ml-errors.png)
 
 ## Line numbering (nlinum)
-![Line numbering](nlinum.png)
-
-## Syntax checking (flycheck)
-![Syntax checking](flycheck.png)
+![Line numbering](linum.png)
 
 ## Auto-completion (company-mode)
 ![Auto completion](company.png)
