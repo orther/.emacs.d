@@ -149,7 +149,8 @@
       :desc "Winner undo"             :nv "u" #'winner-undo
       :desc "Winner redo"             :nv "U" #'winner-redo
       :desc "Ace window"              :nv "w" #'ace-window
-      :desc "Toggle maximize window"  :nv "m" #'doom/window-zoom)
+      :desc "Toggle maximize window"  :nv "m" #'doom/window-zoom
+      :desc "Refresh line numbers"    :nv "r" #'+gdoom/refresh-line-numbers)
 
     (:desc "jump"
       :prefix "j"

@@ -158,3 +158,9 @@ current window."
                      (mapcar #'car (window-prev-buffers window)))
          ;; `other-buffer' honors `buffer-predicate' so no need to filter
          (other-buffer current-buffer t)))))
+
+;;;###autoload
+(defun +gdoom/refresh-line-numbers ()
+  "Refresh line numbers in current window"
+  (interactive)
+  (gdoom*nlinum-flush nil))

@@ -37,3 +37,10 @@
               (save-undo buffer-undo-list))
           (gdoom|yank-advised-indent-function (region-beginning)
                                                 (region-end))))))
+
+(defun gdoom*nlinum-flush (_ &optional norecord)
+  ;; norecord check is necessary to prevent infinite recursion
+  (when (and (boundp 'nlinum-mode) nlinum-mode (not norecord))
+    (nlinum--flush)))
+;; refresh when switching windows
+(advice-add #'select-window :after #'gdoom*nlinum-flush)
