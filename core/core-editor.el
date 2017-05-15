@@ -217,7 +217,7 @@ sake."
 
 (def-package! imenu-list :commands imenu-list-minor-mode)
 
-(def-package! pcre2el :commands rxt-quote-pcre)
+(def-package! pcre2el :commands (rxt-quote-pcre rxt-pcre-to-rx))
 
 (def-package! smart-forward
   :commands (smart-up smart-down smart-backward smart-forward))

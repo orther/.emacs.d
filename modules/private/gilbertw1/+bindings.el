@@ -107,6 +107,10 @@
       ;; TODO spacemacs/paste-whole-file-to-clipboard p
       )
 
+    (:desc "ivy"
+      :prefix "i"
+      :desc "Ivy resumt"               :nv "r" #'ivy-resume)
+
     (:desc "project"
       :prefix "p"
       :desc "Find file in project"     :nv "f" #'counsel-projectile-find-file

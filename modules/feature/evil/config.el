@@ -320,6 +320,7 @@ algorithm is just confusing, like in python or ruby."
 (def-package! evil-mc :demand t
   :config 
   (global-evil-mc-mode 1)
+  ;; BMACS add *-without-register commands
   (setq evil-mc-custom-known-commands
     '((doom/deflate-space-maybe . ((:default . evil-mc-execute-default-evil-delete)))
       (evil-change-without-register . ((:default . evil-mc-execute-default-evil-change)))
@@ -331,6 +332,16 @@ algorithm is just confusing, like in python or ruby."
       (evil-delete-line-without-register . ((:default . evil-mc-execute-default-evil-delete)))
       (evil-paste-after-witout-register . ((:default . evil-mc-execute-default-evil-paste)))
       (evil-paste-before-witout-register . ((:default . evil-mc-execute-default-evil-paste)))))
+
+  (defun evil-mc-make-cursor-move-by-line (dir count)
+    "Create COUNT cursors one for each line moving in the direction DIR.
+  DIR should be 1 or -1 and COUNT should be a positive integer or nil."
+    (setq count (max 0 (or count 1)))
+    (dotimes (i count)
+      (evil-mc-run-cursors-before)
+      (evil-mc-make-cursor-at-pos (point))
+      (let (line-move-visual)
+  (evil-line-move dir))))
   
   ;; If I switch to insert mode, chances are I want to start editing.
   (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors)
@@ -341,6 +352,7 @@ algorithm is just confusing, like in python or ruby."
     (when (evil-mc-has-cursors-p)
       (evil-mc-undo-all-cursors)))
   (add-hook '+evil-esc-hook #'+evil|escape-multiple-cursors))
+  
 
 (def-package! evil-textobj-anyblock
   :commands (evil-numbers/inc-at-pt evil-numbers/dec-at-pt)
