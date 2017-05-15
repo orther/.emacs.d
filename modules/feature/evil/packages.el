@@ -13,7 +13,6 @@
 (package! evil-mc)
 (package! evil-numbers)
 (package! evil-textobj-anyblock)
-(package! evil-search-highlight-persist)
 (package! evil-snipe)
 (package! evil-surround)
 (package! evil-visualstar)
