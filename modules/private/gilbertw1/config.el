@@ -12,3 +12,10 @@
 
 ;; Widen fringes (easier to see git-gutter with twm window border)
 (fringe-mode '(12 . 12))
+
+;; Override vc modified color (gray -> yellow)
+(custom-set-faces
+  '(diff-hl-change ((t (:foreground "#ECBE7B"))))
+  '(git-gutter:modified ((t (:foreground "#ECBE7B"))))
+  '(git-gutter+-modified ((t (:foreground "#ECBE7B"))))
+  '(git-gutter-fr:modified ((t (:foreground "#ECBE7B")))))
