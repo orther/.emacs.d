@@ -51,6 +51,9 @@ FUN function callback"
   "Run everytime `org-mode' is enabled."
   (setq line-spacing 1)
 
+  ;; show-paren-mode causes problems for org-indent-mode
+  (show-paren-mode -1)
+
   (visual-line-mode +1)
   (when (and (featurep 'evil) evil-mode)
     (evil-org-mode +1))
