@@ -283,6 +283,7 @@ across windows."
   (add-hook 'evil-replace-state-entry-hook #'+evil|escape-enable)
   (add-hook 'evil-replace-state-exit-hook  #'+evil|escape-disable)
   :config
+  (map! :irvo "C-g" #'evil-escape)
   (setq evil-escape-key-sequence "jk"
         evil-escape-delay 0.25))
 
@@ -312,14 +313,22 @@ across windows."
   :commands (evilmi-jump-items evilmi-text-object global-evil-matchit-mode)
   :config (global-evil-matchit-mode 1)
   :init
+  (map! :m "%" #'evilmi-jump-items)
   (+evil--textobj "%" #'evilmi-text-object)
+  :config
   (defun +evil|simple-matchit ()
-    "Force evil-matchit to favor simple bracket jumping. Helpful where the new
-algorithm is just confusing, like in python or ruby."
-    (setq-local evilmi-always-simple-jump t)))
+    "A hook to force evil-matchit to favor simple bracket jumping. Helpful when
+the new algorithm is confusing, like in python or ruby."
+    (setq-local evilmi-always-simple-jump t))
+  (add-hook 'python-mode-hook #'+evil|simple-matchit))
 
 (def-package! evil-mc :demand t
-  :config 
+  :init (defvar evil-mc-key-map (make-sparse-keymap))
+  :config
+  ;; Start evil-mc in paused mode.
+  (add-hook 'evil-mc-mode-hook #'evil-mc-pause-cursors)
+  (add-hook 'evil-mc-before-cursors-created #'evil-mc-pause-cursors)
+
   (global-evil-mc-mode 1)
   ;; BMACS add *-without-register commands
   (setq evil-mc-custom-known-commands
@@ -347,13 +356,21 @@ algorithm is just confusing, like in python or ruby."
   ;; If I switch to insert mode, chances are I want to start editing.
   (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors)
 
-  ;; undo cursors on ESC
+ ;; My workflow is to place the cursors, get into position, then enable evil-mc
+ ;; by invoking `+evil/mc-toggle-cursors'
+  (defun +evil/mc-toggle-cursors ()
+    "Toggle frozen state of evil-mc cursors."
+    (interactive)
+    (setq evil-mc-frozen (not (and (evil-mc-has-cursors-p)
+                                   evil-mc-frozen))))
+  ;; ...or going into insert mode
+  (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors)
+
   (defun +evil|escape-multiple-cursors ()
     "Undo cursors and freeze them again (for next time)."
     (when (evil-mc-has-cursors-p)
       (evil-mc-undo-all-cursors)))
   (add-hook '+evil-esc-hook #'+evil|escape-multiple-cursors))
-  
 
 (def-package! evil-textobj-anyblock
   :commands (evil-numbers/inc-at-pt evil-numbers/dec-at-pt)
@@ -392,12 +409,19 @@ algorithm is just confusing, like in python or ruby."
   :config (global-evil-surround-mode 1))
 
 
+;; Without `evil-visualstar', * and # grab the word at point and search, no
+;; matter what mode you're in. I want to be able to visually select a region and
+;; search for other occurrences of it.
 (def-package! evil-visualstar
   :commands (global-evil-visualstar-mode
              evil-visualstar/begin-search
              evil-visualstar/begin-search-forward
              evil-visualstar/begin-search-backward)
-  :config (global-evil-visualstar-mode 1))
+  :init
+  (map! :v "*" #'evil-visualstar/begin-search-forward
+        :v "#" #'evil-visualstar/begin-search-backward)
+  :config
+  (global-evil-visualstar-mode 1))
 
 
 ;; A side-panel for browsing my project files. Inspired by vim's NERDTree. Sure,
