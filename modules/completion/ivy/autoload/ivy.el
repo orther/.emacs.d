@@ -64,13 +64,6 @@ limit to buffers in the current workspace."
   (interactive "P")
   (+ivy/switch-buffer other-window-p t))
 
-;;;###autoload
-(defun +ivy/kill-ring ()
-  "Search through the kill ring with `ivy'."
-  (interactive)
-  (require 'wgrep)
-  (call-interactively 'ivy-occur))
-
 ;; TODO refactor ivy task candidate functions (messy!)
 (defun +ivy--tasks-candidates (tasks)
   "Generate a list of task tags (specified by `+ivy-task-tags') for
