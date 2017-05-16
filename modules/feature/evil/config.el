@@ -269,7 +269,7 @@ across windows."
 (def-package! evil-escape
   :demand t
   :init
-  (setq evil-escape-excluded-states '(visual multiedit)
+  (setq evil-escape-excluded-states '(normal visual multiedit)
         ;; BMACS disable escape key sequence
         evil-escape-key-sequence nil
         evil-escape-excluded-major-modes '(neotree-mode)
