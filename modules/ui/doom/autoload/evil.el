@@ -31,11 +31,13 @@ use the current window."
   (let ((mode major-mode)
         (old-project (doom-project-root))
         (new-buf (get-buffer-create " *doom-esc:scratch*")))
+    (if bang
+        (switch-to-buffer new-buf)
+      (select-window (doom-popup-buffer new-buf)))
     (with-current-buffer new-buf
       (setq default-directory old-project
             mode-line-format (doom-modeline 'minimal))
       (when (and (not (eq major-mode mode))
                  (functionp mode))
-        (funcall mode)))
-    (if bang (switch-to-buffer new-buf) (doom-popup-buffer new-buf))))
+        (funcall mode)))))
 

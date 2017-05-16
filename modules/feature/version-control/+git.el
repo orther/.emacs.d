@@ -48,7 +48,7 @@
 (def-package! magit
   :commands (magit-status magit-blame)
   :config
-  (set! :popup "^\\*magit" :regexp t)
+  (set! :popup "^\\*magit" :regexp t :size 30)
   (map! :map magit-mode-map
         ;; Don't interfere with window movement keys
         :nv "C-j" nil

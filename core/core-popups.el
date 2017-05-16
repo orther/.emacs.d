@@ -66,7 +66,7 @@ is enabled/disabled.'")
         ;; BMACS: doom-esc matcher for escapable popups
         '(("^\\*ftp " :size 8  :noselect t :autokill t :noesc t)
           ;; doom
-          ("^\\*doom-esc:" :regexp t :size 0.35 :select t)
+          ("^ ?\\*doom-esc:.+\\*$"  :size 25  :modeline minimal :regexp t)
           ("^\\*doom:" :regexp t :size 0.35 :noesc t :select t)
           ("^\\*doom " :regexp t :noselect t :autokill t :autoclose t)
           ;; built-in (emacs)
@@ -397,10 +397,7 @@ the command buffer."
     buf)
   (advice-add #'mu4e~temp-window :override #'doom*mu4e-popup-window))
 
-
-(after! multi-term
-  (setq multi-term-buffer-name "doom:terminal"))
-
+;; BMACS - removed auto set terminal buffer name
 
 (after! neotree
   ;; Neotree has its own window/popup management built-in, which is difficult to

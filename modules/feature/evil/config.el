@@ -270,7 +270,7 @@ across windows."
   :demand t
   :init
   (setq evil-escape-excluded-states '(visual multiedit)
-        evil-escape-key-sequence "jk"
+        evil-escape-key-sequence nil
         evil-escape-delay 0.25)
 
   :config
@@ -342,7 +342,7 @@ the new algorithm is confusing, like in python or ruby."
       (evil-mc-make-cursor-at-pos (point))
       (let (line-move-visual)
   (evil-line-move dir))))
-  
+
   ;; If I switch to insert mode, chances are I want to start editing.
   (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors)
 
@@ -470,7 +470,7 @@ the new algorithm is confusing, like in python or ruby."
   ;; BMACS - Hide neotree on enter file
   (add-hook 'neo-enter-hook #'+evil/neo-hide-on-enter)
   (advice-add 'neo-buffer--execute :before #'+evil/before-neobuffer-execute)
-  
+
   (evil-set-initial-state 'neotree-mode 'motion)
 
   (push neo-buffer-name winner-boring-buffers)

@@ -63,6 +63,7 @@
   :m ";" #'evil-ex
   (:leader
     ;; common
+    :desc "Blink cursor line"          :nv "SPC" #'doom/blink-cursor
     :desc "Counsel M-x"                :nv ":" #'counsel-M-x
     :desc "Run shell command"          :nv "!" #'shell-command
     :desc "Find file in project"       :nv "/" #'counsel-projectile-rg
@@ -120,7 +121,7 @@
       :desc "Kill project buffers"     :nv "k" #'projectile-kill-buffers
       :desc "Recent project files"     :nv "r" #'projectile-recentf
       :desc "Invalidate cache"         :nv "I" #'projectile-invalidate-cache
-      :desc "List project tasks"       :nv "t" #'+ivy/tasks
+      :desc "List project tasks"       :nv "a" #'+ivy/tasks
       :desc "Pop term in project root" :nv "'" #'+term/project-popup)
 
     (:desc "search"
