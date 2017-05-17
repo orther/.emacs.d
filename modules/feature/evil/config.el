@@ -186,10 +186,12 @@ across windows."
   ;;BMACS - change easymotion prefix to g
   (let ((prefix "g"))
     (evilem-default-keybindings prefix)
-    (evilem-define (kbd (concat prefix " l")) #'evil-forward-word-begin)
-    (evilem-define (kbd (concat prefix " h")) #'evil-backward-word-begin)
-    (evilem-define (kbd (concat prefix " L")) #'evil-forward-WORD-begin)
-    (evilem-define (kbd (concat prefix " H")) #'evil-backward-WORD-begin)
+    (evilem-define (kbd (concat prefix " l")) #'evil-forward-word-begin :scope 'line)
+    (evilem-define (kbd (concat prefix " h")) #'evil-backward-word-begin :scope 'line)
+    (evilem-define (kbd (concat prefix " L")) #'evil-forward-WORD-begin :scope 'line)
+    (evilem-define (kbd (concat prefix " H")) #'evil-backward-WORD-begin :scope 'line)
+    (evilem-define (kbd (concat prefix " (")) #'evil-backward-sentence-begin)
+    (evilem-define (kbd (concat prefix " )")) #'evil-forward-sentence-begin)
     (evilem-define (kbd (concat prefix " n")) #'evil-ex-search-next)
     (evilem-define (kbd (concat prefix " N")) #'evil-ex-search-previous)
     (evilem-define (kbd (concat prefix " s")) 'evil-snipe-repeat
