@@ -231,8 +231,6 @@ sake."
   :commands (wgrep-setup wgrep-change-to-wgrep-mode)
   :config
   (setq wgrep-auto-save-buffer t)
-  (advice-add #'wgrep-abort-changes :after #'doom/popup-close)
-  (advice-add #'wgrep-finish-edit :after #'doom/popup-close)
   (map! :map wgrep-mode-map
         (:desc "wgrep mode actions"
          :prefix ","
