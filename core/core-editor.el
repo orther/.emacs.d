@@ -194,12 +194,13 @@ sake."
         aw-scope 'frame
         aw-background t))
 
+  ;; BMACS - enable avy across all windows, more funs, timeout-seconds 0.3
 (def-package! avy
-  :commands (avy-goto-char-2 avy-goto-line)
+  :commands (avy-goto-char-2 avy-goto-line avy-go-word-or-subword-1 avy-goto-char-timer)
   :config
-  ;; BMACS - enable avy across all windows
   (setq avy-all-windows 'all-frames
-        avy-background t))
+        avy-background t
+        avy-timeout-seconds 0.3))
 
 (def-package! command-log-mode
   :commands (command-log-mode global-command-log-mode)

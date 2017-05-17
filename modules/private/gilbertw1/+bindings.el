@@ -162,8 +162,8 @@
       :desc "Dumb jump go"            :nv "q" #'dumb-jump-go
       :desc "Dump jump go other"      :nv "Q" #'dumb-jump-go-other-window
       :desc "Avy go to line"          :nv "l" #'avy-goto-line
-      :desc "Avy go to word"          :nv "w" #'avy-goto-word-0
-      :desc "Avy go to char"          :nv "j" #'evil-avy-goto-word-or-subword-1)
+      :desc "Avy go to word"          :nv "w" #'evil-avy-goto-word-or-subword-1
+      :desc "Avy go to char"          :nv "j" #'avy-goto-char-2)
 
     (:desc "git"
       :prefix "g"
@@ -222,7 +222,7 @@
  :nv "H"  #'evil-first-non-blank
  :nv "L"  #'evil-last-non-blank
  ;; search avy goto
- :nv "C-f"  #'avy-goto-char-2
+ :nv "C-f"  #'avy-goto-char-timer
  :nv "/" #'swiper
  ;; evil commentary
  :nv "gc" #'evil-commentary
@@ -327,5 +327,6 @@
           ;; Remove slow/annoying help subsections
           "h" nil
           "g" nil)))
+
 
 
