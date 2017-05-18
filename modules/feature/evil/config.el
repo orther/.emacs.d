@@ -328,11 +328,11 @@ the new algorithm is confusing, like in python or ruby."
   (add-hook 'python-mode-hook #'+evil|simple-matchit))
 
 (def-package! evil-mc :demand t
-  :init (defvar evil-mc-key-map (make-sparse-keymap))
+  ;:init (defvar evil-mc-key-map (make-sparse-keymap))
   :config
-  ;; Start evil-mc in paused mode.
-  (add-hook 'evil-mc-mode-hook #'evil-mc-pause-cursors)
-  (add-hook 'evil-mc-before-cursors-created #'evil-mc-pause-cursors)
+  ;; BMACS - Start evil-mc in paused mode.
+  ;(add-hook 'evil-mc-mode-hook #'evil-mc-pause-cursors)
+  ;(add-hook 'evil-mc-before-cursors-created #'evil-mc-pause-cursors)
 
   (global-evil-mc-mode 1)
   ;; BMACS add *-without-register commands

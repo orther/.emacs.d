@@ -122,7 +122,7 @@
       :desc "Recent project files"     :nv "r" #'projectile-recentf
       :desc "Invalidate cache"         :nv "I" #'projectile-invalidate-cache
       :desc "List project tasks"       :nv "a" #'+ivy/tasks
-      :desc "Pop term in project root" :nv "'" #'+term/project-popup)
+      :desc "Pop term in project root" :nv "'" #'+term/popup-in-project)
 
     (:desc "search"
       :prefix "s"
