@@ -10,7 +10,7 @@
 ;;    anywhere I can call org-capture, like, say, from qutebrowser, vimperator,
 ;;    dmenu or a global keybinding.
 
-(add-hook '+org-init-hook '+org|init-capture t)
+(add-hook '+org-init-hook #'+org|init-capture t)
 
 (defun +org|init-capture ()
   "Set up a sane `org-capture' workflow."
@@ -56,5 +56,5 @@
     "Closes the frame once org-capture is done."
     (when (equal "org-capture" (frame-parameter nil 'name))
       (delete-frame)))
-  (add-hook 'org-capture-after-finalize-hook '+org|capture-finalize))
+  (add-hook 'org-capture-after-finalize-hook #'+org|capture-finalize))
 
