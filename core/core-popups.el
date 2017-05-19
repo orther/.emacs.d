@@ -64,6 +64,8 @@ is enabled/disabled.'")
         ;;              the popup window.
         shackle-rules
         '(("^\\*ftp " :noselect t :autokill t :noesc t)
+          ;; BMACS - escapable popup (scratch buffer / term buffer)
+          ("^ ?\\*doom-esc:.+\\*$"  :size 25  :modeline minimal :regexp t)
           ;; doom
           ("^\\*doom:" :regexp t :size 0.35 :noesc t :select t :modeline t)
           ("^\\*doom " :regexp t :noselect t :autokill t :autoclose t)
