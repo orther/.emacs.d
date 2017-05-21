@@ -81,13 +81,16 @@
 
 ;; --- is the environment set up properly? --------------------
 
+;; git
 (check! (not (executable-find "git"))
   (error! "Important: Couldn't find git"))
 
+;; windows? windows
 (check! (memq system-type '(windows-nt ms-dos cygwin))
   (warn! "Warning: Windows detected")
   (explain! "DOOM was designed for MacOS and Linux. Expect a bumpy ride!"))
 
+;; bsd vs gnu tar
 (if (executable-find "tar")
     (check! (not (string-match-p "(GNU tar)" (shell-command-to-string "tar --version")))
       (warn! "Warning: BSD tar detected")
@@ -100,13 +103,44 @@
                  "  brew install gnu-tar"))))
   (check! nil (error! "Important: Couldn't find tar"))) ; very unlikely
 
+;; gnutls-cli & openssl
 (check! (not (executable-find "gnutls-cli"))
   (cond ((executable-find "openssl")
          (warn! "Warning: couldn't find gnutls-cli")
-         (explain! "...but found openssl (which is possibly less secure)"))
+         (explain!
+          "Emacs will fall back on openssl to validate HTTPS ELPA sources.")
+         (let* ((output (shell-command-to-string "openssl version"))
+                (version (cadr (split-string output " " t))))
+           (when version
+             (cond ((version<= version "1.0.1")
+                    (error! "  But you have an old version of OpenSSL (v%s)!" version)
+                    (explain!
+                     (indented 2
+                       (concat
+                        "This may not affect your Emacs experience, but there are security "
+                        "vulnerabilities in the SSL2/3 & TLS1.0 protocols. You should be "
+                        "using TLS 1.1+, which wasn't introduced until OpenSSL v1.0.1. "
+                        "\n\nYou should upgrade!"))))
+                 (t
+                  (success! "  And it is up-to-date (%s)" version)
+                  (explain! "  This means you are fine, and may ignore this warning.")))
+           (when (and version (version<= version "1.0.1"))
+             (warn! "But you have an old version of OpenSSL (%s)!")
+             (explain!
+              "TLS 1.1+ wasn't introduced until v1.0.1, and there are vulnerabilities "
+              "in the SSL2/3 & TLS 1.0 protocols.")))))
         (t
          (error! "Warning: neither gnutls-cli or openssl were found")
-         (explain! "You will be unable to install/update packages through secure sources (HTTPS)"))))
+         (explain!
+          "You won't be able to install/update packages through secure ELPA "
+          "sources (HTTPS). If for some reason you cannot install gnutls-cli "
+          "or openssl, or simply don't care, you can bypass this by using "
+          "the INSECURE flag:\n"
+          "\n  INSECURE=1 make install\n"
+          "\nOr by changing the https links in `package-archives' to http.\n"
+          "\n...but you're leaving your security in the hands of your network, "
+          "provider or that neckbearded roommate who knows more about computers "
+          "than you do! Good luck!"))))
 
 
 ;; --- report! ------------------------------------------------
