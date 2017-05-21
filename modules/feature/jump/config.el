@@ -50,6 +50,14 @@
   (setq dumb-jump-default-project doom-emacs-dir
         dumb-jump-selector 'ivy))
 
+(def-package! gxref
+  :commands (gxref-xref-backend
+             gxref-create-db
+             gxref-update-db
+             gxref-single-update-db
+             gxref-set-project-dir)
+  :init
+  (setq-default xref-backend-functions '(gxref-xref-backend t)))
 
 ;; (def-package! ggtags
 ;;   :commands (ggtags-find-tag-dwim
