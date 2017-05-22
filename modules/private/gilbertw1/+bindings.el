@@ -118,6 +118,7 @@
       :desc "Run cmd in project root"  :nv "!" #'projectile-run-shell-command-in-root
       :desc "Toggle project neotree"   :nv "t" #'+evil/neotree
       :desc "Switch project"           :nv "p" #'counsel-projectile-switch-project
+      :desc "Switch project workspace" :nv "l" #'+workspace-switch-project
       :desc "Kill project buffers"     :nv "k" #'projectile-kill-buffers
       :desc "Recent project files"     :nv "r" #'projectile-recentf
       :desc "Invalidate cache"         :nv "I" #'projectile-invalidate-cache

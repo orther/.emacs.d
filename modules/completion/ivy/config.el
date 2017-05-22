@@ -61,6 +61,7 @@ session)."
         "C-u" #'doom-minibuffer-kill-line
         "C-b" #'backward-word
         "C-f" #'forward-word
+        "C-o" #'ivy-dispatching-done
         "<C-return>" #'ivy-immediate-done)
 
   (map! :map ivy-occur-grep-mode-map

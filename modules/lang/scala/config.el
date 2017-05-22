@@ -10,7 +10,10 @@
   (map! :mode scala-mode
         :niv "TAB" 'ensime-company-complete-or-indent
         :localleader
-        :desc "Start ensime"  :n "s" 'ensime))
+        :desc "Start ensime"             :n "s" #'ensime
+        :desc "Shutdown ensime"          :n "x" #'ensime-shutdown
+        :desc "show errors at point"     :n "e" #'ensime-print-errors-at-point
+        :desc "Show errors and warnings" :n "E" #'ensime-show-all-errors-and-warnings))
 
 (def-package! sbt-mode :after scala-mode)
 

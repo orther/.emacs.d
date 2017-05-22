@@ -46,6 +46,7 @@ produces an url. Used by `+jump/online'.")
   :commands (dumb-jump-go dumb-jump-quick-look dumb-jump-back)
   :config
   (setq dumb-jump-default-project doom-emacs-dir
+        dumb-jump-aggressive nil
         dumb-jump-selector 'ivy))
 
 (def-package! gxref
