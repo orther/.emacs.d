@@ -5,3 +5,7 @@
 
 (package! haskell-mode)
 (package! dante)
+(package! hindent)
+(package! ghc)
+(package! company-ghc)
+(package! shm)
