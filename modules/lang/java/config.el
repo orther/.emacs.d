@@ -11,9 +11,13 @@
   (setq meghanada-server-install-dir (concat doom-etc-dir "meghanada-server/")
         meghanada-use-company t
         meghanada-use-flycheck t
-        meghanada-use-auto-start t)
+        meghanada-auto-start nil)
 
-  (map! :map meghanada-mode-map :m "gd" #'meghanada-jump-declaration))
+  (map! :map meghanada-mode-map
+        :m "gd" #'meghanada-jump-declaration
+        :localleader
+        :desc "Start meghanada server"        :n "s" #'meghanda-server-start
+        :desc "Kill meghanada server"         :n "x" #'meghanda-server-start))
 
 
 (def-package! android-mode
@@ -30,3 +34,7 @@
   :config
   (set! :eval 'groovy-mode "groovy"))
 
+(add-hook 'java-mode-hook (lambda ()
+                            (setq c-basic-offset 4
+                                  tab-width 4
+                                  indent-tabs-mode nil)))
