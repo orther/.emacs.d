@@ -67,17 +67,6 @@
   (c-set-offset 'arglist-intro '+)
   (c-set-offset 'arglist-close '0)
 
-  (defun +cc--c-lineup-inclass (langelem)
-    (let ((inclass (assoc 'inclass c-syntactic-context)))
-      (save-excursion
-        (goto-char (c-langelem-pos inclass))
-        (if (or (looking-at "struct")
-                (looking-at "typedef struct"))
-            '+
-          '++))))
-  (c-set-offset 'inclass #'+cc--c-lineup-inclass)
-
-
   ;; Certain mappings interfere with smartparens and custom bindings,
   ;; so unbind them
   (map! :map c-mode-map
