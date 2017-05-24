@@ -81,17 +81,15 @@
  :m ";" 'evil-ex
  (:leader
    ;; Most commonly used
-   ;; :desc "Switch project buffer" :n ","  #'persp-switch-to-buffer
-   ;; :desc "Switch buffer"         :n "<"  #'switch-to-buffer
+   :desc "Previous buffer"       :n "TAB" #'doom/previous-buffer
    :desc "Browse files"          :n "."  #'find-file
-   :desc "Find file from here"   :n ">"  #'counsel-file-jump
    :desc "Find file in project"  :n "/"  #'projectile-find-file
    :desc "Find in file (swiper)" :n "?"  #'swiper
    :desc "Imenu"                 :n ";"  #'imenu
    :desc "Imenu across buffers"  :n ":"  #'imenu-anywhere
    :desc "Find other file"       :n "a"  #'projectile-find-other-file
    ;; :desc "Jump to bookmark"      :n "b"  #'bookmark-jump
-   :desc "Delete bookmark"       :n "B"  #'bookmark-delete
+   ;; :desc "Delete bookmark"       :n "B"  #'bookmark-delete
    :desc "List errors"           :n "e"  #'flycheck-list-errors
    :desc "View Emacs Log"        :n "m"  #'doom/popup-toggle-messages
    :desc "Recent files"          :n "r"  #'recentf
@@ -126,9 +124,8 @@
 
    (:desc "buffer"
      :prefix "b"
-     :desc "Switch project buffer" :n ","  #'persp-switch-to-buffer
-     ;; :desc "Switch workspace buffer"  :nv "b" #'+ivy/switch-workspace-buffer
-     ;; :desc "Switch buffer"            :nv "B" #'+ivy/switch-buffer
+     :desc "Switch workspace buffer"  :nv "b" #'persp-switch-to-buffer
+     :desc "Switch buffer"            :nv "B" #'switch-buffer
      :desc "Kill buffer"              :nv "d" #'kill-this-buffer
      :desc "Kill other buffers"       :nv "D" #'doom/kill-other-buffers
      :desc "Kill a buffer"            :nv "k" #'kill-buffer
