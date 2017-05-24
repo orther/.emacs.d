@@ -81,8 +81,8 @@
  :m ";" 'evil-ex
  (:leader
    ;; Most commonly used
-   :desc "Switch project buffer" :n ","  #'persp-switch-to-buffer
-   :desc "Switch buffer"         :n "<"  #'switch-to-buffer
+   ;; :desc "Switch project buffer" :n ","  #'persp-switch-to-buffer
+   ;; :desc "Switch buffer"         :n "<"  #'switch-to-buffer
    :desc "Browse files"          :n "."  #'find-file
    :desc "Find file from here"   :n ">"  #'counsel-file-jump
    :desc "Find file in project"  :n "/"  #'projectile-find-file
@@ -90,111 +90,112 @@
    :desc "Imenu"                 :n ";"  #'imenu
    :desc "Imenu across buffers"  :n ":"  #'imenu-anywhere
    :desc "Find other file"       :n "a"  #'projectile-find-other-file
-   :desc "Jump to bookmark"      :n "b"  #'bookmark-jump
+   ;; :desc "Jump to bookmark"      :n "b"  #'bookmark-jump
    :desc "Delete bookmark"       :n "B"  #'bookmark-delete
    :desc "List errors"           :n "e"  #'flycheck-list-errors
    :desc "View Emacs Log"        :n "m"  #'doom/popup-toggle-messages
    :desc "Recent files"          :n "r"  #'recentf
    :desc "Recent project files"  :n "R"  #'projectile-recentf
    :desc "Insert from kill ring" :n "y"  #'counsel-yank-pop
-   :desc "Switch project"        :n "p"  #'projectile-switch-project
-   :desc "Open Neotree"          :n "\\" #'+evil/neotree
+   ;; :desc "Switch project"        :n "p"  #'projectile-switch-project
+   ;; :desc "Open Neotree"          :n "\\" #'+evil/neotree
 
    ;; Since I've remapped C-h...
    :desc "help"                  :n "h"  #'help-command
 
-   ;; (:desc "file"
-   ;;   :prefix "f"
-   ;;   :desc "Open file from here"      :nv "f" #'counsel-find-file
-   ;;   :desc "Sudo open file from here" :nv "F" #'doom/sudo-find-file
-   ;;   :desc "Copy file"                :nv "c" #'copy-file
-   ;;   ;; :desc "Copy current file"        :nv "C" #'+gdoom/copy-file
-   ;;   ;; :desc "Rename current file"      :nv "R" #'+gdoom/rename-current-buffer-file
-   ;;   ;; :desc "Delete file"              :nv "d" #'+gdoom/delete-file-confirm
-   ;;   ;; :desc "Delete current file"      :nv "D" #'+gdoom/delete-current-buffer-file
-   ;;   ;; :desc "Sudo edit file"           :nv "E" #'+gdoom/sudo-edit
-   ;;   :desc "Recent files"             :nv "r"  #'counsel-recentf
-   ;;   :desc "Neotree toggle"           :nv "t"  #'neotree-toggle
-   ;;   :desc "Save buffer"              :nv "s"  #'save-buffer
-   ;;   :desc "Save all buffers"         :nv "S"  #'evil-write-all
-   ;;   :desc "Counsel bookmark"         :nv "b"  #'counsel-bookmark
-   ;;   :desc "Remote ssh tramp"         :nv "i"  (lambda ()
-   ;;                                              (interactive)
-   ;;                                              (counsel-find-file "/ssh:"))
-   ;;   ;; :desc "Show and copy filename"   :nv "y" #'+gdoom/show-and-copy-buffer-filename
-   ;;   )
+   (:desc "file"
+     :prefix "f"
+     :desc "Open file from here"      :nv "f" #'counsel-find-file
+     :desc "Sudo open file from here" :nv "F" #'doom/sudo-find-file
+     :desc "Copy file"                :nv "c" #'copy-file
+     ;; :desc "Copy current file"        :nv "C" #'+gdoom/copy-file
+     ;; :desc "Rename current file"      :nv "R" #'+gdoom/rename-current-buffer-file
+     ;; :desc "Delete file"              :nv "d" #'+gdoom/delete-file-confirm
+     ;; :desc "Delete current file"      :nv "D" #'+gdoom/delete-current-buffer-file
+     ;; :desc "Sudo edit file"           :nv "E" #'+gdoom/sudo-edit
+     :desc "Recent files"             :nv "r"  #'counsel-recentf
+     :desc "Neotree toggle"           :nv "t"  #'neotree-toggle
+     :desc "Save buffer"              :nv "s"  #'save-buffer
+     :desc "Save all buffers"         :nv "S"  #'evil-write-all
+     :desc "Counsel bookmark"         :nv "b"  #'counsel-bookmark
+     :desc "Remote ssh tramp"         :nv "i"  (lambda ()
+                                                (interactive)
+                                                (counsel-find-file "/ssh:"))
+     ;; :desc "Show and copy filename"   :nv "y" #'+gdoom/show-and-copy-buffer-filename
+     )
 
-   ;; (:desc "buffer"
-   ;;   :prefix "b"
-   ;;   :desc "Switch workspace buffer"  :nv "b" #'+ivy/switch-workspace-buffer
-   ;;   :desc "Switch buffer"            :nv "B" #'+ivy/switch-buffer
-   ;;   :desc "Kill buffer"              :nv "d" #'kill-this-buffer
-   ;;   :desc "Kill other buffers"       :nv "D" #'doom/kill-other-buffers
-   ;;   :desc "Kill a buffer"            :nv "k" #'kill-buffer
-   ;;   :desc "New empty buffer"         :nv "n" #'evil-buffer-new
-   ;;   :desc "Pop scratch buffer"       :nv "s" #'+doom:pop-scratch-buffer
-   ;;   ;; TODO spacemacs/copy-whole-buffer-to-clipboard y
-   ;;   ;; TODO spacemacs/paste-whole-file-to-clipboard p
-   ;;   )
+   (:desc "buffer"
+     :prefix "b"
+     :desc "Switch project buffer" :n ","  #'persp-switch-to-buffer
+     ;; :desc "Switch workspace buffer"  :nv "b" #'+ivy/switch-workspace-buffer
+     ;; :desc "Switch buffer"            :nv "B" #'+ivy/switch-buffer
+     :desc "Kill buffer"              :nv "d" #'kill-this-buffer
+     :desc "Kill other buffers"       :nv "D" #'doom/kill-other-buffers
+     :desc "Kill a buffer"            :nv "k" #'kill-buffer
+     :desc "New empty buffer"         :nv "n" #'evil-buffer-new
+     :desc "Pop scratch buffer"       :nv "s" #'+doom:pop-scratch-buffer
+     ;; TODO spacemacs/copy-whole-buffer-to-clipboard y
+     ;; TODO spacemacs/paste-whole-file-to-clipboard p
+     )
 
    ;; (:desc "ivy"
    ;;   :prefix "i"
    ;;   :desc "Ivy resumt"               :nv "r" #'ivy-resume)
 
-   ;; (:desc "project"
-   ;;   :prefix "p"
-   ;;   :desc "Find file in project"     :nv "f" #'counsel-projectile-find-file
-   ;;   :desc "Run cmd in project root"  :nv "!" #'projectile-run-shell-command-in-root
-   ;;   :desc "Toggle project neotree"   :nv "t" #'+evil/neotree
-   ;;   :desc "Switch project"           :nv "p" #'counsel-projectile-switch-project
-   ;;   :desc "Switch project workspace" :nv "l" #'+workspace-switch-project
-   ;;   :desc "Kill project buffers"     :nv "k" #'projectile-kill-buffers
-   ;;   :desc "Recent project files"     :nv "r" #'projectile-recentf
-   ;;   :desc "Invalidate cache"         :nv "I" #'projectile-invalidate-cache
-   ;;   :desc "List project tasks"       :nv "a" #'+ivy/tasks
-   ;;   :desc "Pop term in project root" :nv "'" #'+term/popup-in-project)
+   (:desc "project"
+     :prefix "p"
+     :desc "Find file in project"     :nv "f" #'counsel-projectile-find-file
+     :desc "Run cmd in project root"  :nv "!" #'projectile-run-shell-command-in-root
+     :desc "Toggle project neotree"   :nv "t" #'+evil/neotree
+     :desc "Switch project"           :nv "p" #'counsel-projectile-switch-project
+     :desc "Switch project workspace" :nv "l" #'+workspace-switch-project
+     :desc "Kill project buffers"     :nv "k" #'projectile-kill-buffers
+     :desc "Recent project files"     :nv "r" #'projectile-recentf
+     :desc "Invalidate cache"         :nv "I" #'projectile-invalidate-cache
+     :desc "List project tasks"       :nv "a" #'+ivy/tasks
+     :desc "Pop term in project root" :nv "'" #'+term/popup-in-project)
 
-   ;; (:desc "search"
-   ;;   :prefix "s"
-   ;;   :desc "IEdit mode"              :nv "e" #'evil-iedit-state/iedit-mode
-   ;;   :desc "Swiper search"           :nv "s" #'swiper)
+   (:desc "search"
+     :prefix "s"
+     :desc "IEdit mode"              :nv "e" #'evil-iedit-state/iedit-mode
+     :desc "Swiper search"           :nv "s" #'swiper)
 
-   ;; (:desc "workspace"
-   ;;   :prefix "l"
-   ;;   :desc "Switch to workspace"    :nv "l" #'persp-switch
-   ;;   :desc "Save workspace state"   :nv "s" #'persp-save-state-to-file
-   ;;   :desc "Switch last workspace"  :nv "TAB" #'+workspace-switch-last
-   ;;   :desc "Kill workspace"         :nv "d" #'persp-kill)
+   (:desc "workspace"
+     :prefix "l"
+     :desc "Switch to workspace"    :nv "l" #'persp-switch
+     :desc "Save workspace state"   :nv "s" #'persp-save-state-to-file
+     :desc "Switch last workspace"  :nv "TAB" #'+workspace-switch-last
+     :desc "Kill workspace"         :nv "d" #'persp-kill)
 
-   ;; (:desc "window"
-   ;;   :prefix "w"
-   ;;   :desc "Split window vertical"   :nv "/" #'split-window-right
-   ;;   :desc "Split window horizontal" :nv "-" #'split-window-below
-   ;;   :desc "Balance windows"         :nv "=" #'balance-windows
-   ;;   :desc "Ace delete window"       :nv "d" #'ace-delete-window
-   ;;   :desc "Delete current window"   :nv "D" #'delete-window
-   ;;   :desc "Window left"             :nv "h" #'evil-window-left
-   ;;   :desc "Window down"             :nv "j" #'evil-window-down
-   ;;   :desc "Window right"            :nv "l" #'evil-window-right
-   ;;   :desc "Window up"               :nv "k" #'evil-window-up
-   ;;   :desc "Move window left"        :nv "H" #'evil-window-move-far-left
-   ;;   :desc "Move window down"        :nv "J" #'evil-window-move-very-bottom
-   ;;   :desc "Move window right"       :nv "L" #'evil-window-move-far-right
-   ;;   :desc "Move window up"          :nv "K" #'evil-window-move-very-top
-   ;;   :desc "Winner undo"             :nv "u" #'winner-undo
-   ;;   :desc "Winner redo"             :nv "U" #'winner-redo
-   ;;   :desc "Ace window"              :nv "w" #'ace-window
-   ;;   :desc "Toggle maximize window"  :nv "m" #'doom/window-zoom
-   ;;   ;; :desc "Refresh line numbers"    :nv "r" #'+gdoom/refresh-line-numbers
-   ;;   )
+   (:desc "window"
+     :prefix "w"
+     :desc "Split window vertical"   :nv "/" #'split-window-right
+     :desc "Split window horizontal" :nv "-" #'split-window-below
+     :desc "Balance windows"         :nv "=" #'balance-windows
+     :desc "Ace delete window"       :nv "D" #'ace-delete-window
+     :desc "Delete current window"   :nv "d" #'delete-window
+     :desc "Window left"             :nv "h" #'evil-window-left
+     :desc "Window down"             :nv "j" #'evil-window-down
+     :desc "Window right"            :nv "l" #'evil-window-right
+     :desc "Window up"               :nv "k" #'evil-window-up
+     :desc "Move window left"        :nv "H" #'evil-window-move-far-left
+     :desc "Move window down"        :nv "J" #'evil-window-move-very-bottom
+     :desc "Move window right"       :nv "L" #'evil-window-move-far-right
+     :desc "Move window up"          :nv "K" #'evil-window-move-very-top
+     :desc "Winner undo"             :nv "u" #'winner-undo
+     :desc "Winner redo"             :nv "U" #'winner-redo
+     :desc "Ace window"              :nv "w" #'ace-window
+     :desc "Toggle maximize window"  :nv "m" #'doom/window-zoom
+     ;; :desc "Refresh line numbers"    :nv "r" #'+gdoom/refresh-line-numbers
+     )
 
-   ;; (:desc "jump"
-   ;;   :prefix "j"
-   ;;   :desc "Dumb jump go"            :nv "q" #'dumb-jump-go
-   ;;   :desc "Dump jump go other"      :nv "Q" #'dumb-jump-go-other-window
-   ;;   :desc "Avy go to line"          :nv "l" #'avy-goto-line
-   ;;   :desc "Avy go to word"          :nv "w" #'evil-avy-goto-word-or-subword-1
-   ;;   :desc "Avy go to char"          :nv "j" #'avy-goto-char-2)
+   (:desc "jump"
+     :prefix "j"
+     :desc "Dumb jump go"            :nv "q" #'dumb-jump-go
+     :desc "Dump jump go other"      :nv "Q" #'dumb-jump-go-other-window
+     :desc "Avy go to line"          :nv "l" #'avy-goto-line
+     :desc "Avy go to word"          :nv "w" #'evil-avy-goto-word-or-subword-1
+     :desc "Avy go to char"          :nv "j" #'avy-goto-char-2)
 
    (:desc "quit"
      :prefix "q"
