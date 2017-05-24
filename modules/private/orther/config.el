@@ -72,6 +72,20 @@
 ;;     (+my!repeat-with-spc evil-visualstar/begin-search-backward
 ;;       evil-ex-search-previous evil-ex-search-next)))
 
+(defun +orther-javascript/eslintd-set-flycheck-executable ()
+  (interactive)
+  (when-let (eslintd-executable (executable-find "eslint_d"))
+    (make-variable-buffer-local 'flycheck-javascript-eslint-executable)
+    (setq flycheck-javascript-eslint-executable eslintd-executable)
+    (setq eslintd-fix-executable eslintd-executable)))
+
+(after! js2-mode
+  (+orther-javascript/eslintd-set-flycheck-executable))
+
+(def-package! eslintd-fix
+  :commands eslintd-fix-mode
+  :after eslintd-fix
+  :init (add-hook 'js2-mode-hook #'eslintd-fix-mode t))
 
 (after! mu4e
   (setq-default
