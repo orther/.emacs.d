@@ -47,7 +47,12 @@ produces an url. Used by `+jump/online'.")
   :config
   (setq dumb-jump-default-project doom-emacs-dir
         dumb-jump-aggressive nil
-        dumb-jump-selector 'ivy))
+        dumb-jump-selector 'ivy)
+
+  ;; BMACS - scroll to center after jump
+  (add-hook 'dumb-jump-after-jump-hook (lambda () (evil-scroll-line-to-center nil))))
+
+
 
 (def-package! gxref
   :commands (gxref-xref-backend
