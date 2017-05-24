@@ -45,13 +45,6 @@
         '(c-mode c++-mode objc-mode)
         '(company-irony-c-headers company-irony))
 
-  (sp-with-modes '(c-mode c++-mode objc-mode java-mode)
-    (sp-local-pair "<" ">" :when '(+cc-sp-point-is-template-p +cc-sp-point-after-include-p))
-    (sp-local-pair "/*" "*/" :post-handlers '(("||\n[i]" "RET") ("| " "SPC")))
-    ;; Doxygen blocks
-    (sp-local-pair "/**" "*/" :post-handlers '(("||\n[i]" "RET") ("||\n[i]" "SPC")))
-    (sp-local-pair "/*!" "*/" :post-handlers '(("||\n[i]" "RET") ("[d-1]< | " "SPC"))))
-
   ;; Improve indentation of inline lambdas in C++11
   (advice-add #'c-lineup-arglist :around #'+c-lineup-arglist)
 
