@@ -114,7 +114,7 @@
      ;; :desc "Delete current file"      :nv "D" #'+gdoom/delete-current-buffer-file
      ;; :desc "Sudo edit file"           :nv "E" #'+gdoom/sudo-edit
      :desc "Recent files"             :nv "r"  #'counsel-recentf
-     :desc "Neotree toggle"           :nv "t"  #'neotree-toggle
+     :desc "Neotree toggle"           :nv "t"  #'+evil/neotree
      :desc "Save buffer"              :nv "s"  #'save-buffer
      :desc "Save all buffers"         :nv "S"  #'evil-write-all
      :desc "Counsel bookmark"         :nv "b"  #'counsel-bookmark

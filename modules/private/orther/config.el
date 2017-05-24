@@ -7,6 +7,20 @@
 (defvar +orther-dir
   (file-name-directory load-file-name))
 
+;; (setq +doom-font
+;;   (font-spec :family "SF Mono"
+;;              :size 11
+;;              :weight light
+;;              :width normal)
+;;   "The font currently in use.")
+;;
+;; (setq +doom-variable-pitch-font
+;;   (font-spec :family "SF Mono"
+;;              :size 12
+;;              :weight heavy
+;;              :width normal)
+;;   "The font currently in use.")
+
 ;; (defvar +orther-snippets-dir
 ;;   (expand-file-name "snippets/" +orther-dir))
 ;;
@@ -92,3 +106,7 @@
       (user-mail-address      . "brandon@omt.tech")
       (mu4e-compose-signature . "---\nBrandon Orther"))
     t))
+
+;; make fullscreen on load
+(after! evil
+  (doom/toggle-fullscreen))
