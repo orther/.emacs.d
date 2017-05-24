@@ -23,7 +23,6 @@ session)."
 (def-package! ivy :demand t
   :config
   (setq ivy-height 12
-        ivy-do-completion-in-region nil
         ivy-wrap t
         ivy-fixed-height-minibuffer t
         projectile-completion-system 'ivy

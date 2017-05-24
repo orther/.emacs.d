@@ -171,6 +171,7 @@
       :desc "Git status"              :nv "s" #'magit-status
       :desc "Git blame"               :nv "b" #'magit-blame
       :desc "Git time machine"        :nv "t" #'git-timemachine
+      :desc "Git log file"            :nv "l" #'magit-log-buffer-file
       (:desc "gist"
         :prefix "g"
         :desc "Gist from buffer"         :nv "b" #'gist-buffer

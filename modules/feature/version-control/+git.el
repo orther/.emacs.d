@@ -46,7 +46,7 @@
         :nv "b" #'git-timemachine-blame))
 
 (def-package! magit
-  :commands (magit-status magit-blame))
+  :commands (magit-status magit-blame magit-log-buffer-file))
 
 (def-package! git-link
   :commands (git-link git-link-commit git-link-homepage))
