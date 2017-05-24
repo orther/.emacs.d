@@ -7,19 +7,11 @@
 (defvar +orther-dir
   (file-name-directory load-file-name))
 
-;; (setq +doom-font
-;;   (font-spec :family "SF Mono"
-;;              :size 11
-;;              :weight light
-;;              :width normal)
-;;   "The font currently in use.")
-;;
-;; (setq +doom-variable-pitch-font
-;;   (font-spec :family "SF Mono"
-;;              :size 12
-;;              :weight heavy
-;;              :width normal)
-;;   "The font currently in use.")
+(setq +doom-font
+  (font-spec :family "SF Mono" :size 11 :weight 'light))
+
+(setq +doom-variable-pitch-font
+  (font-spec :family "SF Mono" :size 13 :weight 'light))
 
 ;; (defvar +orther-snippets-dir
 ;;   (expand-file-name "snippets/" +orther-dir))
