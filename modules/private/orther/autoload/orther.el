@@ -1,6 +1,13 @@
 ;;; private/orther/autoload/orther.el
 
 ;;;###autoload
+(defun +orther/start-fullscreen ()
+  "Install my snippets from https://github.com/orther/emacs-snippets into
+private/orther/snippets."
+  (interactive)
+  (doom/toggle-fullscreen))
+
+;;;###autoload
 (defun +orther/install-snippets ()
   "Install my snippets from https://github.com/orther/emacs-snippets into
 private/orther/snippets."
