@@ -1,11 +1,9 @@
 ;;; module-haskell.el
 
-;; requires cabal (flycheck), ghci/hugs (repl)
-
 (def-package! haskell-mode
-  :mode (("\\.hs$" . haskell-mode)
-         ("\\.ghci$" . ghci-script-mode)
-         ("\\.cabal$" . haskell-cabal-mode))
+  :mode "\\.hs$"
+  :mode ("\\.ghci$" . ghci-script-mode)
+  :mode ("\\.cabal$" . haskell-cabal-mode)
   :interpreter (("runghc" . haskell-mode)
                 ("runhaskell" . haskell-mode))
   :config
@@ -14,8 +12,8 @@
   (add-hook 'haskell-mode-hook (lambda () (ghc-init)))
   (add-hook 'haskell-mode-hook #'structured-haskell-mode)
 
-  (set! :popup "*debug:haskell*" :size 20)
   (set! :repl 'haskell-mode #'switch-to-haskell)
+
   (push ".hi" completion-ignored-extensions)
 
   (add-to-list 'company-backends 'company-ghc)
@@ -40,7 +38,16 @@
 (def-package! dante
   :after haskell-mode
   :config
-  (when (executable-find "cabal")
+  (if (executable-find "cabal")
     (add-hook! 'haskell-mode-hook
-      #'(flycheck-mode dante-mode interactive-haskell-mode))))
+      #'(flycheck-mode dante-mode interactive-haskell-mode))
+    (warn "haskell-mode: couldn't find cabal")))
 
+(def-package! company-ghc
+  :after haskell-mode
+  :config
+  (set! :company-backend 'haskell-mode #'company-ghc)
+  (setq company-ghc-show-info 'oneline)
+  (if (executable-find "ghc-mod")
+      (add-hook 'haskell-mode-hook #'ghc-comp-init)
+    (warn "haskell-mode: couldn't find ghc-mode")))
