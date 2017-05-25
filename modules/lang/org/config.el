@@ -397,7 +397,8 @@ FUN function callback"
   ;; Remove highlights on ESC
   (defun +org|remove-occur-highlights (&rest args)
     (when (derived-mode-p 'org-mode)
-      (org-remove-occur-highlights)))
+      (org-remove-occur-highlights)
+      t))
   (add-hook '+evil-esc-hook #'+org|remove-occur-highlights)
 
   (after! org-bullets
