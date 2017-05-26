@@ -1,4 +1,4 @@
-;;; private/hlissner/+bindings.el
+;;; private/orther/+bindings.el
 
 ;; I've swapped these keys on my keyboard
 ;; (setq x-super-keysym 'alt
@@ -25,8 +25,8 @@
  ;; Make M-x available everywhere
  :nvime "M-x" #'execute-extended-command
  :nvime "A-x" #'execute-extended-command
- :nvime "M-:" #'+hlissner/C-u-M-x
- :nvime "A-:" #'+hlissner/C-u-M-x
+ :nvime "M-:" #'+orther/C-u-M-x
+ :nvime "A-:" #'+orther/C-u-M-x
  ;; Emacs debug utilities
  "M-;"    #'eval-expression
  "A-;"    #'eval-expression
@@ -74,8 +74,8 @@
  "M-v"    #'clipboard-yank
  "M-f"    #'+ivy:swiper
  "C-M-f"  #'doom/toggle-fullscreen
- :m "A-j" #'+hlissner:multi-next-line
- :m "A-k" #'+hlissner:multi-previous-line
+ :m "A-j" #'+orther:multi-next-line
+ :m "A-k" #'+orther:multi-previous-line
 
  ;;; <leader> and <localleader>
  :m ";" 'evil-ex
@@ -91,7 +91,7 @@
    ;; :desc "Jump to bookmark"      :n "b"  #'bookmark-jump
    ;; :desc "Delete bookmark"       :n "B"  #'bookmark-delete
    :desc "List errors"           :n "e"  #'flycheck-list-errors
-   :desc "View Emacs Log"        :n "m"  #'doom/popup-toggle-messages
+   :desc "View Emacs Log"        :n "M"  #'doom/popup-toggle-messages
    :desc "Recent files"          :n "r"  #'recentf
    :desc "Recent project files"  :n "R"  #'projectile-recentf
    :desc "Insert from kill ring" :n "y"  #'counsel-yank-pop
@@ -266,20 +266,20 @@
 
    (:desc "Personal"
      :prefix "SPC"
-     :desc "Browse emacs.d"         :n "."   #'+hlissner/browse-emacsd
-     :desc "Find file in emacs.d"   :n "/"   #'+hlissner/find-in-emacsd
-     :desc "Browse dotfiles"        :n ">"   #'+hlissner/browse-dotfiles
-     :desc "Find file in dotfiles"  :n "?"   #'+hlissner/find-in-dotfiles
+     :desc "Browse emacs.d"         :n "."   #'+orther/browse-emacsd
+     :desc "Find file in emacs.d"   :n "/"   #'+orther/find-in-emacsd
+     :desc "Browse dotfiles"        :n ">"   #'+orther/browse-dotfiles
+     :desc "Find file in dotfiles"  :n "?"   #'+orther/find-in-dotfiles
      :desc "Reload theme"           :n "R"   #'+doom/reset-theme
      ;; Org notes
-     :desc "Browse notes"           :n "n"   #'+hlissner/browse-notes
-     :desc "Find file in notes"     :n "N"   #'+hlissner/find-in-notes
+     :desc "Browse notes"           :n "n"   #'+orther/browse-notes
+     :desc "Find file in notes"     :n "N"   #'+orther/find-in-notes
      :desc "Browse project notes"   :n "p"   #'+org/browse-notes-for-project
      :desc "Browse mode notes"      :n "m"   #'+org/browse-notes-for-major-mode
      :desc "Org Capture"            :n "SPC" #'+org/capture
      ;; misc
      :desc "Find snippet for mode"  :n "s"  #'yas-visit-snippet-file
-     :desc "Find snippet"           :n "S"  #'+hlissner/find-in-snippets
+     :desc "Find snippet"           :n "S"  #'+orther/find-in-snippets
      ))
 
  (:localleader

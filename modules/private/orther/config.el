@@ -7,15 +7,32 @@
 (defvar +orther-dir
   (file-name-directory load-file-name))
 
-(setq +doom-font
-  (font-spec :family "SF Mono" :size 11 :weight 'light))
+;; ;; ;; brighter minibuffer when active
+;; (add-hook 'minibuffer-setup-hook #'doom-brighten-minibuffer)
 
-(setq +doom-variable-pitch-font
-  (font-spec :family "SF Mono" :size 13 :weight 'light))
+(require 'company)
+(setq company-idle-delay 0.2
+      company-minimum-prefix-length 3)
 
-;; (defvar +orther-snippets-dir
-;;   (expand-file-name "snippets/" +orther-dir))
-;;
+;; customize doom neotree
+(setq doom-neotree-enable-file-icons t)
+
+(after! neotree
+  (setq neo-window-width 35))
+
+;; Widen fringes (easier to see git-gutter with twm window border)
+(fringe-mode '(12 . 12))
+
+;; Override vc modified color (gray -> yellow)
+(custom-set-faces
+  '(diff-hl-change ((t (:foreground "#ECBE7B"))))
+  '(git-gutter:modified ((t (:foreground "#ECBE7B"))))
+  '(git-gutter+-modified ((t (:foreground "#ECBE7B"))))
+  '(git-gutter-fr:modified ((t (:foreground "#ECBE7B")))))
+
+(defvar +orther-snippets-dir
+  (expand-file-name "snippets/" +orther-dir))
+
 ;; (setq user-mail-address "brandon@omt.tech"
 ;;       user-full-name "Brandon Orther"
 ;;       epa-file-encrypt-to user-mail-address
@@ -26,51 +43,50 @@
 ;;   (let ((auth-sources (if (equal tramp-current-method "sudo") nil auth-sources)))
 ;;     (apply orig-fn args)))
 ;; (advice-add #'tramp-read-passwd :around #'+orther*no-authinfo-for-tramp)
-;;
-;;
-;; ;; Don't use default snippets, use mine.
-;; (after! yasnippet
-;;   (setq yas-snippet-dirs (append (list '+orther-snippets-dir)
-;;                                  (delete 'yas-installed-snippets-dir yas-snippet-dirs))))
 
 
-;; ;; Repeat all sorts of motion and searches with SPC & C-SPC
-;; (defmacro +my!repeat-with-spc (command next-func prev-func)
-;;   "Repeat motions with SPC/S-SPC"
-;;   (let ((fn-sym (intern (format "+evil*repeat-%s" command))))
-;;     `(progn
-;;        (defun ,fn-sym (&rest _)
-;;          (define-key evil-motion-state-map (kbd "SPC") ',next-func)
-;;          (define-key evil-motion-state-map (kbd "S-SPC") ',prev-func))
-;;        (advice-add #',command :before #',fn-sym))))
+;; Don't use default snippets, use mine.
+(after! yasnippet
+  (setq yas-snippet-dirs (append (list '+orther-snippets-dir)
+                                 (delete 'yas-installed-snippets-dir yas-snippet-dirs))))
 
-;; (after! evil
-;;   n/N
-;;   (+my!repeat-with-spc evil-ex-search-next evil-ex-search-next evil-ex-search-previous)
-;;   (+my!repeat-with-spc evil-ex-search-previous evil-ex-search-next evil-ex-search-previous)
-;;   (+my!repeat-with-spc evil-ex-search-forward evil-ex-search-next evil-ex-search-previous)
-;;   (+my!repeat-with-spc evil-ex-search-backward evil-ex-search-next evil-ex-search-previous)
-;;
-;;   ;; f/F/t/T/s/S
-;;   (after! evil-snipe
-;;     (setq evil-snipe-repeat-keys nil
-;;           evil-snipe-override-evil-repeat-keys nil) ; causes problems with remapped ;
-;;
-;;     (+my!repeat-with-spc evil-snipe-f evil-snipe-repeat evil-snipe-repeat-reverse)
-;;     (+my!repeat-with-spc evil-snipe-F evil-snipe-repeat evil-snipe-repeat-reverse)
-;;     (+my!repeat-with-spc evil-snipe-t evil-snipe-repeat evil-snipe-repeat-reverse)
-;;     (+my!repeat-with-spc evil-snipe-T evil-snipe-repeat evil-snipe-repeat-reverse)
-;;     (+my!repeat-with-spc evil-snipe-s evil-snipe-repeat evil-snipe-repeat-reverse)
-;;     (+my!repeat-with-spc evil-snipe-S evil-snipe-repeat evil-snipe-repeat-reverse)
-;;     (+my!repeat-with-spc evil-snipe-x evil-snipe-repeat evil-snipe-repeat-reverse)
-;;     (+my!repeat-with-spc evil-snipe-X evil-snipe-repeat evil-snipe-repeat-reverse))
-;;
-;;   ;; */#
-;;   (after! evil-visualstar
-;;     (+my!repeat-with-spc evil-visualstar/begin-search-forward
-;;       evil-ex-search-next evil-ex-search-previous)
-;;     (+my!repeat-with-spc evil-visualstar/begin-search-backward
-;;       evil-ex-search-previous evil-ex-search-next)))
+;; Repeat all sorts of motion and searches with SPC & C-SPC
+(defmacro +my!repeat-with-spc (command next-func prev-func)
+  "Repeat motions with SPC/S-SPC"
+  (let ((fn-sym (intern (format "+evil*repeat-%s" command))))
+    `(progn
+       (defun ,fn-sym (&rest _)
+         (define-key evil-motion-state-map (kbd "SPC") ',next-func)
+         (define-key evil-motion-state-map (kbd "S-SPC") ',prev-func))
+       (advice-add #',command :before #',fn-sym))))
+
+(after! evil
+  ;; n/N
+  (+my!repeat-with-spc evil-ex-search-next evil-ex-search-next evil-ex-search-previous)
+  (+my!repeat-with-spc evil-ex-search-previous evil-ex-search-next evil-ex-search-previous)
+  (+my!repeat-with-spc evil-ex-search-forward evil-ex-search-next evil-ex-search-previous)
+  (+my!repeat-with-spc evil-ex-search-backward evil-ex-search-next evil-ex-search-previous)
+
+  ;; f/F/t/T/s/S
+  (after! evil-snipe
+    (setq evil-snipe-repeat-keys nil
+          evil-snipe-override-evil-repeat-keys nil) ; causes problems with remapped ;
+
+    (+my!repeat-with-spc evil-snipe-f evil-snipe-repeat evil-snipe-repeat-reverse)
+    (+my!repeat-with-spc evil-snipe-F evil-snipe-repeat evil-snipe-repeat-reverse)
+    (+my!repeat-with-spc evil-snipe-t evil-snipe-repeat evil-snipe-repeat-reverse)
+    (+my!repeat-with-spc evil-snipe-T evil-snipe-repeat evil-snipe-repeat-reverse)
+    (+my!repeat-with-spc evil-snipe-s evil-snipe-repeat evil-snipe-repeat-reverse)
+    (+my!repeat-with-spc evil-snipe-S evil-snipe-repeat evil-snipe-repeat-reverse)
+    (+my!repeat-with-spc evil-snipe-x evil-snipe-repeat evil-snipe-repeat-reverse)
+    (+my!repeat-with-spc evil-snipe-X evil-snipe-repeat evil-snipe-repeat-reverse))
+
+  ;; */#
+  (after! evil-visualstar
+    (+my!repeat-with-spc evil-visualstar/begin-search-forward
+      evil-ex-search-next evil-ex-search-previous)
+    (+my!repeat-with-spc evil-visualstar/begin-search-backward
+      evil-ex-search-previous evil-ex-search-next)))
 
 (defun +orther-javascript/eslintd-set-flycheck-executable ()
   (interactive)

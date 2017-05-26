@@ -1,13 +1,6 @@
 ;;; private/orther/autoload/orther.el
 
 ;;;###autoload
-(defun +orther/start-fullscreen ()
-  "Install my snippets from https://github.com/orther/emacs-snippets into
-private/orther/snippets."
-  (interactive)
-  (doom/toggle-fullscreen))
-
-;;;###autoload
 (defun +orther/install-snippets ()
   "Install my snippets from https://github.com/orther/emacs-snippets into
 private/orther/snippets."
@@ -40,9 +33,9 @@ private/orther/snippets."
 ;;;###autoload (autoload '+orther/browse-templates "private/orther/autoload/orther" nil t)
 (+orther-def-finder! templates +file-templates-dir)
 
-;; ;;;###autoload (autoload '+orther/find-in-snippets "private/orther/autoload/orther" nil t)
-;; ;;;###autoload (autoload '+orther/browse-snippets "private/orther/autoload/orther" nil t)
-;; (+orther-def-finder! snippets +orther-snippets-dir)
+;;;###autoload (autoload '+orther/find-in-snippets "private/orther/autoload/orther" nil t)
+;;;###autoload (autoload '+orther/browse-snippets "private/orther/autoload/orther" nil t)
+(+orther-def-finder! snippets +orther-snippets-dir)
 
 ;;;###autoload (autoload '+orther/find-in-dotfiles "private/orther/autoload/orther" nil t)
 ;;;###autoload (autoload '+orther/browse-dotfiles "private/orther/autoload/orther" nil t)
