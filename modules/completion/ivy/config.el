@@ -34,15 +34,7 @@ session)."
         ;; disable magic slash on non-match
         ivy-magic-slash-non-match-action nil)
 
-  ;; BMACS - ghetto (https://github.com/magit/magit/issues/3090)
-  (defun ivy-magit-completing-read (prompt collection &optional predicate require-match
-                                           initial-input history def inherit-input-method)
-    (let ((full-collection (if def
-                                   (add-to-list 'collection def)
-                                 collection)))
-      (ivy-completing-read prompt full-collection predicate require-match initial-input history def inherit-input-method)))
-
-  (after! magit      (setq magit-completing-read-function #'ivy-magit-completing-read))
+  (after! magit      (setq magit-completing-read-function #'ivy-completing-read))
   (after! yasnippet  (push #'+ivy-yas-prompt yas-prompt-functions))
 
   (ivy-mode +1)
