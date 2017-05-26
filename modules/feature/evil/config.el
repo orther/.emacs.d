@@ -332,26 +332,23 @@ the new algorithm is confusing, like in python or ruby."
     (setq-local evilmi-always-simple-jump t))
   (add-hook 'python-mode-hook #'+evil|simple-matchit))
 
-(def-package! evil-mc :demand t
-  ;:init (defvar evil-mc-key-map (make-sparse-keymap))
+(def-package! evil-mc
+  :commands (evil-mc-make-cursor-here evil-mc-make-all-cursors
+             evil-mc-undo-all-cursors evil-mc-pause-cursors
+             evil-mc-resume-cursors evil-mc-make-and-goto-first-cursor
+             evil-mc-make-and-goto-last-cursor evil-mc-make-cursor-here
+             evil-mc-make-cursor-move-next-line
+             evil-mc-make-cursor-move-prev-line
+             evil-mc-make-cursor-at-pos
+             evil-mc-make-and-goto-next-cursor evil-mc-skip-and-goto-next-cursor
+             evil-mc-make-and-goto-prev-cursor evil-mc-skip-and-goto-prev-cursor
+             evil-mc-make-and-goto-next-match evil-mc-skip-and-goto-next-match
+             evil-mc-skip-and-goto-next-match evil-mc-make-and-goto-prev-match
+             evil-mc-skip-and-goto-prev-match)
+  :init
+  (defvar evil-mc-key-map (make-sparse-keymap))
   :config
-  ;; BMACS - Start evil-mc in paused mode.
-  ;(add-hook 'evil-mc-mode-hook #'evil-mc-pause-cursors)
-  ;(add-hook 'evil-mc-before-cursors-created #'evil-mc-pause-cursors)
-
-  (global-evil-mc-mode 1)
-  ;; BMACS add *-without-register commands
-  (setq evil-mc-custom-known-commands
-    '((doom/deflate-space-maybe . ((:default . evil-mc-execute-default-evil-delete)))
-      (evil-change-without-register . ((:default . evil-mc-execute-default-evil-change)))
-      (evil-change-line-without-register . ((:default . evil-mc-execute-default-evil-change-line)))
-      (evil-delete-without-register . ((:default . evil-mc-execute-default-evil-delete)))
-      (evil-delete-without-register-if-whitespace . ((:default . evil-mc-execute-default-evil-delete)))
-      (evil-delete-char-without-register . ((:default . evil-mc-execute-default-evil-delete)))
-      (evil-delete-backward-char-without-register . ((:default . evil-mc-execute-default-evil-delete)))
-      (evil-delete-line-without-register . ((:default . evil-mc-execute-default-evil-delete)))
-      (evil-paste-after-witout-register . ((:default . evil-mc-execute-default-evil-paste)))
-      (evil-paste-before-witout-register . ((:default . evil-mc-execute-default-evil-paste)))))
+  (global-evil-mc-mode +1)
 
   (defun evil-mc-make-cursor-move-by-line (dir count)
     "Create COUNT cursors one for each line moving in the direction DIR.
@@ -361,29 +358,29 @@ the new algorithm is confusing, like in python or ruby."
       (evil-mc-run-cursors-before)
       (evil-mc-make-cursor-at-pos (point))
       (let (line-move-visual)
-  (evil-line-move dir))))
+        (evil-line-move dir))))
 
-  ;; If I switch to insert mode, chances are I want to start editing.
-  (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors)
+  ;; Add custom commands to whitelisted commands
+  (dolist (fn '(doom/deflate-space-maybe doom/inflate-space-maybe
+                doom/backward-to-bol-or-indent doom/forward-to-last-non-comment-or-eol
+                doom/backward-kill-to-bol-and-indent))
+    (push (cons fn '((:default . evil-mc-execute-default-call))) evil-mc-custom-known-commands))
 
- ;; My workflow is to place the cursors, get into position, then enable evil-mc
- ;; by invoking `+evil/mc-toggle-cursors'
-  (defun +evil/mc-toggle-cursors ()
-    "Toggle frozen state of evil-mc cursors."
-    (interactive)
-    (setq evil-mc-frozen (not (and (evil-mc-has-cursors-p)
-                                   evil-mc-frozen))))
-  ;; ...or going into insert mode
-  (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors)
+  ;; if I'm in insert mode, chances are I want cursors to resume
+  (add-hook! 'evil-mc-before-cursors-created
+    (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors nil t))
+  (add-hook! 'evil-mc-after-cursors-deleted
+    (remove-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors t))
 
   (defun +evil|escape-multiple-cursors ()
-    "Undo cursors and freeze them again (for next time)."
+    "Clear evil-mc cursors and restore state."
     (when (evil-mc-has-cursors-p)
       (evil-mc-undo-all-cursors)
+      (evil-mc-resume-cursors)
       t))
   (add-hook '+evil-esc-hook #'+evil|escape-multiple-cursors)
 
-  ;; disable evil-escape in evil-mc
+  ;; disable evil-escape in evil-mc; causes unwanted text on invocation
   (push 'evil-escape-mode evil-mc-incompatible-minor-modes))
 
 (def-package! evil-textobj-anyblock
