@@ -83,6 +83,6 @@
           (neo-buffer--set-expand node t)
           (neo-buffer--refresh t)
           (when neo-auto-indent-point
-            (next-line)
+            (forward-line)
             (neo-point-auto-indent)))
       (call-interactively 'neotree-enter))))
