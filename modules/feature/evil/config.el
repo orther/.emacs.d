@@ -75,22 +75,12 @@
                         table)))
   (add-hook 'minibuffer-inactive-mode-hook #'minibuffer-inactive-mode-hook-setup)
 
-  (defsubst +evil--textobj (key inner-fn &optional outer-fn)
-    "Define a text object."
-    (declare (indent defun))
-    (define-key evil-inner-text-objects-map key inner-fn)
-    (define-key evil-outer-text-objects-map key (or outer-fn inner-fn)))
-
 
   ;; --- keybind fixes ----------------------
-  (map! ;; undo/redo for visual regions
-        :v "C-u" #'undo-tree-undo
-        :v "C-r" #'undo-tree-redo
-
-        (:after wgrep
-          ;; a wrapper that invokes `wgrep-mark-deletion' across lines
-          ;; you use `evil-delete' on.
-          :map wgrep-mode-map [remap evil-delete] #'+evil-delete))
+  (after! wgrep
+    ;; a wrapper that invokes `wgrep-mark-deletion' across lines
+    ;; you use `evil-delete' on.
+    (map! :map wgrep-mode-map [remap evil-delete] #'+evil-delete))
 
 
   ;; --- evil hacks -------------------------
@@ -184,8 +174,7 @@ across windows."
 (def-package! evil-args
   :commands (evil-inner-arg evil-outer-arg
              evil-forward-arg evil-backward-arg
-             evil-jump-out-args)
-  :init (+evil--textobj "a" #'evil-inner-arg #'evil-outer-arg))
+             evil-jump-out-args))
 
 
 (def-package! evil-commentary
@@ -312,19 +301,15 @@ across windows."
              evil-indent-plus-i-indent-up
              evil-indent-plus-a-indent-up
              evil-indent-plus-i-indent-up-down
-             evil-indent-plus-a-indent-up-down)
-  :init
-  (+evil--textobj "i" #'evil-indent-plus-i-indent #'evil-indent-plus-a-indent)
-  (+evil--textobj "I" #'evil-indent-plus-i-indent-up #'evil-indent-plus-a-indent-up)
-  (+evil--textobj "J" #'evil-indent-plus-i-indent-up-down #'evil-indent-plus-a-indent-up-down))
+             evil-indent-plus-a-indent-up-down))
 
 
 (def-package! evil-matchit
   :commands (evilmi-jump-items evilmi-text-object global-evil-matchit-mode)
   :config (global-evil-matchit-mode 1)
   :init
-  (map! :m "%" #'evilmi-jump-items)
-  (+evil--textobj "%" #'evilmi-text-object)
+  (map! [remap evil-jump-item] #'evilmi-jump-items
+        :textobj "%" #'evilmi-text-object #'evilmi-text-object)
   :config
   (defun +evil|simple-matchit ()
     "A hook to force evil-matchit to favor simple bracket jumping. Helpful when
@@ -384,10 +369,7 @@ the new algorithm is confusing, like in python or ruby."
   (push 'evil-escape-mode evil-mc-incompatible-minor-modes))
 
 (def-package! evil-textobj-anyblock
-  :init
-  (+evil--textobj "B"
-    #'evil-textobj-anyblock-inner-block
-    #'evil-textobj-anyblock-a-block))
+  :commands (evil-textobj-anyblock-inner-block evil-textobj-anyblock-a-block))
 
 
 (def-package! evil-snipe :demand t
@@ -400,15 +382,8 @@ the new algorithm is confusing, like in python or ruby."
         evil-snipe-aliases '((?\[ "[[{(]")
                              (?\] "[]})]")
                              (?\; "[;:]")))
-
   :config
-  (evil-snipe-override-mode +1)
-  ;; turn off evil snipe override in magit buffer
-  (add-hook 'magit-mode-hook 'turn-off-evil-snipe-override-mode)
-  ;; Switch to evil-easymotion/avy after first snipe
-  (map! :map evil-snipe-parent-transient-map
-        "C-;" (λ! (require 'evil-easymotion)
-                  (call-interactively +evil--snipe-repeat-fn))))
+  (evil-snipe-override-mode +1))
 
 
 (def-package! evil-surround
@@ -489,6 +464,7 @@ the new algorithm is confusing, like in python or ruby."
         neo-confirm-create-file #'off-p
         neo-confirm-create-directory #'off-p
         neo-show-hidden-files nil
+        neo-keymap-style 'concise
         neo-hidden-regexp-list
         '(;; vcs folders
           "^\\.\\(git\\|hg\\|svn\\)$"
@@ -509,31 +485,7 @@ the new algorithm is confusing, like in python or ruby."
   (advice-add 'neo-buffer--execute :before #'+evil/before-neobuffer-execute)
 
   (evil-set-initial-state 'neotree-mode 'motion)
-
-  (push neo-buffer-name winner-boring-buffers)
-
-  ;; `neotree-mode-map' are overridden when the neotree buffer is created. So we
-  ;; bind them in a hook.
-  (add-hook 'neo-after-create-hook #'+evil|neotree-init-keymap)
-  (defun +evil|neotree-init-keymap (&rest _)
-    (map! :Lm "\\\\"     'evil-window-prev
-          :Lm "RET"      'neotree-enter
-          :Lm "TAB"      'neotree-stretch-toggle
-          :Lm "<return>" 'neotree-enter
-          :Lm "h"        '+evil/neotree-collapse-or-up
-          :Lm "L"        'neotree-enter
-          :Lm "l"        '+evil/neotree-expand-or-open
-          :Lm "ESC"      'neotree-hide
-          :Lm "q"        'neotree-hide
-          :Lm "k"        'neotree-previous-line
-          :Lm "j"        'neotree-next-line
-          :Lm "v"        'neotree-enter-vertical-split
-          :Lm "s"        'neotree-enter-horizontal-split
-          :Lm "c"        'neotree-create-node
-          :Lm "d"        'neotree-delete-node
-          :Lm "\C-r"     'neotree-refresh
-          :Lm "r"        'neotree-rename-node
-          :Lm "R"        'neotree-change-root)))
+  (push neo-buffer-name winner-boring-buffers))
 
 (def-package! evil-iedit-state
   :commands (evil-iedit-state evil-iedit-state/iedit-mode)

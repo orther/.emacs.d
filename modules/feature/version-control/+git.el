@@ -38,15 +38,7 @@
   (require 'magit-blame)
 
   ;; Force evil to rehash keybindings for the current state
-  (add-hook 'git-timemachine-mode-hook #'evil-force-normal-state)
-  (map! :map git-timemachine-mode-map
-        :nv "p" #'git-timemachine-show-previous-revision
-        :nv "n" #'git-timemachine-show-next-revision
-        :nv "g" #'git-timemachine-show-nth-revision
-        :nv "q" #'git-timemachine-quit
-        :nv "w" #'git-timemachine-kill-abbreviated-revision
-        :nv "W" #'git-timemachine-kill-revision
-        :nv "b" #'git-timemachine-blame))
+  (add-hook 'git-timemachine-mode-hook #'evil-force-normal-state))
 
 (def-package! magit
   :commands (magit-status magit-blame magit-log-buffer-file))

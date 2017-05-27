@@ -34,29 +34,10 @@
 
   (push #'company-sort-by-occurrence company-transformers)
 
-  (map! (:map company-active-map
-          ;; Don't interfere with `evil-delete-backward-word' in insert mode
-          "C-w"        nil
+  (after! yasnippet
+    (nconc company-backends '(company-yasnippet)))
 
-          "C-o"        #'company-search-kill-others
-          "C-j"        #'company-select-next
-          "C-k"        #'company-select-previous
-          "C-h"        #'company-quickhelp-manual-begin
-          "C-S-h"      #'company-show-doc-buffer
-          "C-S-s"      #'company-search-candidates
-          "C-s"        #'company-filter-candidates
-          [enter]      #'company-complete-common
-          "C-h"        #'company-quickhelp-manual-begin
-          [tab]        #'company-complete-common-or-cycle
-          [backtab]    #'company-select-previous
-          [escape]     (λ! (company-abort) (evil-normal-state 1)))
-
-        ;; Automatically applies to `company-filter-map'
-        (:map company-search-map
-          "C-j"        #'company-search-repeat-forward
-          "C-k"        #'company-search-repeat-backward
-          "C-s"        (λ! (company-search-abort) (company-filter-candidates))
-          [escape]     #'company-search-abort))
+  (global-company-mode +1))
 
 (def-package! company-statistics
   :after company
