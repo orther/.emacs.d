@@ -34,8 +34,8 @@ session)."
         ;; disable magic slash on non-match
         ivy-magic-slash-non-match-action nil)
 
-  (after! magit      (setq magit-completing-read-function #'ivy-completing-read))
-  (after! yasnippet  (push #'+ivy-yas-prompt yas-prompt-functions))
+  (after! magit     (setq magit-completing-read-function #'ivy-completing-read))
+  (after! yasnippet (push #'+ivy-yas-prompt yas-prompt-functions))
 
   (ivy-mode +1)
 
@@ -69,7 +69,6 @@ session)."
   :after ivy
   :config
   (require 'counsel-projectile)
-
   (setq counsel-find-file-ignore-regexp "\\(?:^[#.]\\)\\|\\(?:[#~]$\\)\\|\\(?:^Icon?\\)")
 
   ;; Configure `counsel-rg', `counsel-ag' & `counsel-pt'
