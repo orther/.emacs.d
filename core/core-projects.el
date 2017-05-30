@@ -37,6 +37,17 @@ state are passed in.")
                   ("html" "jade" "pug" "jsx" "tsx"))
                 projectile-other-file-alist))
 
+  ;; Fix projectile-recentf (correctly handle abbreviated file names)
+  (defun projectile-recentf-files ()
+    "Return a list of recently visited files in a project."
+    (and (boundp 'recentf-list)
+         (let ((project-root (abbreviate-file-name (projectile-project-root))))
+           (mapcar
+            (lambda (f) (file-relative-name f project-root))
+            (cl-remove-if-not
+             (lambda (f) (string-prefix-p project-root f))
+             recentf-list)))))
+
   ;; Projectile root-searching functions cause an endless loop on TRAMP
   ;; connections, so we disable them.
   (defun doom*projectile-locate-dominating-file (orig-fn &rest args)
