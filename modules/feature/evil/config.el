@@ -297,20 +297,7 @@ across windows."
              evil-indent-plus-i-indent-up-down
              evil-indent-plus-a-indent-up-down))
 
-
-(def-package! evil-matchit
-  :commands (evilmi-jump-items evilmi-text-object global-evil-matchit-mode)
-  :config (global-evil-matchit-mode 1)
-  :init
-  (map! [remap evil-jump-item]    #'+evil/matchit
-        [remap evilmi-jump-items] #'+evil/matchit
-        :textobj "%" #'evilmi-text-object #'evilmi-text-object)
-  :config
-  (defun +evil|simple-matchit ()
-    "A hook to force evil-matchit to favor simple bracket jumping. Helpful when
-the new algorithm is confusing, like in python or ruby."
-    (setq-local evilmi-always-simple-jump t))
-  (add-hook 'python-mode-hook #'+evil|simple-matchit))
+;; BMACS - removed evil-matchit
 
 (def-package! evil-mc
   :commands (evil-mc-make-cursor-here evil-mc-make-all-cursors

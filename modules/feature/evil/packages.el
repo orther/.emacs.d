@@ -9,7 +9,7 @@
 (package! evil-escape)
 (package! evil-exchange)
 (package! evil-indent-plus)
-(package! evil-matchit)
+;; BMACS - removed evil-matchit
 (package! evil-mc)
 (package! evil-numbers)
 (package! evil-textobj-anyblock)
