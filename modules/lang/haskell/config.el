@@ -16,7 +16,6 @@
 
   (push ".hi" completion-ignored-extensions)
 
-  (add-to-list 'company-backends 'company-ghc)
   (custom-set-variables '(company-ghc-show-info t))
 
   (autoload 'switch-to-haskell "inf-haskell" nil t)
