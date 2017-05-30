@@ -50,7 +50,7 @@
   :after company
   :config
   (setq company-quickhelp-delay nil)
-  (company-quickhelp-mode +1))
+  (company-quickhelp-mode +1)
 
   ;; TAB auto-completion in term buffers
   (after! comint

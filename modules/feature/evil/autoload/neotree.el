@@ -72,17 +72,3 @@
             (eq file-fn 'neo-open-file-vertical-split)
             (eq file-fn 'neo-open-file-horizontal-split))
     (setq +evil/neotree-opening-file t)))
-
-;;;###autoload
-(defun +evil/neotree-expand-or-open ()
-  "Expand or open a neotree node."
-  (interactive)
-  (when-let (node (neo-buffer--get-filename-current-line))
-    (if (file-directory-p node)
-        (progn
-          (neo-buffer--set-expand node t)
-          (neo-buffer--refresh t)
-          (when neo-auto-indent-point
-            (forward-line)
-            (neo-point-auto-indent)))
-      (call-interactively 'neotree-enter))))

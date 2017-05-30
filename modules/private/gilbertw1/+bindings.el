@@ -265,21 +265,233 @@
    :i "C-p"   (λ! (let ((company-selection-wrap-around t))
                     (call-interactively 'company-dabbrev-code)
                     (company-select-previous-or-abort))))
- ;; evil-visual-star
- :v  "*"   #'evil-visualstar/begin-search-forward
- :v  "#"   #'evil-visualstar/begin-search-backward
- ;; evil-surround
- :v  "s"   #'evil-surround-region
- :o  "S"   #'evil-surround-edit
- :o  "S"   #'evil-Surround-edit
- ;; evil-forward
- :niv "<C-i>" #'evil-jump-forward
 
  ;; help-mode
  (:map help-mode-map
    :n "]]"  #'help-go-forward
    :n "[["  #'help-go-back
-   :n "o"   #'ace-link-help))
+   :n "o"   #'ace-link-help)
+
+
+ ;; --- Plugin bindings ------------------------------
+ ;; auto-yasnippet
+ :i  [C-tab] #'aya-expand
+ :nv [C-tab] #'aya-create
+
+ ;; company-mode (+ vim-like omnicompletion)
+ :i "C-SPC"  #'+company/complete
+
+(:after company
+   (:map company-active-map
+     ;; Don't interfere with `evil-delete-backward-word' in insert mode
+     "C-w"        nil
+     "C-o"        #'company-search-kill-others
+     "C-n"        #'company-select-next
+     "C-p"        #'company-select-previous
+     "C-j"        #'company-select-next
+     "C-k"        #'company-select-previous
+     "C-h"        #'company-quickhelp-manual-begin
+     "C-S-h"      #'company-show-doc-buffer
+     "C-S-s"      #'company-search-candidates
+     "C-s"        #'company-filter-candidates
+     [enter]      #'company-complete-common
+     "C-h"        #'company-quickhelp-manual-begin
+     [tab]        #'company-complete-common-or-cycle
+     [backtab]    #'company-select-previous
+     [escape]     (λ! (company-abort) (evil-normal-state 1)))
+   ;; Automatically applies to `company-filter-map'
+   (:map company-search-map
+     "C-j"        #'company-search-repeat-forward
+     "C-k"        #'company-search-repeat-backward
+     "C-s"        (λ! (company-search-abort) (company-filter-candidates))
+     [escape]     #'company-search-abort))
+
+ ;; counsel
+ (:after counsel
+   :map counsel-ag-map
+   [backtab] #'+ivy/wgrep-occur  ; search/replace on results
+   "C-SPC"   #'counsel-git-grep-recenter   ; preview
+   "M-RET"   (+ivy-do-action! #'+ivy-git-grep-other-window-action))
+
+ ;; evil-commentary
+ :n  "gc" #'evil-commentary
+
+ ;; evil-exchange
+ :n  "gx" #'evil-exchange
+
+ ;; evil-matchit
+ :nv [tab] #'+evil/matchit-or-toggle-fold
+
+ ;; evil-mc
+ :v  "R"   #'evil-mc-make-all-cursors
+ :nv "M-d" #'evil-mc-make-and-goto-next-match
+ :nv "M-D" #'evil-mc-make-and-goto-prev-match
+ (:prefix "gz"
+   :nv "m" #'evil-mc-make-all-cursors
+   :nv "u" #'evil-mc-undo-all-cursors
+   :nv "z" #'+evil/mc-toggle-cursors
+   :nv "c" #'+evil/mc-make-cursor-here
+   :nv "n" #'evil-mc-make-and-goto-next-cursor
+   :nv "p" #'evil-mc-make-and-goto-prev-cursor
+   :nv "N" #'evil-mc-make-and-goto-last-cursor
+   :nv "P" #'evil-mc-make-and-goto-first-cursor)
+ (:after evil-mc
+   :map evil-mc-key-map
+   :nv "C-n" #'evil-mc-make-and-goto-next-cursor
+   :nv "C-N" #'evil-mc-make-and-goto-last-cursor
+   :nv "C-p" #'evil-mc-make-and-goto-prev-cursor
+   :nv "C-P" #'evil-mc-make-and-goto-first-cursor)
+
+ ;; evil-snipe
+ (:after evil-snipe
+   ;; Binding to switch to evil-easymotion/avy after a snipe
+   :map evil-snipe-parent-transient-map
+   "C-;" (λ! (require 'evil-easymotion)
+             (call-interactively +evil--snipe-repeat-fn)))
+
+ ;; evil-surround
+ :v  "S"  #'evil-surround-region
+ :o  "s"  #'evil-surround-edit
+ :o  "S"  #'evil-Surround-edit
+
+ ;; expand-region
+ :v  "v"  #'er/expand-region
+ :v  "V"  #'er/contract-region
+
+ ;; flycheck
+ :m  "]e" #'next-error
+ :m  "[e" #'previous-error
+ (:after flycheck
+   :map flycheck-error-list-mode-map
+   :n "C-n" #'flycheck-error-list-next-error
+   :n "C-p" #'flycheck-error-list-previous-error
+   :n "j"   #'flycheck-error-list-next-error
+   :n "k"   #'flycheck-error-list-previous-error
+   :n "RET" #'flycheck-error-list-goto-error)
+
+ ;; flyspell
+ :m  "]S" #'flyspell-correct-word-generic
+ :m  "[S" #'flyspell-correct-previous-word-generic
+
+ ;; git-gutter
+ :m  "]d" #'git-gutter:next-hunk
+ :m  "[d" #'git-gutter:previous-hunk
+
+ ;; git-timemachine
+ (:after git-timemachine
+   (:map git-timemachine-mode-map
+     :nv "p" #'git-timemachine-show-previous-revision
+     :nv "n" #'git-timemachine-show-next-revision
+     :nv "g" #'git-timemachine-show-nth-revision
+     :nv "q" #'git-timemachine-quit
+     :nv "w" #'git-timemachine-kill-abbreviated-revision
+     :nv "W" #'git-timemachine-kill-revision
+     :nv "b" #'git-timemachine-blame))
+
+ ;; gist
+ (:after gist
+   :map gist-list-menu-mode-map
+   :n "RET" #'+gist/open-current
+   :n "b"   #'gist-browse-current-url
+   :n "c"   #'gist-add-buffer
+   :n "d"   #'gist-kill-current
+   :n "f"   #'gist-fork
+   :n "q"   #'quit-window
+   :n "r"   #'gist-list-reload
+   :n "s"   #'gist-star
+   :n "S"   #'gist-unstar
+   :n "y"   #'gist-print-current-url)
+
+ ;; hl-todo
+ :m  "]t" #'hl-todo-next
+ :m  "[t" #'hl-todo-previous
+
+ ;; ivy
+ (:after ivy
+   :map ivy-minibuffer-map
+   [escape] #'keyboard-escape-quit
+   "C-y" #'yank
+   "M-v" #'yank
+   "M-z" #'undo
+   "C-r" #'evil-paste-from-register
+   "C-h" (kbd "DEL")
+   "C-k" #'ivy-previous-line
+   "C-j" #'ivy-next-line
+   "C-l" #'ivy-alt-done
+   "C-w" #'+ivy/backward-kill-word
+   "C-u" #'doom/minibuffer-kill-line
+   "C-b" #'backward-word
+   "C-f" #'forward-word
+   "C-o" #'ivy-dispatching-done
+   "<C-return>" #'ivy-immediate-done)
+
+(:map ivy-occur-grep-mode-map
+  (:desc "ivy occur actions"
+    :prefix ","
+    :desc "switch to ivy wgrep mode"    :n "," 'ivy-wgrep-change-to-wgrep-mode
+    :desc "switch to ivy wgrep mode"    :n "w" 'ivy-wgrep-change-to-wgrep-mode))
+
+ ;; neotree
+ (:after neotree
+   :map neotree-mode-map
+   :n "g"         nil
+   :n [tab]       #'neotree-quick-look
+   :n "RET"       #'neotree-enter
+   :n [backspace] #'evil-window-prev
+   :n "j"         #'neotree-next-line
+   :n "k"         #'neotree-previous-line
+   :n "n"         #'neotree-next-line
+   :n "p"         #'neotree-previous-line
+   :n "h"         #'+evil/neotree-collapse-or-up
+   :n "l"         #'+evil/neotree-expand-or-open
+   :n "J"         #'neotree-select-next-sibling-node
+   :n "K"         #'neotree-select-previous-sibling-node
+   :n "H"         #'neotree-select-up-node
+   :n "L"         #'neotree-select-down-node
+   :n "G"         #'evil-goto-line
+   :n "gg"        #'evil-goto-first-line
+   :n "v"         #'neotree-enter-vertical-split
+   :n "s"         #'neotree-enter-horizontal-split
+   :n "q"         #'neotree-hide
+   :n "R"         #'neotree-refresh)
+
+ ;; realgud
+ (:after realgud
+   :map realgud:shortkey-mode-map
+   :n "j" #'evil-next-line
+   :n "k" #'evil-previous-line
+   :n "h" #'evil-backward-char
+   :n "l" #'evil-forward-char
+   :m "n" #'realgud:cmd-next
+   :m "b" #'realgud:cmd-break
+   :m "B" #'realgud:cmd-clear
+   :n "c" #'realgud:cmd-continue)
+
+ ;; rotate-text
+ :n  "!"  #'rotate-text
+
+ ;; smart-forward
+ :nv "K"  #'smart-up
+ :m  "g]" #'smart-forward
+ :m  "g[" #'smart-backward
+
+ ;; undo-tree -- undo/redo for visual regions
+ :v "C-u" #'undo-tree-undo
+ :v "C-r" #'undo-tree-redo
+
+ ;; yasnippet
+ (:after yasnippet
+   (:map yas-keymap
+     "C-e"           #'+snippets/goto-end-of-field
+     "C-a"           #'+snippets/goto-start-of-field
+     "<M-right>"     #'+snippets/goto-end-of-field
+     "<M-left>"      #'+snippets/goto-start-of-field
+     "<M-backspace>" #'+snippets/delete-to-start-of-field
+     [escape]        #'evil-normal-state
+     [backspace]     #'+snippets/delete-backward-char
+     [delete]        #'+snippets/delete-forward-char-or-field)
+   (:map yas-minor-mode-map
+     :i "M-SPC" yas-maybe-expand)))
 
 
 ;;
