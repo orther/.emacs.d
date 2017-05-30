@@ -299,7 +299,7 @@ across windows."
 
 ;; BMACS - removed evil-matchit
 
-(def-package! evil-mc
+(def-package! evil-mc :demand t
   :commands (evil-mc-make-cursor-here evil-mc-make-all-cursors
              evil-mc-undo-all-cursors evil-mc-pause-cursors
              evil-mc-resume-cursors evil-mc-make-and-goto-first-cursor
@@ -312,8 +312,9 @@ across windows."
              evil-mc-make-and-goto-next-match evil-mc-skip-and-goto-next-match
              evil-mc-skip-and-goto-next-match evil-mc-make-and-goto-prev-match
              evil-mc-skip-and-goto-prev-match)
-  :init
-  (defvar evil-mc-key-map (make-sparse-keymap))
+  ;; BMACS - don't override default keybindings
+  ;; :init
+  ;; (defvar evil-mc-key-map (make-sparse-keymap))
   :config
   (global-evil-mc-mode +1)
 

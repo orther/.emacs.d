@@ -21,50 +21,27 @@
  "M-;"    #'eval-expression
  "A-;"    #'eval-expression
  ;; Tools
- [f9]     #'doom/what-face
- [f10]    #'doom/blink-cursor
  "C-`"    #'doom/popup-toggle
  ;; Text-scaling
  "M-0"    (λ! (text-scale-set 0))
  "M-="    #'text-scale-increase
  "M--"    #'text-scale-decrease
- ;; Simple window navigation/manipulation
- ;"M-w"    'delete-window
- ;"M-W"    'delete-frame
- ;"M-n"    'evil-buffer-new
- ;"M-N"    'make-frame
- ;"C-j"    'evil-window-down
- ;"C-k"    'evil-window-up
- ;"C-h"    'evil-window-left
- ;"C-l"    'evil-window-right
- ;; Basic escape keys for emacs mode
-; :e "C-h" 'evil-window-left
-; :e "C-j" 'evil-window-down
-; :e "C-k" 'evil-window-up
-; :e "C-l" 'evil-window-right
  ;; Temporary escape into emacs mode
  :e [C-escape] #'evil-normal-state
  :n [C-escape] #'evil-emacs-state
- :e "M-w" #'kill-ring-save
 
  "M-r"  #'+eval/buffer
  "M-b"  #'+eval/build
 
- [M-backspace]  #'doom/backward-kill-to-bol-and-indent
- "M-a"          #'mark-whole-buffer
- "M-c"          #'evil-yank
- "M-q"          #'save-buffers-kill-emacs
- "M-s"          #'save-buffer
- "M-v"          #'clipboard-yank
- "C-M-f"        #'doom/toggle-fullscreen
  :nvi "TAB"     #'indent-for-tab-command
 
   ;;; <leader> and <localleader>
   :m ";" #'evil-ex
   (:leader
     ;; common
-    :desc "Blink cursor line"          :nv "SPC" #'doom/blink-cursor
+    :desc "Blink cursor line"          :nv "SPC" #'+doom/blink-cursor
     :desc "Counsel M-x"                :nv ":" #'counsel-M-x
+    :desc "Eval expr"                  :nv ";" #'eval-expression
     :desc "Run shell command"          :nv "!" #'shell-command
     :desc "Find file in project"       :nv "/" #'counsel-projectile-rg
     :desc "Find file from here"        :nv "?" #'counsel-rg
@@ -97,6 +74,7 @@
 
     (:desc "buffer"
       :prefix "b"
+      :desc "Select entire buffer"     :nv "a" #'mark-whole-buffer
       :desc "Switch workspace buffer"  :nv "b" #'+ivy/switch-workspace-buffer
       :desc "Switch buffer"            :nv "B" #'+ivy/switch-buffer
       :desc "Kill buffer"              :nv "d" #'kill-this-buffer
@@ -110,7 +88,7 @@
 
     (:desc "ivy"
       :prefix "i"
-      :desc "Ivy resumt"               :nv "r" #'ivy-resume)
+      :desc "Ivy resume"               :nv "r" #'ivy-resume)
 
     (:desc "project"
       :prefix "p"
@@ -225,7 +203,6 @@
  :nv "L"  #'evil-last-non-blank
  ;; search avy goto
  :nv "C-f"  #'avy-goto-char-timer
- :nv "/" #'swiper
  ;; evil commentary
  :nv "gc" #'evil-commentary
 
@@ -319,29 +296,6 @@
  ;; evil-exchange
  :n  "gx" #'evil-exchange
 
- ;; evil-matchit
- :nv [tab] #'+evil/matchit-or-toggle-fold
-
- ;; evil-mc
- :v  "R"   #'evil-mc-make-all-cursors
- :nv "M-d" #'evil-mc-make-and-goto-next-match
- :nv "M-D" #'evil-mc-make-and-goto-prev-match
- (:prefix "gz"
-   :nv "m" #'evil-mc-make-all-cursors
-   :nv "u" #'evil-mc-undo-all-cursors
-   :nv "z" #'+evil/mc-toggle-cursors
-   :nv "c" #'+evil/mc-make-cursor-here
-   :nv "n" #'evil-mc-make-and-goto-next-cursor
-   :nv "p" #'evil-mc-make-and-goto-prev-cursor
-   :nv "N" #'evil-mc-make-and-goto-last-cursor
-   :nv "P" #'evil-mc-make-and-goto-first-cursor)
- (:after evil-mc
-   :map evil-mc-key-map
-   :nv "C-n" #'evil-mc-make-and-goto-next-cursor
-   :nv "C-N" #'evil-mc-make-and-goto-last-cursor
-   :nv "C-p" #'evil-mc-make-and-goto-prev-cursor
-   :nv "C-P" #'evil-mc-make-and-goto-first-cursor)
-
  ;; evil-snipe
  (:after evil-snipe
    ;; Binding to switch to evil-easymotion/avy after a snipe
@@ -350,7 +304,7 @@
              (call-interactively +evil--snipe-repeat-fn)))
 
  ;; evil-surround
- :v  "S"  #'evil-surround-region
+ :v  "s"  #'evil-surround-region
  :o  "s"  #'evil-surround-edit
  :o  "S"  #'evil-Surround-edit
 
@@ -366,7 +320,7 @@
    :n "C-n" #'flycheck-error-list-next-error
    :n "C-p" #'flycheck-error-list-previous-error
    :n "j"   #'flycheck-error-list-next-error
-   :n "k"   #'flycheck-error-list-previous-error
+
    :n "RET" #'flycheck-error-list-goto-error)
 
  ;; flyspell
@@ -501,17 +455,43 @@
 ;; This section is dedicated to "fixing" certain keys so that they behave
 ;; properly, more like vim, or how I like it.
 
-(map! (:unless window-system "TAB" [tab]) ; Fix TAB in terminal
+(map! (:map input-decode-map
+        [?\C-i] [C-i]
+        [S-iso-lefttab] [backtab]
+        (:unless window-system "TAB" [tab])) ; Fix TAB in terminal
+
+      :niv "<C-i>" #'evil-jump-forward
 
       ;; I want C-a and C-e to be a little smarter. C-a will jump to
       ;; indentation. Pressing it again will send you to the true bol. Same goes
-      ;; for C-e, except it will ignore comments and trailing whitespace.
+      ;; for C-e, except it will ignore comments and trailing whitespace before
+      ;; jumping to eol.
       :i "C-a" #'doom/backward-to-bol-or-indent
       :i "C-e" #'doom/forward-to-last-non-comment-or-eol
       :i "C-u" #'doom/backward-kill-to-bol-and-indent
 
-      ;; escape from insert mode (more responsive than using key-chord-define)
-      :irv "C-g" #'evil-normal-state
+      ;; textmate-esque newline insertion
+      :i [C-return]     #'evil-open-below
+      :i [S-C-return]   #'evil-open-above
+      ;; textmate-esque deletion
+      [C-backspace]     #'doom/backward-kill-to-bol-and-indent
+      :i [backspace]    #'delete-backward-char
+      :i [C-backspace]  #'doom/backward-kill-to-bol-and-indent
+      ;; Emacsien motions for insert mode
+      :i "C-b" #'backward-word
+      :i "C-f" #'forward-word
+
+      ;; Highjacks space/backspace to:
+      ;;   a) balance spaces inside brackets/parentheses ( | ) -> (|)
+      ;;   b) delete space-indented blocks intelligently
+      ;;   c) do none of this when inside a string
+      :i "SPC"                          #'doom/inflate-space-maybe
+      :i [remap delete-backward-char]   #'doom/deflate-space-maybe
+      :i [remap newline]                #'doom/newline-and-indent
+
+      (:after org-mode
+        (:map org-mode-map
+          :i [remap doom/inflate-space-maybe] #'org-self-insert-command))
 
       ;; Make ESC quit all the things
       (:map (minibuffer-local-map
@@ -523,24 +503,19 @@
         "C-r" #'evil-paste-from-register)
 
       (:map messages-buffer-mode-map
-        "M-;"  #'eval-expression
-        "A-;"  #'eval-expression)
+        "M-;" #'eval-expression
+        "A-;" #'eval-expression)
+
+      (:map tabulated-list-mode-map
+        [remap evil-record-macro] #'doom/popup-close-maybe)
 
       (:map (evil-ex-completion-map evil-ex-search-keymap read-expression-map)
         "C-a" #'move-beginning-of-line
-        "C-w" #'backward-kill-word
-        "C-u" #'backward-kill-sentence
+        "C-w" #'doom/minibuffer-kill-word
+        "C-u" #'doom/minibuffer-kill-line
         "C-b" #'backward-word
-        "C-f" #'forward-word)
+        "C-f" #'forward-word
+        "M-z" #'doom/minibuffer-undo)
 
       (:after view
-        (:map view-mode-map "<escape>" 'View-quit-all))
-
-      (:after help-mode
-        (:map help-map
-          ;; Remove slow/annoying help subsections
-          "h" nil
-          "g" nil)))
-
-
-
+        (:map view-mode-map "<escape>" #'View-quit-all)))
