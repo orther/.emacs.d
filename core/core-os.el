@@ -11,7 +11,7 @@
   (fset 'evil-visual-update-x-selection 'ignore))
 
 (cond
- (IS-MAC 
+ (IS-MAC
    (unless window-system
      (setq interprogram-cut-function
            (lambda (text &optional push)
@@ -22,7 +22,7 @@
 
  (IS-LINUX
    (progn
-     (setq x-select-enable-clipboard t)
+     (setq select-enable-clipboard t)
      (defun xsel-cut-function (text &optional push)
        (with-temp-buffer
          (insert text)

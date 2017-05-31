@@ -58,12 +58,6 @@ limit to buffers in the current workspace."
             :keymap ivy-switch-buffer-map
 :caller '+ivy/switch-workspace-buffer))
 
-;;;###autoload
-(defun +ivy/switch-workspace-buffer (&optional other-window-p)
-  "Switch to an open buffer in the current workspace."
-  (interactive "P")
-  (+ivy/switch-buffer other-window-p t))
-
 ;; TODO refactor ivy task candidate functions (messy!)
 (defun +ivy--tasks-candidates (tasks)
   "Generate a list of task tags (specified by `+ivy-task-tags') for

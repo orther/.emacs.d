@@ -29,10 +29,7 @@
  ;; Temporary escape into emacs mode
  :e [C-escape] #'evil-normal-state
  :n [C-escape] #'evil-emacs-state
-
- "M-r"  #'+eval/buffer
- "M-b"  #'+eval/build
-
+ ;; Indent on tab
  :nvi "TAB"     #'indent-for-tab-command
 
   ;;; <leader> and <localleader>
@@ -51,7 +48,8 @@
     :desc "Ace window"                 :nv "W" #'ace-window
     :desc "Pop terminal"               :nv "'" #'+term/popup
 
-    ;; Eyebrowse
+    ;; eyebrowse quick top-level
+    :desc "Switch to last eyespace"    :nv "DEL" #'eyebrowse-last-window-config
     :desc "Eyespace 1"                 :nv "1" #'eyebrowse-switch-to-window-config-1
     :desc "Eyespace 2"                 :nv "2" #'eyebrowse-switch-to-window-config-2
     :desc "Eyespace 3"                 :nv "3" #'eyebrowse-switch-to-window-config-3
@@ -96,6 +94,20 @@
       ;; TODO spacemacs/copy-whole-buffer-to-clipboard y
       ;; TODO spacemacs/paste-whole-file-to-clipboard p
       )
+
+    (:desc "eyebrowse"
+      :prefix "e"
+      :desc "Switch to last eyespace"    :nv "TAB" #'eyebrowse-last-window-config
+      :desc "Close eyespace"             :nv "d" #'eyebrowse-close-window-config
+      :desc "Eyespace 1"                 :nv "1" #'eyebrowse-switch-to-window-config-1
+      :desc "Eyespace 2"                 :nv "2" #'eyebrowse-switch-to-window-config-2
+      :desc "Eyespace 3"                 :nv "3" #'eyebrowse-switch-to-window-config-3
+      :desc "Eyespace 4"                 :nv "4" #'eyebrowse-switch-to-window-config-4
+      :desc "Eyespace 5"                 :nv "5" #'eyebrowse-switch-to-window-config-5
+      :desc "Eyespace 6"                 :nv "6" #'eyebrowse-switch-to-window-config-6
+      :desc "Eyespace 7"                 :nv "7" #'eyebrowse-switch-to-window-config-7
+      :desc "Eyespace 8"                 :nv "8" #'eyebrowse-switch-to-window-config-8
+      :desc "Eyespace 9"                 :nv "9" #'eyebrowse-switch-to-window-config-9)
 
     (:desc "ivy"
       :prefix "i"
@@ -161,6 +173,8 @@
       :desc "Git blame"               :nv "b" #'magit-blame
       :desc "Git time machine"        :nv "t" #'git-timemachine
       :desc "Git log file"            :nv "l" #'magit-log-buffer-file
+      :desc "Show and copy git link"  :nv "y" #'git-link
+      :desc "Open git link"           :nv "o" #'+vcs/git-browse
       (:desc "gist"
         :prefix "g"
         :desc "Gist from buffer"         :nv "b" #'gist-buffer
@@ -214,8 +228,6 @@
  :nv "L"  #'evil-last-non-blank
  ;; search avy goto
  :nv "C-f"  #'avy-goto-char-timer
- ;; evil commentary
- :nv "gc" #'evil-commentary
 
  (:map evil-window-map ; prefix "C-w"
    ;; Navigation
@@ -238,28 +250,11 @@
    ;; Delete window
    "C-C"     #'ace-delete-window)
 
- ;;; Plugins
- ;; company-mode (+ vim-like omnicompletion)
- :i "C-SPC" #'+company/complete
- (:prefix "C-x"
-   :i "C-l"   #'+company/whole-lines
-   :i "C-k"   #'+company/dict-or-keywords
-   :i "C-f"   #'company-files
-   :i "C-]"   #'company-tags
-   :i "s"     #'company-ispell
-   :i "C-s"   #'company-yasnippet
-   :i "C-o"   #'company-capf
-   :i "C-n"   #'company-dabbrev-code
-   :i "C-p"   (λ! (let ((company-selection-wrap-around t))
-                    (call-interactively 'company-dabbrev-code)
-                    (company-select-previous-or-abort))))
-
  ;; help-mode
  (:map help-mode-map
    :n "]]"  #'help-go-forward
    :n "[["  #'help-go-back
    :n "o"   #'ace-link-help)
-
 
  ;; --- Plugin bindings ------------------------------
  ;; auto-yasnippet
