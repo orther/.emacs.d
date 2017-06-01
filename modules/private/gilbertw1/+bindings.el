@@ -431,9 +431,10 @@
  :n  "!"  #'rotate-text
 
  ;; smart-forward
- :nv "K"  #'smart-up
- :m  "g]" #'smart-forward
- :m  "g[" #'smart-backward
+ :nv "C-k"  #'smart-up
+ :nv "C-j"  #'smart-down
+ :m  "C-l" #'smart-forward
+ :m  "C-S-h" #'smart-backward
 
  ;; undo-tree -- undo/redo for visual regions
  :v "C-u" #'undo-tree-undo
@@ -442,6 +443,7 @@
  ;; yasnippet
  (:after yasnippet
    (:map yas-keymap
+     [tab]           #'yas-next-field
      "C-e"           #'+snippets/goto-end-of-field
      "C-a"           #'+snippets/goto-start-of-field
      "<M-right>"     #'+snippets/goto-end-of-field
