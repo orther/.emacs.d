@@ -44,7 +44,7 @@ produces an url. Used by `+jump/online'.")
 ;;
 
 (def-package! dumb-jump
-  :commands (dumb-jump-go dumb-jump-quick-look dumb-jump-back)
+  :commands (dumb-jump-go dumb-jump-go-other-window dumb-jump-quick-look dumb-jump-back)
   :config
   (setq dumb-jump-default-project doom-emacs-dir
         dumb-jump-aggressive nil

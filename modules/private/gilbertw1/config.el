@@ -17,7 +17,12 @@
 
 ;; Override vc modified color (gray -> yellow)
 (custom-set-faces
-  '(diff-hl-change ((t (:foreground "#ECBE7B"))))
-  '(git-gutter:modified ((t (:foreground "#ECBE7B"))))
-  '(git-gutter+-modified ((t (:foreground "#ECBE7B"))))
+  '(diff-hl-change         ((t (:foreground "#ECBE7B"))))
+  '(git-gutter:modified    ((t (:foreground "#ECBE7B"))))
+  '(git-gutter+-modified   ((t (:foreground "#ECBE7B"))))
   '(git-gutter-fr:modified ((t (:foreground "#ECBE7B")))))
+
+;; Override smerge colors
+(custom-set-faces
+  '(smerge-refined-removed ((t (:inherit 'smerge-mine))))
+  '(smerge-refined-added   ((t (:inherit 'smerge-other)))))

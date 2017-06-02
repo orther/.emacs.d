@@ -202,6 +202,16 @@
      :desc "Open/Send to REPL"        :nv "r" #'+eval/repl
      :desc "Open debugger"            :nv  "R" #'+debug/open))
 
+ ;; Works when I accidentally use tmux bindings
+ (:desc "tmux emulation"
+   :prefix "C-b"
+   :desc "Window left"             :nv "h" #'evil-window-left
+   :desc "Window down"             :nv "j" #'evil-window-down
+   :desc "Window right"            :nv "l" #'evil-window-right
+   :desc "Window up"               :nv "k" #'evil-window-up
+   :desc "Delete current window"   :nv "x" #'delete-window
+   :desc "Split window vertical"   :nv "/" #'split-window-right
+   :desc "Split window horizontal" :nv "-" #'split-window-below)
 
  ;;; Evil-esque bindings
  ;;; indent on new line
