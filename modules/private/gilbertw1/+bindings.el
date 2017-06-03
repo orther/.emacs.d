@@ -175,6 +175,7 @@
       :desc "Git log file"            :nv "l" #'magit-log-buffer-file
       :desc "Show and copy git link"  :nv "y" #'git-link
       :desc "Open git link"           :nv "o" #'+vcs/git-browse
+      :desc "Delete git index lock"   :nv "X" #'+gilbertw1/delete-git-index-lock
       (:desc "gist"
         :prefix "g"
         :desc "Gist from buffer"         :nv "b" #'gist-buffer
