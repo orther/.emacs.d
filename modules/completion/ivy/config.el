@@ -35,23 +35,10 @@ session)."
         ;; disable magic slash on non-match
         ivy-magic-slash-non-match-action nil)
 
-  (after! magit      (setq magit-completing-read-function #'ivy-completing-read))
-  (after! yasnippet  (push #'+ivy-yas-prompt yas-prompt-functions))
+  (after! magit     (setq magit-completing-read-function #'ivy-completing-read))
+  (after! yasnippet (push #'+ivy-yas-prompt yas-prompt-functions))
 
   (ivy-mode +1)
-
-  (map! :map ivy-minibuffer-map
-        [escape] #'keyboard-escape-quit
-        "M-v" #'yank
-        "M-z" #'undo
-        "C-r" #'evil-paste-from-register
-        "C-k" #'ivy-previous-line
-        "C-j" #'ivy-next-line
-        "C-l" #'ivy-alt-done
-        "C-w" #'+ivy/backward-kill-word
-        "C-u" #'doom/minibuffer-kill-line
-        "C-b" #'backward-word
-        "C-f" #'forward-word)
 
   (map! :map ivy-mode-map
         [remap describe-face]             #'counsel-describe-face
@@ -88,7 +75,6 @@ session)."
   :after ivy
   :config
   (require 'counsel-projectile)
-
   (setq counsel-find-file-ignore-regexp "\\(?:^[#.]\\)\\|\\(?:[#~]$\\)\\|\\(?:^Icon?\\)")
 
   ;; Configure `counsel-rg', `counsel-ag' & `counsel-pt'
@@ -98,11 +84,6 @@ session)."
     (ivy-add-actions
      cmd
      '(("O" +ivy-git-grep-other-window-action "open in other window"))))
-
-  (map! :map counsel-ag-map
-        [backtab] #'+ivy/wgrep-occur  ; search/replace on results
-        "C-SPC"   #'counsel-git-grep-recenter   ; preview
-        "M-RET"   (+ivy-do-action! #'+ivy-git-grep-other-window-action))
 
   (advice-add #'counsel-ag-function :override #'+ivy*counsel-ag-function))
 

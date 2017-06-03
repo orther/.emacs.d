@@ -12,9 +12,10 @@
 
 ;; Editing
 (ex! "@"            #'+evil:macro-on-all-lines)   ; TODO Test me
+(ex! "al[ign]"      #'+evil:align)
 (ex! "enhtml"       #'+web:encode-html-entities)
 (ex! "dehtml"       #'+web:decode-html-entities)
-(ex! "ie[dit]"      #'evil-multiedit-ex-match)
+(ex! "mc"           #'+evil:mc)
 (ex! "na[rrow]"     #'+evil:narrow-buffer)
 (ex! "retab"        #'+evil:retab)
 
@@ -68,6 +69,7 @@
 (ex! "todo"        #'+ivy:todo)
 
 ;; File operations
+(ex! "cp"          #'+evil:copy-this-file)
 (ex! "mv"          #'+evil:move-this-file)
 (ex! "rm"          #'+evil:delete-this-file)
 

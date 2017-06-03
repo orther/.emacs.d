@@ -66,7 +66,7 @@
   (dolist (mode '(help-mode debugger-mode))
     (evil-set-initial-state mode 'normal))
 
-  ;; make `try-expand-dabbrev' from `hippie-expand' work in mini-buffer
+  ;; make `try-expand-dabbrev' from `hippie-expand' work in minibuffer
   ;; @see `he-dabbrev-beg', so we need re-define syntax for '/'
   (defun minibuffer-inactive-mode-hook-setup ()
     (set-syntax-table (let* ((table (make-syntax-table)))
@@ -74,22 +74,20 @@
                         table)))
   (add-hook 'minibuffer-inactive-mode-hook #'minibuffer-inactive-mode-hook-setup)
 
-  (defsubst +evil--textobj (key inner-fn &optional outer-fn)
-    "Define a text object."
-    (declare (indent defun))
-    (define-key evil-inner-text-objects-map key inner-fn)
-    (define-key evil-outer-text-objects-map key (or outer-fn inner-fn)))
-
 
   ;; --- keybind fixes ----------------------
-  (map! ;; undo/redo for visual regions
-        :v "C-u" #'undo-tree-undo
-        :v "C-r" #'undo-tree-redo
-
-        (:after wgrep
+  (map! (:after wgrep
           ;; a wrapper that invokes `wgrep-mark-deletion' across lines
           ;; you use `evil-delete' on.
-          :map wgrep-mode-map [remap evil-delete] #'+evil-delete))
+          :map wgrep-mode-map [remap evil-delete] #'+evil-delete)
+
+        ;; replace native folding commands
+        :n "zo" #'+evil/fold-open
+        :n "zO" #'+evil/fold-open
+        :n "zc" #'+evil/fold-close
+        :n "za" #'+evil/fold-toggle
+        :n "zr" #'+evil/fold-open-all
+        :n "zm" #'+evil/fold-close-all)
 
 
   ;; --- evil hacks -------------------------
@@ -130,41 +128,27 @@ across windows."
   (advice-add #'evil-ex-replace-special-filenames
               :override #'+evil*ex-replace-special-filenames)
 
-  ;; By default :g[lobal] doesn't highlight matches in the current buffer. I've
-  ;; got to write my own argument type and interactive code to get it to do so.
-  ;; While I'm at it, I use this to write an :al[ign] command as a wrapper
-  ;; around `align-regexp'.
-
-  ;; TODO Must be simpler way to do this
+  ;; These arg types will highlight matches in the current buffer
   (evil-ex-define-argument-type buffer-match :runner +evil-ex-buffer-match)
   (evil-ex-define-argument-type global-match :runner +evil-ex-global-match)
 
+  ;; By default :g[lobal] doesn't highlight matches in the current buffer. I've
+  ;; got to write my own argument type and interactive code to get it to do so.
+  (evil-ex-define-argument-type global-delim-match :runner +evil-ex-global-delim-match)
+
+  (dolist (sym '(evil-ex-global evil-ex-global-inverted))
+    (evil-set-command-property sym :ex-arg 'global-delim-match))
+
+  ;; Other commands can make use of this
   (evil-define-interactive-code "<//>"
     :ex-arg buffer-match (list (when (evil-ex-p) evil-ex-argument)))
-  (evil-define-interactive-code "<g//>"
-    :ex-arg global-match (when (evil-ex-p) (evil-ex-parse-global evil-ex-argument)))
+  (evil-define-interactive-code "<//g>"
+    :ex-arg global-match (list (when (evil-ex-p) evil-ex-argument)))
 
-  (evil-define-operator +evil:global (beg end pattern command &optional invert)
-    "Rewritten :g[lobal] that will highlight buffer matches. Takes the same arguments."
-    :motion mark-whole-buffer :move-point nil
-    (interactive "<r><g//><!>")
-    (evil-ex-global beg end pattern command invert))
-
-  (evil-define-operator +evil:align (&optional beg end bang pattern)
-    "Ex interface to `align-regexp'. Accepts vim-style regexps."
-    (interactive "<r><!><//>")
-    (align-regexp
-     beg end
-     (concat "\\(\\s-*\\)"
-             (if bang
-                 (regexp-quote pattern)
-               (evil-transform-vim-style-regexp pattern)))
-     1 1))
-
-  ;; Must be aggressively defined here, otherwise the above highlighting won't
-  ;; work on first invocation
-  (evil-ex-define-cmd "g[lobal]" #'+evil:global)
-  (evil-ex-define-cmd "al[ign]"  #'+evil:align)
+  (evil-set-command-properties
+   '+evil:align :move-point t :ex-arg 'buffer-match :ex-bang t :evil-mc t :keep-visual t :suppress-operator t)
+  (evil-set-command-properties
+   '+evil:mc :move-point nil :ex-arg 'global-match :ex-bang t :evil-mc t)
 
   ;; Move to new split -- setting `evil-split-window-below' &
   ;; `evil-vsplit-window-right' to non-nil mimics this, but that doesn't update
@@ -183,8 +167,7 @@ across windows."
 (def-package! evil-args
   :commands (evil-inner-arg evil-outer-arg
              evil-forward-arg evil-backward-arg
-             evil-jump-out-args)
-  :init (+evil--textobj "a" #'evil-inner-arg #'evil-outer-arg))
+             evil-jump-out-args))
 
 
 (def-package! evil-commentary
@@ -196,21 +179,6 @@ across windows."
   :defer 1
   :commands evilem-define
   :config
-  (let ((prefix "g SPC"))
-    (evilem-default-keybindings prefix)
-    (evilem-define (kbd (concat prefix " n")) #'evil-ex-search-next)
-    (evilem-define (kbd (concat prefix " N")) #'evil-ex-search-previous)
-    (evilem-define (kbd (concat prefix " s")) 'evil-snipe-repeat
-                   :pre-hook (save-excursion (call-interactively #'evil-snipe-s))
-                   :bind ((evil-snipe-scope 'buffer)
-                          (evil-snipe-enable-highlight)
-                          (evil-snipe-enable-incremental-highlight)))
-    (evilem-define (kbd (concat prefix " S")) #'evil-snipe-repeat-reverse
-                   :pre-hook (save-excursion (call-interactively #'evil-snipe-s))
-                   :bind ((evil-snipe-scope 'buffer)
-                          (evil-snipe-enable-highlight)
-                          (evil-snipe-enable-incremental-highlight))))
-
   (defvar +evil--snipe-repeat-fn
     (evilem-create #'evil-snipe-repeat
                    :bind ((evil-snipe-scope 'whole-buffer)
@@ -301,58 +269,22 @@ across windows."
              evil-indent-plus-i-indent-up
              evil-indent-plus-a-indent-up
              evil-indent-plus-i-indent-up-down
-             evil-indent-plus-a-indent-up-down)
-  :init
-  (+evil--textobj "i" #'evil-indent-plus-i-indent #'evil-indent-plus-a-indent)
-  (+evil--textobj "I" #'evil-indent-plus-i-indent-up #'evil-indent-plus-a-indent-up)
-  (+evil--textobj "J" #'evil-indent-plus-i-indent-up-down #'evil-indent-plus-a-indent-up-down))
+             evil-indent-plus-a-indent-up-down))
 
 
 (def-package! evil-matchit
   :commands (evilmi-jump-items evilmi-text-object global-evil-matchit-mode)
   :config (global-evil-matchit-mode 1)
   :init
-  (map! :m "%" #'evilmi-jump-items)
-  (+evil--textobj "%" #'evilmi-text-object)
+  (map! [remap evil-jump-item]    #'+evil/matchit
+        [remap evilmi-jump-items] #'+evil/matchit
+        :textobj "%" #'evilmi-text-object #'evilmi-text-object)
   :config
   (defun +evil|simple-matchit ()
     "A hook to force evil-matchit to favor simple bracket jumping. Helpful when
 the new algorithm is confusing, like in python or ruby."
     (setq-local evilmi-always-simple-jump t))
   (add-hook 'python-mode-hook #'+evil|simple-matchit))
-
-
-(def-package! evil-mc
-  :commands evil-mc-make-cursor-here
-  :init (defvar evil-mc-key-map (make-sparse-keymap))
-  :config
-  ;; Start evil-mc in paused mode.
-  (add-hook 'evil-mc-mode-hook #'evil-mc-pause-cursors)
-  (add-hook 'evil-mc-before-cursors-created #'evil-mc-pause-cursors)
-
-  (global-evil-mc-mode 1)
-  (setq evil-mc-custom-known-commands
-        '((doom/deflate-space-maybe . ((:default . evil-mc-execute-default-call)))))
-
- ;; My workflow is to place the cursors, get into position, then enable evil-mc
- ;; by invoking `+evil/mc-toggle-cursors'
-  (defun +evil/mc-toggle-cursors ()
-    "Toggle frozen state of evil-mc cursors."
-    (interactive)
-    (setq evil-mc-frozen (not (and (evil-mc-has-cursors-p)
-                                   evil-mc-frozen))))
-  ;; ...or going into insert mode
-  (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors)
-
-  (defun +evil|escape-multiple-cursors ()
-    "Undo cursors and freeze them again (for next time)."
-    (when (evil-mc-has-cursors-p)
-      (evil-mc-undo-all-cursors)
-      t))
-  (add-hook '+evil-esc-hook #'+evil|escape-multiple-cursors)
-
-  ;; disable evil-escape in evil-mc
-  (push 'evil-escape-mode evil-mc-incompatible-minor-modes))
 
 
 (def-package! evil-multiedit
@@ -368,11 +300,50 @@ the new algorithm is confusing, like in python or ruby."
              evil-multiedit-ex-match))
 
 
-(def-package! evil-textobj-anyblock
+(def-package! evil-mc
+  :commands (evil-mc-make-cursor-here evil-mc-make-all-cursors
+             evil-mc-undo-all-cursors evil-mc-pause-cursors
+             evil-mc-resume-cursors evil-mc-make-and-goto-first-cursor
+             evil-mc-make-and-goto-last-cursor evil-mc-make-cursor-here
+             evil-mc-make-cursor-move-next-line
+             evil-mc-make-cursor-move-prev-line
+             evil-mc-make-cursor-at-pos
+             evil-mc-make-and-goto-next-cursor evil-mc-skip-and-goto-next-cursor
+             evil-mc-make-and-goto-prev-cursor evil-mc-skip-and-goto-prev-cursor
+             evil-mc-make-and-goto-next-match evil-mc-skip-and-goto-next-match
+             evil-mc-skip-and-goto-next-match evil-mc-make-and-goto-prev-match
+             evil-mc-skip-and-goto-prev-match)
   :init
-  (+evil--textobj "B"
-    #'evil-textobj-anyblock-inner-block
-    #'evil-textobj-anyblock-a-block))
+  (defvar evil-mc-key-map (make-sparse-keymap))
+  :config
+  (global-evil-mc-mode +1)
+
+  ;; Add custom commands to whitelisted commands
+  (dolist (fn '(doom/deflate-space-maybe doom/inflate-space-maybe
+                doom/backward-to-bol-or-indent doom/forward-to-last-non-comment-or-eol
+                doom/backward-kill-to-bol-and-indent doom/newline-and-indent))
+    (push (cons fn '((:default . evil-mc-execute-default-call))) evil-mc-custom-known-commands))
+
+  ;; if I'm in insert mode, chances are I want cursors to resume
+  (add-hook! 'evil-mc-before-cursors-created
+    (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors nil t))
+  (add-hook! 'evil-mc-after-cursors-deleted
+    (remove-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors t))
+
+  (defun +evil|escape-multiple-cursors ()
+    "Clear evil-mc cursors and restore state."
+    (when (evil-mc-has-cursors-p)
+      (evil-mc-undo-all-cursors)
+      (evil-mc-resume-cursors)
+      t))
+  (add-hook '+evil-esc-hook #'+evil|escape-multiple-cursors)
+
+  ;; disable evil-escape in evil-mc; causes unwanted text on invocation
+  (push 'evil-escape-mode evil-mc-incompatible-minor-modes))
+
+
+(def-package! evil-textobj-anyblock
+  :commands (evil-textobj-anyblock-inner-block evil-textobj-anyblock-a-block))
 
 
 (def-package! evil-snipe :demand t
@@ -385,13 +356,8 @@ the new algorithm is confusing, like in python or ruby."
         evil-snipe-aliases '((?\[ "[[{(]")
                              (?\] "[]})]")
                              (?\; "[;:]")))
-
   :config
-  (evil-snipe-override-mode +1)
-  ;; Switch to evil-easymotion/avy after a snipe
-  (map! :map evil-snipe-parent-transient-map
-        "C-;" (λ! (require 'evil-easymotion)
-                  (call-interactively +evil--snipe-repeat-fn))))
+  (evil-snipe-override-mode +1))
 
 
 (def-package! evil-surround
@@ -467,6 +433,7 @@ the new algorithm is confusing, like in python or ruby."
         neo-confirm-create-file #'off-p
         neo-confirm-create-directory #'off-p
         neo-show-hidden-files nil
+        neo-keymap-style 'concise
         neo-hidden-regexp-list
         '(;; vcs folders
           "^\\.\\(git\\|hg\\|svn\\)$"
@@ -479,32 +446,4 @@ the new algorithm is confusing, like in python or ruby."
           "~$"
           "^#.*#$"))
 
-  (evil-set-initial-state 'neotree-mode 'motion)
-
-  (push neo-buffer-name winner-boring-buffers)
-
-  ;; `neotree-mode-map' are overridden when the neotree buffer is created. So we
-  ;; bind them in a hook.
-  (add-hook 'neo-after-create-hook #'+evil|neotree-init-keymap)
-  (defun +evil|neotree-init-keymap (&rest _)
-    (map! :Lm "\\\\"     'evil-window-prev
-          :Lm "RET"      'neotree-enter
-          :Lm "<return>" 'neotree-enter
-          :Lm "ESC ESC"  'neotree-hide
-          :Lm [return]   'neotree-enter
-          :Lm "q"        'neotree-hide
-          :Lm "J"        'neotree-select-next-sibling-node
-          :Lm "K"        'neotree-select-previous-sibling-node
-          :Lm "H"        'neotree-select-up-node
-          :Lm "L"        'neotree-select-down-node
-          :Lm "h"        '+evil/neotree-collapse-or-up
-          :Lm "j"        'neotree-next-line
-          :Lm "k"        'neotree-previous-line
-          :Lm "l"        '+evil/neotree-expand-or-open
-          :Lm "v"        'neotree-enter-vertical-split
-          :Lm "s"        'neotree-enter-horizontal-split
-          :Lm "c"        'neotree-create-node
-          :Lm "d"        'neotree-delete-node
-          :Lm "\C-r"     'neotree-refresh
-          :Lm "r"        'neotree-rename-node
-          :Lm "R"        'neotree-change-root)))
+  (push neo-buffer-name winner-boring-buffers))

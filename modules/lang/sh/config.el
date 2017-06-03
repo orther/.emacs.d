@@ -1,8 +1,8 @@
 ;;; lang/sh/config.el
 
 (def-package! sh-script ; built-in
-  :mode (("\\.zsh$" . sh-mode)
-         ("/bspwmrc$" . sh-mode))
+  :mode ("\\.zsh$"   . sh-mode)
+  :mode ("/bspwmrc$" . sh-mode)
   :init
   (add-hook! sh-mode #'(flycheck-mode highlight-numbers-mode +sh|extra-fontify))
   :config
@@ -10,9 +10,7 @@
   (set! :repl 'sh-mode #'+sh/repl)
   (setq sh-indent-after-continuation 'always)
 
-  ;; [pedantry intensifies]
-  (add-hook! sh-mode (setq mode-name "sh"))
-
+  ;; sh-mode has file extensions checks for other shells, but not zsh, so...
   (defun +sh|detect-zsh ()
     (when (and buffer-file-name (string-match-p "\\.zsh\\'" buffer-file-name))
       (sh-set-shell "zsh")))

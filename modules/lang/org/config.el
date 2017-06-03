@@ -54,6 +54,9 @@
   (when (and (featurep 'evil) evil-mode)
     (evil-org-mode +1))
 
+  (require 'toc-org)
+  (toc-org-enable)
+
   (unless org-agenda-inhibit-startup
     ;; My version of the 'overview' #+STARTUP option: expand first-level
     ;; headings.
@@ -344,7 +347,7 @@
           :m  "gh"  #'outline-up-heading
           :m  "gj"  #'org-forward-heading-same-level
           :m  "gk"  #'org-backward-heading-same-level
-          :m  "gl"  (λ! (call-interactively #'outline-next-visible-heading) (show-children))
+          :m  "gl"  (λ! (call-interactively #'outline-next-visible-heading) (outline-show-children))
 
           :n  "go"  #'org-open-at-point
           :n  "gO"  (λ! (let ((org-link-frame-setup (append '((file . find-file-other-window)) org-link-frame-setup))
@@ -383,32 +386,5 @@
     (when (derived-mode-p 'org-mode)
       (org-remove-occur-highlights)
       t))
-  (add-hook '+evil-esc-hook #'+org|remove-occur-highlights)
-
-  (after! org-bullets
-    (define-minor-mode org-bullets-mode
-      "Modified version of `org-bullets-mode' that respects the `org-hide' face."
-      nil nil nil
-      (let* ((keyword
-              `((,org-outline-regexp-bol
-                 (0 (let ((level (- (match-end 0) (match-beginning 0) 1)))
-                      (compose-region (- (match-end 0) 2)
-                                      (- (match-end 0) 1)
-                                      (org-bullets-level-char level))
-                      (when (facep org-bullets-face-name)
-                        (put-text-property (- (match-end 0) 2)
-                                           (- (match-end 0) 1)
-                                           'face org-bullets-face-name))
-                      (put-text-property (match-beginning 0) (match-end 0)
-                                         'keymap org-bullets-bullet-map)
-                      nil))))))
-        (if org-bullets-mode
-            (progn (font-lock-add-keywords nil keyword)
-                   (font-lock-fontify-buffer))
-          (save-excursion
-            (goto-char (point-min))
-            (font-lock-remove-keywords nil keyword)
-            (while (re-search-forward org-outline-regexp-bol nil t)
-              (decompose-region (match-beginning 0) (match-end 0)))
-            (font-lock-fontify-buffer)))))))
+  (add-hook '+evil-esc-hook #'+org|remove-occur-highlights))
 

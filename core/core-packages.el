@@ -433,9 +433,9 @@ the commandline."
           (push auto-file autoload-files))
         (when (file-directory-p auto-dir)
           (mapc (lambda (file)
-                  ;; Make evil.el autoload files a special case; don't load them
-                  ;; unless evil is enabled.
-                  (unless (and (equal (file-name-nondirectory file) "evil.el")
+                  ;; Make evil*.el autoload files a special case; don't load
+                  ;; them unless evil is enabled.
+                  (unless (and (string-prefix-p "evil" (file-name-nondirectory file))
                                (not (featurep! :feature evil)))
                     (push file autoload-files)))
                 (file-expand-wildcards (expand-file-name "*.el" auto-dir) t)))))
@@ -536,11 +536,16 @@ components to feel its effects."
   "Delete all compiled elc files in DOOM emacs, excluding compiled ELPA/QUELPA
 package files."
   (interactive)
-  (when-let (elc-files (cl-remove-if (lambda (file) (file-in-directory-p file doom-local-dir))
-                                     (directory-files-recursively doom-emacs-dir "\\.elc$")))
-    (dolist (file elc-files)
-      (delete-file file)
-      (message "Deleting %s" (file-relative-name file doom-emacs-dir)))))
+  (if-let (elc-files
+           (append
+            (let ((init-elc (expand-file-name "init.elc" doom-emacs-dir)))
+              (if (file-exists-p init-elc) (list init-elc)))
+            (directory-files-recursively doom-core-dir "\\.elc$")
+            (directory-files-recursively doom-modules-dir "\\.elc$")))
+      (dolist (file elc-files)
+        (delete-file file)
+        (message "Deleting %s" (file-relative-name file doom-emacs-dir)))
+    (message "Everything is clean")))
 
 
 ;;

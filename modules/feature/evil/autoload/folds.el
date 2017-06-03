@@ -21,7 +21,9 @@
 ;;;###autoload
 (defun +evil-fold-p ()
   (or (+evil--vimish-fold-p)
-      (ignore-errors (hs-already-hidden-p))))
+      (ignore-errors
+        (+evil--ensure-modes)
+        (hs-already-hidden-p))))
 
 ;;;###autoload (autoload '+evil/fold-toggle "feature/evil/autoload/folds" nil t)
 (evil-define-command +evil/fold-toggle ()
@@ -46,15 +48,23 @@
 
 ;;;###autoload (autoload '+evil/fold-open-all "feature/evil/autoload/folds" nil t)
 (evil-define-command +evil/fold-open-all (&optional level)
+  "Open folds at LEVEL (or all folds if LEVEL is nil)."
   (interactive "<c>")
   (vimish-fold-unfold-all)
-  (if level (hs-hide-level level) (hs-show-all)))
+  (+evil--ensure-modes)
+  (if (integerp level)
+      (hs-hide-level (1- level))
+    (hs-show-all)))
 
-;;;###autoload (autoload '+evil/fold-close-all "feature/evil/autoload/folds" nil nil)
+;;;###autoload (autoload '+evil/fold-close-all "feature/evil/autoload/folds" nil t)
 (evil-define-command +evil/fold-close-all (&optional level)
+  "Close folds at LEVEL (or all folds if LEVEL is nil)."
   (interactive "<c>")
   (vimish-fold-refold-all)
-  (if level (hs-hide-level level) (hs-hide-all)))
+  (+evil--ensure-modes)
+  (if (integerp level)
+      (hs-hide-level (1- level))
+    (hs-hide-all)))
 
 
 ;; --- misc -------------------------------
@@ -65,10 +75,11 @@
 `hs-toggle-hiding'. Otherwise, if on a delimiter, jump to the matching one with
 `evilmi-jump-items'. If in a magit-status buffer, use `magit-section-toggle'."
   (interactive)
-  (call-interactively
-   (cond ((eq major-mode 'magit-status-mode)
-          #'magit-section-toggle)
-         ((+evil-fold-p)
-          #'+evil/fold-toggle)
-         (t
-          #'evilmi-jump-items))))
+  (ignore-errors
+    (call-interactively
+     (cond ((eq major-mode 'magit-status-mode)
+            #'magit-section-toggle)
+           ((+evil-fold-p)
+            #'+evil/fold-toggle)
+           (t
+            #'evilmi-jump-items)))))

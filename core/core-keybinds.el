@@ -4,11 +4,11 @@
 ;; available keys, and `evil', if it's enabled. All built into one powerful
 ;; macro: `map!'.
 
-(defvar doom-leader-key ","
+(defvar doom-leader-key "SPC"
   "The leader prefix key, for global commands.")
 
-(defvar doom-localleader-key "\\"
-  "The leader prefix key, for global commands.")
+(defvar doom-localleader-key "SPC m"
+  "The localleader prefix key, for major-mode specific commands.")
 
 (defvar doom-evil-state-alist
   '(("n" . normal)
@@ -25,7 +25,7 @@
 (def-package! which-key
   :demand t
   :config
-  (setq which-key-sort-order #'which-key-key-order-alpha
+  (setq which-key-sort-order #'which-key-prefix-then-key-order
         which-key-sort-uppercase-first nil
         which-key-add-column-padding 1
         which-key-max-display-columns nil
@@ -77,6 +77,7 @@ For example, :nvi will map to (list 'normal 'visual 'insert). See
 (put ':desc         'lisp-indent-function 'defun)
 (put ':leader       'lisp-indent-function 'defun)
 (put ':localleader  'lisp-indent-function 'defun)
+(put ':textobj      'lisp-indent-function 'defun)
 
 (defmacro map! (&rest rest)
   "A nightmare of a key-binding macro that will use `evil-define-key*',
@@ -105,6 +106,9 @@ States
     This can be customized with `doom-evil-state-alist'.
 
     :L cannot be in a :map.
+
+    :textobj is a special state that takes a key and two commands, one for the
+    inner binding, another for the outer.
 
 Flags
     (:mode [MODE(s)] [...])    ; inner keybinds are applied to major MODE(s)
@@ -165,12 +169,16 @@ Example
               (setq keymaps
                     (mapcar (lambda (m) (intern (format "%s-map" (symbol-name m))))
                             modes))))
+          (:textobj
+            (let* ((key (pop rest))
+                   (inner (pop rest))
+                   (outer (pop rest)))
+              (push (macroexpand `(map! (:map evil-outer-text-objects-map ,key ,inner)
+                                        (:map evil-inner-text-objects-map ,key ,outer)))
+                    forms)))
           (:prefix
             (let ((def (pop rest)))
-              (setq prefix
-                    (if (or (symbolp def) (listp def))
-                        `(vconcat ,prefix (if (stringp ,def) (kbd ,def) ,def))
-                      `(vconcat ,prefix ,(if (stringp def) (kbd def) def))))
+              (setq prefix `(vconcat ,prefix (kbd ,def)))
               (when desc
                 (push `(doom--keybind-register ,(key-description (eval prefix))
                                                ,desc ',modes)
@@ -189,11 +197,14 @@ Example
        ;; It's a key-def pair
        ((or (stringp key)
             (characterp key)
-            (vectorp key))
+            (vectorp key)
+            (symbolp key))
         (unwind-protect
             (catch 'skip
-              (when (stringp key)
-                (setq key (kbd key)))
+              (cond ((symbolp key)
+                     (setq key `(kbd ,key)))
+                    ((stringp key)
+                     (setq key (kbd key))))
               (when prefix
                 (setq key (append prefix (list key))))
               (unless (> (length rest) 0)

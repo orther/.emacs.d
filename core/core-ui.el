@@ -95,6 +95,19 @@ local value, whether or not it's permanent-local. Therefore, we cycle
       show-paren-when-point-inside-paren t)
 (show-paren-mode +1)
 
+;; like diminish, but for major-modes. [pedantry intensifies]
+(defvar doom-ui-mode-names
+  '((sh-mode . "sh")
+    (emacs-lisp-mode "Elisp"))
+  "An alist mapping major modes to alternative names, which will be set when the
+mode is detected.")
+
+(defun doom|set-mode-name ()
+  "Set the major mode's `mode-name', as dictated by `doom-ui-mode-names'."
+  (let ((name (assq major-mode doom-ui-mode-names)))
+    (if name (setq mode-name (cdr name)))))
+(add-hook 'after-change-major-mode-hook #'doom|set-mode-name)
+
 
 ;;
 ;; Bootstrap
@@ -102,9 +115,9 @@ local value, whether or not it's permanent-local. Therefore, we cycle
 
 (tooltip-mode -1) ; relegate tooltips to echo area only
 (menu-bar-mode -1)
+(tool-bar-mode -1)
 (when (display-graphic-p)
   (scroll-bar-mode -1)
-  (tool-bar-mode -1)
   ;; buffer name  in frame title
   (setq-default frame-title-format '("DOOM Emacs"))
   ;; standardize fringe width
@@ -195,18 +208,57 @@ file."
         (add-hook 'evil-visual-state-entry-hook #'doom|hl-line-off nil t)
         (add-hook 'evil-visual-state-exit-hook #'hl-line-mode nil t)))))
 
-;; Line numbers
-(def-package! linum
-  :commands linum-mode
-  :preface (defvar linum-format "%4d ")
+;; Line number column. A faster (or equivalent, in the worst case) line number
+;; plugin than the built-in `linum'.
+(def-package! nlinum
+  :commands nlinum-mode
+  :preface
+  (defvar linum-format "%3d ")
+  (defvar nlinum-format "%4d ")
   :init
   (add-hook! (prog-mode text-mode)
     (unless (eq major-mode 'org-mode)
-      (linum-mode +1)))
+      (nlinum-mode +1)))
 
   :config
-  (require 'hlinum) ; highlight current line number
-  (hlinum-activate))
+  (defun doom-nlinum-flush-window (&optional window)
+    (let ((window (or window (selected-window)))
+          (orig-win (selected-window)))
+      (with-selected-window window
+        (when nlinum-mode
+          (if (not (eq window orig-win))
+              (nlinum--flush)
+            ;; done in two steps to leave current line number highlighting alone
+            (nlinum--region (point-min) (max 1 (1- (line-beginning-position))))
+            (nlinum--region (min (point-max) (1+ (line-end-position))) (point-max)))))))
+
+  ;; nlinum has a tendency to lose line numbers over time; a known issue. These
+  ;; hooks/advisors attempt to stave off these glitches.
+  (defun doom*nlinum-flush-all-windows (&rest _)
+    "Fix nlinum margins after major UI changes (like a change of font)."
+    (mapc #'doom-nlinum-flush-window (doom-visible-windows))
+    nil)
+  (advice-add #'set-frame-font :after #'doom*nlinum-flush-all-windows)
+
+  (defun doom*nlinum-flush (&optional _ norecord)
+    ;; norecord check is necessary to prevent infinite recursion in
+    ;; `select-window'
+    (when (not norecord) (doom-nlinum-flush-window)))
+  (advice-add #'select-window :before #'doom*nlinum-flush)
+  (advice-add #'select-window :after  #'doom*nlinum-flush)
+  (add-hook '+evil-esc-hook #'doom*nlinum-flush-all-windows t)
+  (add-hook 'focus-in-hook  #'doom*nlinum-flush-all-windows)
+  (add-hook 'focus-out-hook #'doom*nlinum-flush-all-windows)
+
+  ;;
+  (after! web-mode
+    (advice-add #'web-mode-fold-or-unfold :after #'doom*nlinum-flush))
+
+  ;; Optimization: calculate line number column width beforehand
+  (add-hook! nlinum-mode
+    (setq nlinum--width
+          (length (save-excursion (goto-char (point-max))
+                                  (format-mode-line "%l"))))))
 
 ;; Helps us distinguish stacked delimiter pairs. Especially in parentheses-drunk
 ;; languages like Lisp.
