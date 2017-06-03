@@ -490,3 +490,8 @@ across windows."
     (setq iedit-current-symbol-default t
           iedit-only-at-symbol-boundaries t
           iedit-toggle-key-default nil)))
+
+(def-package! evil-goggles :demand t
+  :config
+  (evil-goggles-mode)
+  (evil-goggles-use-diff-faces))

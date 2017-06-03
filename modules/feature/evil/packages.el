@@ -19,4 +19,5 @@
 (package! evil-vimish-fold)
 (package! evil-visualstar)
 (package! evil-iedit-state)
+(package! evil-goggles)
 (package! neotree)
