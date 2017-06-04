@@ -445,8 +445,6 @@
  ;; smart-forward
  :nv "C-k"  #'smart-up
  :nv "C-j"  #'smart-down
- :m  "C-l" #'smart-forward
- :m  "C-S-h" #'smart-backward
 
  ;; undo-tree -- undo/redo for visual regions
  :v "C-u" #'undo-tree-undo
