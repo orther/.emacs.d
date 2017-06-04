@@ -37,6 +37,7 @@
        gist            ; interacting with github gists
        term            ; terminals in Emacs
        eshell          ; a consistent, cross-platform shell (WIP)
+       neotree         ; a project drawer, like NERDTree for vim
 
        :app
        present         ; showing off presentations in emacs

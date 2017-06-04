@@ -117,7 +117,7 @@
       :prefix "p"
       :desc "Find file in project"     :nv "f" #'counsel-projectile-find-file
       :desc "Run cmd in project root"  :nv "!" #'projectile-run-shell-command-in-root
-      :desc "Toggle project neotree"   :nv "t" #'+evil/neotree
+      :desc "Toggle project neotree"   :nv "t" #'+neotree/toggle
       :desc "Switch project"           :nv "p" #'counsel-projectile-switch-project
       :desc "Switch project workspace" :nv "l" #'+workspace-switch-project
       :desc "Kill project buffers"     :nv "k" #'projectile-kill-buffers
@@ -415,8 +415,8 @@
    :n "k"         #'neotree-previous-line
    :n "n"         #'neotree-next-line
    :n "p"         #'neotree-previous-line
-   :n "h"         #'+evil/neotree-collapse-or-up
-   :n "l"         #'+evil/neotree-expand-or-open
+   :n "h"         #'+neotree/neotree-collapse-or-up
+   :n "l"         #'+neotree/neotree-expand-or-open
    :n "J"         #'neotree-select-next-sibling-node
    :n "K"         #'neotree-select-previous-sibling-node
    :n "H"         #'neotree-select-up-node

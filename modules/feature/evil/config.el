@@ -442,58 +442,6 @@ the new algorithm is confusing, like in python or ruby."
   :config
   (global-evil-visualstar-mode 1))
 
-
-;; A side-panel for browsing my project files. Inspired by vim's NERDTree. Sure,
-;; there's dired and projectile, but sometimes I'd like a bird's eye view of a
-;; project.
-(def-package! neotree
-  :commands (neotree-show
-             neotree-hide
-             neotree-toggle
-             neotree-dir
-             neotree-find
-             neo-global--with-buffer
-             neo-global--window-exists-p)
-  :config
-  (setq neo-create-file-auto-open nil
-        neo-auto-indent-point nil
-        neo-autorefresh nil
-        neo-mode-line-type 'none
-        neo-window-width 32
-        neo-smart-open t
-        neo-dont-be-alone t
-        neo-persist-show nil
-        neo-show-hidden-files t
-        neo-show-updir-line nil
-        neo-modern-sidebar t
-        neo-theme 'nerd ; fallback
-        neo-banner-message nil
-        neo-confirm-create-file #'off-p
-        neo-confirm-create-directory #'off-p
-        neo-show-hidden-files nil
-        neo-keymap-style 'concise
-        neo-hidden-regexp-list
-        '(;; vcs folders
-          "^\\.\\(git\\|hg\\|svn\\)$"
-          ;; compiled files
-          "\\.\\(pyc\\|o\\|elc\\|lock\\|css.map\\)$"
-          ;; generated files, caches or local pkgs
-          "^\\(node_modules\\|vendor\\|.\\(project\\|cask\\|yardoc\\|sass-cache\\)\\)$"
-          ;; org-mode folders
-          "^\\.\\(sync\\|export\\|attach\\)$"
-          "~$"
-          "^#.*#$"))
-
-  (defvar +evil/neotree-opening-file nil)
-  (defvar +evil/neotree-entering-dired nil)
-
-  ;; BMACS - Hide neotree on enter file
-  (add-hook 'neo-enter-hook #'+evil/neo-hide-on-enter)
-  (advice-add 'neo-buffer--execute :before #'+evil/before-neobuffer-execute)
-
-  (evil-set-initial-state 'neotree-mode 'motion)
-  (push neo-buffer-name winner-boring-buffers))
-
 (def-package! evil-iedit-state
   :commands (evil-iedit-state evil-iedit-state/iedit-mode)
   :init
