@@ -165,12 +165,6 @@ across windows."
 ;; Plugins
 ;;
 
-(def-package! evil-args
-  :commands (evil-inner-arg evil-outer-arg
-             evil-forward-arg evil-backward-arg
-             evil-jump-out-args))
-
-
 (def-package! evil-commentary
   :commands (evil-commentary evil-commentary-yank evil-commentary-line)
   :config (evil-commentary-mode 1))
@@ -208,8 +202,7 @@ across windows."
     (evilem-create #'evil-snipe-repeat
                    :bind ((evil-snipe-scope 'whole-buffer)
                           (evil-snipe-enable-highlight)
-                          (evil-snipe-enable-incremental-highlight)))))
-
+(evil-snipe-enable-incremental-highlight)))))
 
 (def-package! evil-embrace
   :after evil-surround
@@ -287,15 +280,6 @@ across windows."
       (evil-exchange-cancel)
       t))
   (add-hook '+evil-esc-hook #'+evil|escape-exchange))
-
-
-(def-package! evil-indent-plus
-  :commands (evil-indent-plus-i-indent
-             evil-indent-plus-a-indent
-             evil-indent-plus-i-indent-up
-             evil-indent-plus-a-indent-up
-             evil-indent-plus-i-indent-up-down
-             evil-indent-plus-a-indent-up-down))
 
 (def-package! evil-matchit
   :commands (evilmi-jump-items evilmi-text-object global-evil-matchit-mode)
@@ -375,10 +359,6 @@ the new algorithm is confusing, like in python or ruby."
   ;; disable evil-escape in evil-mc; causes unwanted text on invocation
   (push 'evil-escape-mode evil-mc-incompatible-minor-modes))
 
-(def-package! evil-textobj-anyblock
-  :commands (evil-textobj-anyblock-inner-block evil-textobj-anyblock-a-block))
-
-
 (def-package! evil-snipe :demand t
   :init
   (setq evil-snipe-smart-case t
@@ -454,3 +434,25 @@ the new algorithm is confusing, like in python or ruby."
   :config
   (evil-goggles-mode)
   (evil-goggles-use-diff-faces))
+
+;;
+;; Text object plugins
+;;
+
+(def-package! evil-args
+  :commands (evil-inner-arg evil-outer-arg
+             evil-forward-arg evil-backward-arg
+             evil-jump-out-args))
+
+
+(def-package! evil-indent-plus
+  :commands (evil-indent-plus-i-indent
+             evil-indent-plus-a-indent
+             evil-indent-plus-i-indent-up
+             evil-indent-plus-a-indent-up
+             evil-indent-plus-i-indent-up-down
+             evil-indent-plus-a-indent-up-down))
+
+
+(def-package! evil-textobj-anyblock
+  :commands (evil-textobj-anyblock-inner-block evil-textobj-anyblock-a-block))
