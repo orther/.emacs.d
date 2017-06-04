@@ -30,6 +30,7 @@
        doom-modeline   ; a snazzy Atom-inspired mode-line
        doom-quit       ; DOOM quit-message prompts when you quit Emacs
        hl-todo         ; highlight TODO/FIXME/NOTE tags
+       nav-flash       ; blink the current line after jumping
 
        :tools
        dired           ; making dired pretty [functional]
