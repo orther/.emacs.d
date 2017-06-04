@@ -2,8 +2,6 @@
 
 (eval-when-compile (require 'subr-x))
 
-;; BMACS - removed evil-matchit
-
 ;;;###autoload
 (defun +evil/visual-indent ()
   "vnoremap < <gv"
