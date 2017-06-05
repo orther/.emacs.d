@@ -153,6 +153,7 @@
       :desc "Move window down"        :nv "J" #'evil-window-move-very-bottom
       :desc "Move window right"       :nv "L" #'evil-window-move-far-right
       :desc "Move window up"          :nv "K" #'evil-window-move-very-top
+      :desc "Ace swap window"         :nv "s" #'ace-swap-window
       :desc "Winner undo"             :nv "u" #'winner-undo
       :desc "Winner redo"             :nv "U" #'winner-redo
       :desc "Ace window"              :nv "w" #'ace-window
