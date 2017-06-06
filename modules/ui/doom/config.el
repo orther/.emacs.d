@@ -1,6 +1,6 @@
 ;;; ui/doom/config.el
 
-(defvar +doom-theme 'doom-vibrant
+(defvar +doom-theme 'doom-one
   "The color theme to use.")
 
 (defvar +doom-font

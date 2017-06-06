@@ -18,21 +18,6 @@
         (neotree-find path project-root)))))
 
 ;;;###autoload
-(defun +neotree/neotree-expand-or-open ()
-  "Expand or open a neotree node."
-  (interactive)
-  (let ((node (neo-buffer--get-filename-current-line)))
-    (when node
-      (if (file-directory-p node)
-          (progn
-            (neo-buffer--set-expand node t)
-            (neo-buffer--refresh t)
-            (when neo-auto-indent-point
-              (forward-line)
-              (neo-point-auto-indent)))
-        (call-interactively 'neotree-enter)))))
-
-;;;###autoload
 (defun +neotree/collapse-or-up ()
   "Collapse an expanded directory node or go to the parent node."
   (interactive)
@@ -56,22 +41,22 @@
 
 ;;;###autoload
 (defun +neotree/neo-hide-on-enter (type path arg)
-  (if (or (and (eq +evil/neotree-opening-file t)
+  (if (or (and (eq +neotree/neotree-opening-file t)
                (equal type 'file))
-          (and (eq +evil/neotree-entering-dired t)
+          (and (eq +neotree/neotree-entering-dired t)
                (equal type 'directory)))
       (neotree-hide))
-  (setq +evil/neotree-opening-file nil
-        +evil/neotree-entering-dired nil))
+  (setq +neotree/neotree-opening-file nil
+        +neotree/neotree-entering-dired nil))
 
 ;;;###autoload
 (defun +neotree/before-neobuffer-execute (arg0 &optional file-fn dir-fn &rest args)
   (when (eq dir-fn 'neo-open-dired)
-    (setq +evil/neotree-entering-dired t))
+    (setq +neotree/neotree-entering-dired t))
   (when (or (eq file-fn 'neo-open-file)
             (eq file-fn 'neo-open-file-vertical-split)
             (eq file-fn 'neo-open-file-horizontal-split))
-    (setq +evil/neotree-opening-file t)))
+    (setq +neotree/neotree-opening-file t)))
 
 ;;;###autoload
 (defun +neotree/expand-or-open ()

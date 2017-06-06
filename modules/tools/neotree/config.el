@@ -14,12 +14,7 @@
         neo-autorefresh nil
         neo-mode-line-type 'none
         neo-window-width 32
-        neo-smart-open t
-        neo-dont-be-alone t
-        neo-persist-show nil
-        neo-show-hidden-files t
         neo-show-updir-line nil
-        neo-modern-sidebar t
         neo-theme 'nerd ; fallback
         neo-banner-message nil
         neo-confirm-create-file #'off-p
@@ -42,7 +37,7 @@
     (push neo-buffer-name winner-boring-buffers))
 
   ;; BMACS - Hide neotree on enter file
+  (defvar +neotree/neotree-opening-file nil)
+  (defvar +neotree/neotree-entering-dired nil)
   (add-hook 'neo-enter-hook #'+neotree/neo-hide-on-enter)
-  (advice-add 'neo-buffer--execute :before #'+neotree/before-neobuffer-execute)
-
-  (evil-set-initial-state 'neotree-mode 'motion))
+  (advice-add 'neo-buffer--execute :before #'+neotree/before-neobuffer-execute))

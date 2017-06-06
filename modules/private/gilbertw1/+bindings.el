@@ -277,7 +277,7 @@
  ;; company-mode (+ vim-like omnicompletion)
  :i "C-SPC"  #'+company/complete
 
-(:after company
+ (:after company
    (:map company-active-map
      ;; Don't interfere with `evil-delete-backward-word' in insert mode
      "C-w"        nil
@@ -318,9 +318,9 @@
  ;; evil-snipe
  (:after evil-snipe
    ;; Binding to switch to evil-easymotion/avy after a snipe
-   :map evil-snipe-parent-transient-map
-   "C-;" (λ! (require 'evil-easymotion)
-             (call-interactively +evil--snipe-repeat-fn)))
+   (:map evil-snipe-parent-transient-map
+     "C-;" (λ! (require 'evil-easymotion)
+               (call-interactively +evil--snipe-repeat-fn))))
 
  ;; evil-surround
  :v  "s"  #'evil-surround-region
@@ -334,13 +334,14 @@
  ;; flycheck
  :m  "]e" #'next-error
  :m  "[e" #'previous-error
- (:after flycheck
-   :map flycheck-error-list-mode-map
-   :n "C-n" #'flycheck-error-list-next-error
-   :n "C-p" #'flycheck-error-list-previous-error
-   :n "j"   #'flycheck-error-list-next-error
 
-   :n "RET" #'flycheck-error-list-goto-error)
+ (:after flycheck
+   (:map flycheck-error-list-mode-map
+     :n "C-n" #'flycheck-error-list-next-error
+     :n "C-p" #'flycheck-error-list-previous-error
+     :n "j"   #'flycheck-error-list-next-error
+
+     :n "RET" #'flycheck-error-list-goto-error))
 
  ;; flyspell
  :m  "]S" #'flyspell-correct-word-generic
@@ -363,17 +364,17 @@
 
  ;; gist
  (:after gist
-   :map gist-list-menu-mode-map
-   :n "RET" #'+gist/open-current
-   :n "b"   #'gist-browse-current-url
-   :n "c"   #'gist-add-buffer
-   :n "d"   #'gist-kill-current
-   :n "f"   #'gist-fork
-   :n "q"   #'quit-window
-   :n "r"   #'gist-list-reload
-   :n "s"   #'gist-star
-   :n "S"   #'gist-unstar
-   :n "y"   #'gist-print-current-url)
+   (:map gist-list-menu-mode-map
+     :n "RET" #'+gist/open-current
+     :n "b"   #'gist-browse-current-url
+     :n "c"   #'gist-add-buffer
+     :n "d"   #'gist-kill-current
+     :n "f"   #'gist-fork
+     :n "q"   #'quit-window
+     :n "r"   #'gist-list-reload
+     :n "s"   #'gist-star
+     :n "S"   #'gist-unstar
+     :n "y"   #'gist-print-current-url))
 
  ;; hl-todo
  :m  "]t" #'hl-todo-next
@@ -381,64 +382,63 @@
 
  ;; ivy
  (:after ivy
-   :map ivy-minibuffer-map
-   [escape] #'keyboard-escape-quit
-   "C-y" #'yank
-   "M-v" #'yank
-   "M-z" #'undo
-   "C-r" #'evil-paste-from-register
-   "C-h" (kbd "DEL")
-   "C-k" #'ivy-previous-line
-   "C-j" #'ivy-next-line
-   "C-l" #'ivy-alt-done
-   "C-w" #'+ivy/backward-kill-word
-   "C-u" #'doom/minibuffer-kill-line
-   "C-b" #'backward-word
-   "C-f" #'forward-word
-   "C-o" #'ivy-dispatching-done
-   "<C-return>" #'ivy-immediate-done)
-
-(:map ivy-occur-grep-mode-map
-  (:desc "ivy occur actions"
-    :prefix ","
-    :desc "switch to ivy wgrep mode"    :n "," 'ivy-wgrep-change-to-wgrep-mode
-    :desc "switch to ivy wgrep mode"    :n "w" 'ivy-wgrep-change-to-wgrep-mode))
+   (:map ivy-minibuffer-map
+     [escape] #'keyboard-escape-quit
+     "C-y" #'yank
+     "M-v" #'yank
+     "M-z" #'undo
+     "C-r" #'evil-paste-from-register
+     "C-h" (kbd "DEL")
+     "C-k" #'ivy-previous-line
+     "C-j" #'ivy-next-line
+     "C-l" #'ivy-alt-done
+     "C-w" #'+ivy/backward-kill-word
+     "C-u" #'doom/minibuffer-kill-line
+     "C-b" #'backward-word
+     "C-f" #'forward-word
+     "C-o" #'ivy-dispatching-done
+     "<C-return>" #'ivy-immediate-done)
+   (:map ivy-occur-grep-mode-map
+     (:desc "ivy occur actions"
+       :prefix ","
+       :desc "switch to ivy wgrep mode"    :n "," 'ivy-wgrep-change-to-wgrep-mode
+       :desc "switch to ivy wgrep mode"    :n "w" 'ivy-wgrep-change-to-wgrep-mode)))
 
  ;; neotree
  (:after neotree
-   :map neotree-mode-map
-   :n "g"         nil
-   :n [tab]       #'neotree-quick-look
-   :n "RET"       #'neotree-enter
-   :n [backspace] #'evil-window-prev
-   :n "j"         #'neotree-next-line
-   :n "k"         #'neotree-previous-line
-   :n "n"         #'neotree-next-line
-   :n "p"         #'neotree-previous-line
-   :n "h"         #'+neotree/neotree-collapse-or-up
-   :n "l"         #'+neotree/neotree-expand-or-open
-   :n "J"         #'neotree-select-next-sibling-node
-   :n "K"         #'neotree-select-previous-sibling-node
-   :n "H"         #'neotree-select-up-node
-   :n "L"         #'neotree-select-down-node
-   :n "G"         #'evil-goto-line
-   :n "gg"        #'evil-goto-first-line
-   :n "v"         #'neotree-enter-vertical-split
-   :n "s"         #'neotree-enter-horizontal-split
-   :n "q"         #'neotree-hide
-   :n "R"         #'neotree-refresh)
+   (:map neotree-mode-map
+     :n "g"         nil
+     :n [tab]       #'neotree-quick-look
+     :n "RET"       #'neotree-enter
+     :n [backspace] #'evil-window-prev
+     :n "j"         #'neotree-next-line
+     :n "k"         #'neotree-previous-line
+     :n "n"         #'neotree-next-line
+     :n "p"         #'neotree-previous-line
+     :n "h"         #'+neotree/collapse-or-up
+     :n "l"         #'+neotree/expand-or-open
+     :n "J"         #'neotree-select-next-sibling-node
+     :n "K"         #'neotree-select-previous-sibling-node
+     :n "H"         #'neotree-select-up-node
+     :n "L"         #'neotree-select-down-node
+     :n "G"         #'evil-goto-line
+     :n "gg"        #'evil-goto-first-line
+     :n "v"         #'neotree-enter-vertical-split
+     :n "s"         #'neotree-enter-horizontal-split
+     :n "q"         #'neotree-hide
+     :n "R"         #'neotree-refresh))
 
  ;; realgud
  (:after realgud
-   :map realgud:shortkey-mode-map
-   :n "j" #'evil-next-line
-   :n "k" #'evil-previous-line
-   :n "h" #'evil-backward-char
-   :n "l" #'evil-forward-char
-   :m "n" #'realgud:cmd-next
-   :m "b" #'realgud:cmd-break
-   :m "B" #'realgud:cmd-clear
-   :n "c" #'realgud:cmd-continue)
+   (:map realgud:shortkey-mode-map
+     :n "j" #'evil-next-line
+     :n "k" #'evil-previous-line
+     :n "h" #'evil-backward-char
+     :n "l" #'evil-forward-char
+     :m "n" #'realgud:cmd-next
+     :m "b" #'realgud:cmd-break
+     :m "B" #'realgud:cmd-clear
+     :n "c" #'realgud:cmd-continue))
 
  ;; rotate-text
  :n  "!"  #'rotate-text
