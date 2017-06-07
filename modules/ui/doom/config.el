@@ -80,30 +80,7 @@
               +regex-mode)
     #'solaire-mode))
 
-
-(after! hideshow
-  (defface +doom-folded-face
-    `((((background dark))
-       (:inherit font-lock-comment-face :background ,(doom-color 'black)))
-      (((background light))
-       (:inherit font-lock-comment-face :background ,(doom-color 'light-grey))))
-    "Face to hightlight `hideshow' overlays."
-    :group 'doom)
-
-  ;; Nicer code-folding overlays (with fringe indicators)
-  (setq hs-set-up-overlay
-        (lambda (ov)
-          (when (eq 'code (overlay-get ov 'hs))
-            (when (featurep 'vimish-fold)
-              (overlay-put
-               ov 'before-string
-               (propertize "…" 'display
-                           (list vimish-fold-indication-mode
-                                 'empty-line
-                                 'vimish-fold-fringe))))
-            (overlay-put
-             ov 'display (propertize "  [...]  " 'face '+doom-folded-face))))))
-
+;; BMACS - removed hideshow
 
 (when (and (display-graphic-p) (fboundp 'define-fringe-bitmap))
   ;; NOTE Adjust these bitmaps if you change `doom-ui-fringe-size'

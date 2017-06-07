@@ -3,4 +3,3 @@
 
 (package! doom-themes)
 (package! solaire-mode)
-

@@ -31,6 +31,9 @@
  :n [C-escape] #'evil-emacs-state
  ;; Indent on tab
  :nvi "TAB"     #'indent-for-tab-command
+ ;; Fold toggle
+ :nvi [C-backspace] #'yafolding-toggle-element
+ :nvi [C-S-backspace] #'yafolding-toggle-all
 
   ;;; <leader> and <localleader>
   :m ";" #'evil-ex
@@ -49,7 +52,7 @@
     :desc "Pop terminal"               :nv "'" #'+term/popup
 
     ;; eyebrowse quick top-level
-    :desc "Switch to last eyespace"    :nv "DEL" #'eyebrowse-last-window-config
+    :desc "Switch to last eyespace"    :nv [backspace] #'eyebrowse-last-window-config
     :desc "Eyespace 1"                 :nv "1" #'eyebrowse-switch-to-window-config-1
     :desc "Eyespace 2"                 :nv "2" #'eyebrowse-switch-to-window-config-2
     :desc "Eyespace 3"                 :nv "3" #'eyebrowse-switch-to-window-config-3

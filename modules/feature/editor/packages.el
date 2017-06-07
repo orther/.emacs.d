@@ -2,3 +2,4 @@
 ;;; feature/editor/packages.el
 
 (package! clean-aindent-mode)
+(package! yafolding)

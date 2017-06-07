@@ -80,15 +80,7 @@
   (map! (:after wgrep
           ;; a wrapper that invokes `wgrep-mark-deletion' across lines
           ;; you use `evil-delete' on.
-          :map wgrep-mode-map [remap evil-delete] #'+evil-delete)
-
-        ;; replace native folding commands
-        :n "zo" #'+evil/fold-open
-        :n "zO" #'+evil/fold-open
-        :n "zc" #'+evil/fold-close
-        :n "za" #'+evil/fold-toggle
-        :n "zr" #'+evil/fold-open-all
-        :n "zm" #'+evil/fold-close-all)
+          :map wgrep-mode-map [remap evil-delete] #'+evil-delete))
 
 
   ;; --- evil hacks -------------------------
@@ -374,33 +366,7 @@ the new algorithm is confusing, like in python or ruby."
              evil-surround-region)
   :config (global-evil-surround-mode 1))
 
-
-(def-package! evil-vimish-fold :demand t
-  :init
-  (setq vimish-fold-dir (concat doom-cache-dir "vimish-fold/")
-        vimish-fold-indication-mode 'right-fringe)
-
-  :config
-  (evil-vimish-fold-mode +1)
-
-  ;; custom folding system
-  (defun +evil*fold-hs-minor-mode (&rest args)
-    "Lazily activate buffer-local hs-minor-mode."
-    (unless (bound-and-true-p hs-minor-mode)
-      (hs-minor-mode +1)))
-  (advice-add #'evil-fold-action :before #'+evil*fold-hs-minor-mode)
-
-  (add-to-list
-   'evil-fold-list
-   '((evil-vimish-fold-mode hs-minor-mode)
-     :delete vimish-fold-delete
-     :open-all +evil/fold-open-all
-     :close-all +evil/fold-close-all
-     :toggle +evil/fold-toggle
-     :open +evil/fold-open
-     :open-rec nil
-     :close +evil/fold-close)))
-
+;; BMACS - remove vimish-fold
 
 ;; Without `evil-visualstar', * and # grab the word at point and search, no
 ;; matter what mode you're in. I want to be able to visually select a region and

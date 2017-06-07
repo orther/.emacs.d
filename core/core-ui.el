@@ -144,11 +144,6 @@ mode is detected.")
 (def-package! fringe-helper
   :commands fringe-helper-define)
 
-(def-package! hideshow ; built-in
-  :commands (hs-minor-mode hs-toggle-hiding hs-already-hidden-p)
-  :config
-  (setq hs-hide-comments-when-hiding-all nil))
-
 ;; Show uninterrupted indentation markers with some whitespace voodoo.
 (def-package! highlight-indentation
   :commands (highlight-indentation-mode highlight-indentation-current-column-mode)
