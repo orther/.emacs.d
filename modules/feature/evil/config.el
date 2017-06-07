@@ -390,11 +390,6 @@ the new algorithm is confusing, like in python or ruby."
           iedit-only-at-symbol-boundaries t
           iedit-toggle-key-default nil)))
 
-(def-package! evil-goggles :demand t
-  :config
-  (evil-goggles-mode)
-  (evil-goggles-use-diff-faces))
-
 ;;
 ;; Text object plugins
 ;;

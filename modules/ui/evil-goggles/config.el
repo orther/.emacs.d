@@ -6,5 +6,5 @@
   :init
   (add-hook 'after-init-hook #'evil-goggles-mode)
   :config
-  (setq evil-goggles-duration 0.1)
+  (setq evil-goggles-duration 0.2)
   (evil-goggles-use-diff-faces))
