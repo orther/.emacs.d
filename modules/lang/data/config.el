@@ -37,9 +37,9 @@
 
 
 ;; For ROM hacking or debugging
-(def-package! hexl-mode
-  :mode "\\.hex$"
-  :mode "\\.nes$")
+(def-package! hexl
+  :mode ("\\.hex$" . hexl-mode)
+  :mode ("\\.nes$" . hexl-mode))
 
 
 ;;
