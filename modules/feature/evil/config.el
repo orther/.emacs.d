@@ -82,12 +82,12 @@
           :map wgrep-mode-map [remap evil-delete] #'+evil-delete)
 
         ;; replace native folding commands
-        :n "zo" #'+evil/fold-open
-        :n "zO" #'+evil/fold-open
-        :n "zc" #'+evil/fold-close
-        :n "za" #'+evil/fold-toggle
-        :n "zr" #'+evil/fold-open-all
-        :n "zm" #'+evil/fold-close-all)
+        :n "zo" #'+evil:fold-open
+        :n "zO" #'+evil:fold-open
+        :n "zc" #'+evil:fold-close
+        :n "za" #'+evil:fold-toggle
+        :n "zr" #'+evil:fold-open-all
+        :n "zm" #'+evil:fold-close-all)
 
 
   ;; --- evil hacks -------------------------
@@ -164,12 +164,6 @@ across windows."
 ;; Plugins
 ;;
 
-(def-package! evil-args
-  :commands (evil-inner-arg evil-outer-arg
-             evil-forward-arg evil-backward-arg
-             evil-jump-out-args))
-
-
 (def-package! evil-commentary
   :commands (evil-commentary evil-commentary-yank evil-commentary-line)
   :config (evil-commentary-mode 1))
@@ -177,7 +171,6 @@ across windows."
 
 (def-package! evil-easymotion
   :defer 1
-  :commands evilem-define
   :config
   (defvar +evil--snipe-repeat-fn
     (evilem-create #'evil-snipe-repeat
@@ -243,7 +236,7 @@ across windows."
 (def-package! evil-escape
   :demand t
   :init
-  (setq evil-escape-excluded-states '(normal visual multiedit)
+  (setq evil-escape-excluded-states '(normal visual multiedit emacs)
         evil-escape-excluded-major-modes '(neotree-mode)
         evil-escape-key-sequence "jk"
         evil-escape-delay 0.25)
@@ -263,21 +256,11 @@ across windows."
   (add-hook '+evil-esc-hook #'+evil|escape-exchange))
 
 
-(def-package! evil-indent-plus
-  :commands (evil-indent-plus-i-indent
-             evil-indent-plus-a-indent
-             evil-indent-plus-i-indent-up
-             evil-indent-plus-a-indent-up
-             evil-indent-plus-i-indent-up-down
-             evil-indent-plus-a-indent-up-down))
-
-
 (def-package! evil-matchit
   :commands (evilmi-jump-items evilmi-text-object global-evil-matchit-mode)
   :config (global-evil-matchit-mode 1)
   :init
-  (map! [remap evil-jump-item]    #'+evil/matchit
-        [remap evilmi-jump-items] #'+evil/matchit
+  (map! [remap evil-jump-item]    #'evilmi-jump-items
         :textobj "%" #'evilmi-text-object #'evilmi-text-object)
   :config
   (defun +evil|simple-matchit ()
@@ -324,12 +307,6 @@ the new algorithm is confusing, like in python or ruby."
                 doom/backward-kill-to-bol-and-indent doom/newline-and-indent))
     (push (cons fn '((:default . evil-mc-execute-default-call))) evil-mc-custom-known-commands))
 
-  ;; if I'm in insert mode, chances are I want cursors to resume
-  (add-hook! 'evil-mc-before-cursors-created
-    (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors nil t))
-  (add-hook! 'evil-mc-after-cursors-deleted
-    (remove-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors t))
-
   (defun +evil|escape-multiple-cursors ()
     "Clear evil-mc cursors and restore state."
     (when (evil-mc-has-cursors-p)
@@ -340,10 +317,6 @@ the new algorithm is confusing, like in python or ruby."
 
   ;; disable evil-escape in evil-mc; causes unwanted text on invocation
   (push 'evil-escape-mode evil-mc-incompatible-minor-modes))
-
-
-(def-package! evil-textobj-anyblock
-  :commands (evil-textobj-anyblock-inner-block evil-textobj-anyblock-a-block))
 
 
 (def-package! evil-snipe :demand t
@@ -368,31 +341,12 @@ the new algorithm is confusing, like in python or ruby."
   :config (global-evil-surround-mode 1))
 
 
-(def-package! evil-vimish-fold :demand t
+(def-package! evil-vimish-fold
+  :commands evil-vimish-fold-mode
   :init
   (setq vimish-fold-dir (concat doom-cache-dir "vimish-fold/")
         vimish-fold-indication-mode 'right-fringe)
-
-  :config
-  (evil-vimish-fold-mode +1)
-
-  ;; custom folding system
-  (defun +evil*fold-hs-minor-mode (&rest args)
-    "Lazily activate buffer-local hs-minor-mode."
-    (unless (bound-and-true-p hs-minor-mode)
-      (hs-minor-mode +1)))
-  (advice-add #'evil-fold-action :before #'+evil*fold-hs-minor-mode)
-
-  (add-to-list
-   'evil-fold-list
-   '((evil-vimish-fold-mode hs-minor-mode)
-     :delete vimish-fold-delete
-     :open-all +evil/fold-open-all
-     :close-all +evil/fold-close-all
-     :toggle +evil/fold-toggle
-     :open +evil/fold-open
-     :open-rec nil
-     :close +evil/fold-close)))
+  (add-hook 'emacs-startup-hook #'evil-vimish-fold-mode t))
 
 
 ;; Without `evil-visualstar', * and # grab the word at point and search, no
@@ -410,40 +364,24 @@ the new algorithm is confusing, like in python or ruby."
   (global-evil-visualstar-mode 1))
 
 
-;; A side-panel for browsing my project files. Inspired by vim's NERDTree. Sure,
-;; there's dired and projectile, but sometimes I'd like a bird's eye view of a
-;; project.
-(def-package! neotree
-  :commands (neotree-show
-             neotree-hide
-             neotree-toggle
-             neotree-dir
-             neotree-find
-             neo-global--with-buffer
-             neo-global--window-exists-p)
-  :config
-  (setq neo-create-file-auto-open nil
-        neo-auto-indent-point nil
-        neo-autorefresh nil
-        neo-mode-line-type 'none
-        neo-window-width 25
-        neo-show-updir-line nil
-        neo-theme 'nerd ; fallback
-        neo-banner-message nil
-        neo-confirm-create-file #'off-p
-        neo-confirm-create-directory #'off-p
-        neo-show-hidden-files nil
-        neo-keymap-style 'concise
-        neo-hidden-regexp-list
-        '(;; vcs folders
-          "^\\.\\(git\\|hg\\|svn\\)$"
-          ;; compiled files
-          "\\.\\(pyc\\|o\\|elc\\|lock\\|css.map\\)$"
-          ;; generated files, caches or local pkgs
-          "^\\(node_modules\\|vendor\\|.\\(project\\|cask\\|yardoc\\|sass-cache\\)\\)$"
-          ;; org-mode folders
-          "^\\.\\(sync\\|export\\|attach\\)$"
-          "~$"
-          "^#.*#$"))
+;;
+;; Text object plugins
+;;
 
-  (push neo-buffer-name winner-boring-buffers))
+(def-package! evil-args
+  :commands (evil-inner-arg evil-outer-arg
+             evil-forward-arg evil-backward-arg
+             evil-jump-out-args))
+
+
+(def-package! evil-indent-plus
+  :commands (evil-indent-plus-i-indent
+             evil-indent-plus-a-indent
+             evil-indent-plus-i-indent-up
+             evil-indent-plus-a-indent-up
+             evil-indent-plus-i-indent-up-down
+             evil-indent-plus-a-indent-up-down))
+
+
+(def-package! evil-textobj-anyblock
+  :commands (evil-textobj-anyblock-inner-block evil-textobj-anyblock-a-block))

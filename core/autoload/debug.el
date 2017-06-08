@@ -1,10 +1,10 @@
 ;;; debug.el
 
 ;;;###autoload
-(defun doom/what-face (pos)
-  "Lists all faces at point. Overlay faces are <>-delimited."
+(defun doom/what-face (&optional pos)
+  "Lists all faces at point. Overlay faces are denoted with an asterix."
   (interactive "d")
-  (let ((pos (point))
+  (let ((pos (or pos (point)))
         faces)
     (when-let (face (get-text-property pos 'face))
       (dolist (f (if (listp face) face (list face)))
@@ -13,11 +13,13 @@
       (let ((face (overlay-get ov 'face)))
         (dolist (f (if (listp face) face (list face)))
           (push (propertize (concat (symbol-name f) "*") 'face f) faces))))
+    (if (called-interactively-p 'any)
+        (message "%s %s"
+                 (propertize "Faces:" 'face 'font-lock-comment-face)
+                 (if faces (string-join faces ", ") "n/a"))
+      (mapcar #'substring-no-properties faces))))
 
-    (message "%s %s"
-             (propertize "Faces:" 'face 'font-lock-comment-face)
-             (if faces (string-join faces ", ") "n/a"))))
-
+;;;###autoload
 (defun doom-active-minor-modes ()
   "Get a list of active minor-mode symbols."
   (cl-remove-if (lambda (m) (and (boundp m) (symbol-value m)))
@@ -30,7 +32,11 @@ selection of all minor-modes, active or not."
   (interactive
    (list (completing-read "Minor mode: "
                           (doom-active-minor-modes))))
-  (describe-minor-mode-from-symbol (intern mode)))
+  (describe-minor-mode-from-symbol
+   (cl-typecase mode
+     (string (intern mode))
+     (symbol mode)
+     (t (error "Expected a symbol/string, got a %s" (type-of mode))))))
 
 ;;;###autoload
 (defun doom/am-i-secure ()

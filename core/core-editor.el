@@ -20,6 +20,7 @@ modes are active and the buffer is read-only.")
  delete-trailing-lines nil
  fill-column 80
  sentence-end-double-space nil
+ word-wrap t
  ;; Scrolling
  hscroll-margin 1
  hscroll-step 1
@@ -40,56 +41,23 @@ modes are active and the buffer is read-only.")
  ;; Wrapping
  truncate-lines t
  truncate-partial-width-windows 50
+ ;; undo-tree
+ undo-tree-auto-save-history t
+ undo-tree-history-directory-alist (list (cons "." (concat doom-cache-dir "undo-tree-hist/")))
  visual-fill-column-center-text nil
- word-wrap t
  vc-follow-symlinks t)
 
-;; Save point across sessions
-(require 'saveplace)
-(setq save-place-file (concat doom-cache-dir "saveplace"))
-(save-place-mode +1)
-
-;; Save history across sessions
-(require 'savehist)
-(setq savehist-file (concat doom-cache-dir "savehist")
-      savehist-save-minibuffer-history t
-      savehist-autosave-interval nil ; save on kill only
-      savehist-additional-variables '(kill-ring search-ring regexp-search-ring))
-(savehist-mode 1)
-
-;; Branching & persistent undo
-(require 'undo-tree)
-(setq undo-tree-auto-save-history t
-      undo-tree-history-directory-alist (list (cons "." (concat doom-cache-dir "undo-tree-hist/"))))
-
-;; Keep track of recently opened files
-(require 'recentf)
-(setq recentf-save-file (concat doom-cache-dir "recentf")
-      recentf-exclude (list "/tmp/" "/ssh:" "\\.?ido\\.last$" "\\.revive$" "/TAGS$"
-                            "^/var/folders/.+$" doom-local-dir)
-      recentf-max-menu-items 0
-      recentf-max-saved-items 250
-      recentf-filename-handlers '(abbreviate-file-name))
-(quiet! (recentf-mode 1))
-
-;; Ediff: use existing frame instead of creating a new one
-(add-hook! ediff-load
+;; ediff: use existing frame instead of creating a new one
+(add-hook! 'ediff-load-hook
   (setq ediff-diff-options           "-w"
         ediff-split-window-function  #'split-window-horizontally
         ediff-window-setup-function  #'ediff-setup-windows-plain)) ; no extra frames
 
-;; revert buffers for changed files
-(global-auto-revert-mode 1)
-(setq auto-revert-verbose nil)
-
-;; don't kill scratch buffers
 (defun doom|dont-kill-scratch-buffer ()
+  "Don't kill the scratch buffer."
   (or (not (string= (buffer-name) "*scratch*"))
       (ignore (bury-buffer))))
 (add-hook 'kill-buffer-query-functions #'doom|dont-kill-scratch-buffer)
-
-;; enabled by default in Emacs 25+. No thanks.
-(electric-indent-mode -1)
 
 (defun doom*delete-trailing-whitespace (orig-fn &rest args)
   "Don't affect trailing whitespace on current line."
@@ -104,9 +72,9 @@ modes are active and the buffer is read-only.")
 (advice-add #'delete-trailing-whitespace :around #'doom*delete-trailing-whitespace)
 
 (defun doom|check-large-file ()
-  "Check if the buffer's file is large. If so, ask for confirmation to open it
-literally (read-only, disabled undo and in fundamental-mode) for performance
-sake."
+  "Check if the buffer's file is large (see `doom-large-file-size'). If so, ask
+for confirmation to open it literally (read-only, disabled undo and in
+fundamental-mode) for performance sake."
   (let* ((filename (buffer-file-name))
          (size (nth 7 (file-attributes filename))))
     (when (and (not (memq major-mode doom-large-file-modes-list))
@@ -122,15 +90,49 @@ sake."
 
 
 ;;
+;; Built-in plugins
+;;
+
+;; revert buffers for changed files
+(global-auto-revert-mode 1)
+(setq auto-revert-verbose nil)
+
+;; enabled by default in Emacs 25+. No thanks.
+(electric-indent-mode -1)
+
+;; savehist / saveplace
+(setq savehist-file (concat doom-cache-dir "savehist")
+      savehist-save-minibuffer-hisstory t
+      savehist-autosave-interval nil ; save on kill only
+      savehist-additional-variables '(kill-ring search-ring regexp-search-ring)
+      save-place-file (concat doom-cache-dir "saveplace"))
+(add-hook! 'after-init-hook #'(savehist-mode save-place-mode))
+
+;; Keep track of recently opened files
+(def-package! recentf
+  :defer 1
+  :config
+  (setq recentf-save-file (concat doom-cache-dir "recentf")
+        recentf-exclude (list "/tmp/" "/ssh:" "\\.?ido\\.last$" "\\.revive$" "/TAGS$"
+                              "^/var/folders/.+$" doom-local-dir)
+        recentf-max-menu-items 0
+        recentf-max-saved-items 250
+        recentf-filename-handlers '(abbreviate-file-name))
+  (quiet! (recentf-mode 1)))
+
+
+;;
 ;; Core Plugins
 ;;
 
 ;; Handles whitespace (tabs/spaces) settings externally. This way projects can
 ;; specify their own formatting rules.
-(def-package! editorconfig :demand t
+(def-package! editorconfig
+  :demand t
   :mode ("\\.?editorconfig$" . editorconfig-conf-mode)
   :init
   (def-setting! :editorconfig (action value)
+    ":add or :remove an entry in `editorconfig-indentation-alist'."
     `(after! editorconfig
        ,(cond ((eq action :add)
                `(push ',value editorconfig-indentation-alist))
@@ -149,7 +151,8 @@ sake."
     (if indent-tabs-mode (whitespace-mode +1))))
 
 ;; Auto-close delimiters and blocks as you type
-(def-package! smartparens :demand t
+(def-package! smartparens
+  :demand t
   :init
   (setq sp-autowrap-region nil ; let evil-surround handle this
         sp-highlight-pair-overlay nil
@@ -179,6 +182,15 @@ sake."
     :unless '(sp-point-before-word-p sp-point-before-same-p))
   (sp-local-pair '(xml-mode nxml-mode php-mode)
                  "<!--" "-->"   :post-handlers '(("| " "SPC"))))
+
+;; Branching & persistent undo
+(def-package! undo-tree
+  :demand t
+  :config
+  (defun doom*silent-undo-tree-load (orig-fn &rest args)
+    "Silence undo-tree load errors."
+    (quiet! (apply orig-fn args)))
+  (advice-add #'undo-tree-load-history-hook :around #'doom*silent-undo-tree-load))
 
 
 ;;

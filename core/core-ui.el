@@ -14,20 +14,21 @@
  image-animate-loop t
  indicate-buffer-boundaries nil
  indicate-empty-lines nil
+ max-mini-window-height 0.3
+ mode-line-default-help-echo nil ; disable mode-line mouseovers
+ mouse-yank-at-point t           ; middle-click paste at point, not at click
+ resize-mini-windows 'grow-only  ; Minibuffer resizing
+ show-help-function nil          ; hide :help-echo text
+ split-width-threshold nil       ; favor horizontal splits
+ uniquify-buffer-name-style 'forward
+ use-dialog-box nil              ; always avoid GUI
+ visible-cursor nil
+ x-stretch-cursor nil
+ ;; defer jit font locking slightly to [try to] improve Emacs performance
  jit-lock-defer-time nil
  jit-lock-stealth-nice 0.1
  jit-lock-stealth-time 0.2
  jit-lock-stealth-verbose nil
- max-mini-window-height 0.3
- mode-line-default-help-echo nil  ; disable mode-line mouseovers
- mouse-yank-at-point t          ; middle-click paste at point, not at click
- resize-mini-windows 'grow-only ; Minibuffer resizing
- show-help-function nil         ; hide :help-echo text
- split-width-threshold nil      ; favor horizontal splits
- uniquify-buffer-name-style 'forward
- use-dialog-box nil             ; always avoid GUI
- visible-cursor nil
- x-stretch-cursor nil
  ;; `pos-tip' defaults
  pos-tip-internal-border-width 6
  pos-tip-border-width 1
@@ -95,6 +96,14 @@ local value, whether or not it's permanent-local. Therefore, we cycle
       show-paren-when-point-inside-paren t)
 (show-paren-mode +1)
 
+;;; More reliable inter-window border
+;; The native border "consumes" a pixel of the fringe on righter-most splits,
+;; `window-divider' does not. Available since Emacs 25.1.
+(setq-default window-divider-default-places t
+              window-divider-default-bottom-width 1
+              window-divider-default-right-width 1)
+(window-divider-mode +1)
+
 ;; like diminish, but for major-modes. [pedantry intensifies]
 (defvar doom-ui-mode-names
   '((sh-mode . "sh")
@@ -115,7 +124,8 @@ mode is detected.")
 
 (tooltip-mode -1) ; relegate tooltips to echo area only
 (menu-bar-mode -1)
-(tool-bar-mode -1)
+(when (fboundp 'tool-bar-mode)
+  (tool-bar-mode -1))
 (when (display-graphic-p)
   (scroll-bar-mode -1)
   ;; buffer name  in frame title
@@ -131,6 +141,9 @@ mode is detected.")
 ;;
 ;; Plugins
 ;;
+
+(def-package! fringe-helper
+  :commands fringe-helper-define)
 
 (def-package! hideshow ; built-in
   :commands (hs-minor-mode hs-toggle-hiding hs-already-hidden-p)
@@ -196,11 +209,16 @@ file."
   :init
   (add-hook! (linum-mode nlinum-mode) #'hl-line-mode)
   :config
-  ;; stickiness doesn't play nice with emacs 25+
+  ;; I don't need hl-line showing in other windows. This also offers a small
+  ;; speed boost when buffer is displayed in multiple windows.
   (setq hl-line-sticky-flag nil
         global-hl-line-sticky-flag nil)
 
-  ;; acts weird with evil visual mode, so disable it temporarily
+  ;; Fix lingering hl-line overlays
+  (add-hook! 'hl-line-mode-hook
+    (remove-overlays (point-min) (point-max) 'face 'hl-line))
+
+  ;; Acts & looks weird with evil visual mode, so disable it temporarily
   (defun doom|hl-line-off () (hl-line-mode -1))
   (after! evil
     (add-hook! 'hl-line-mode-hook
@@ -219,46 +237,23 @@ file."
   (add-hook! (prog-mode text-mode)
     (unless (eq major-mode 'org-mode)
       (nlinum-mode +1)))
-
   :config
-  (defun doom-nlinum-flush-window (&optional window)
-    (let ((window (or window (selected-window)))
-          (orig-win (selected-window)))
-      (with-selected-window window
-        (when nlinum-mode
-          (if (not (eq window orig-win))
-              (nlinum--flush)
-            ;; done in two steps to leave current line number highlighting alone
-            (nlinum--region (point-min) (max 1 (1- (line-beginning-position))))
-            (nlinum--region (min (point-max) (1+ (line-end-position))) (point-max)))))))
-
-  ;; nlinum has a tendency to lose line numbers over time; a known issue. These
-  ;; hooks/advisors attempt to stave off these glitches.
-  (defun doom*nlinum-flush-all-windows (&rest _)
-    "Fix nlinum margins after major UI changes (like a change of font)."
-    (mapc #'doom-nlinum-flush-window (doom-visible-windows))
-    nil)
-  (advice-add #'set-frame-font :after #'doom*nlinum-flush-all-windows)
-
-  (defun doom*nlinum-flush (&optional _ norecord)
-    ;; norecord check is necessary to prevent infinite recursion in
-    ;; `select-window'
-    (when (not norecord) (doom-nlinum-flush-window)))
-  (advice-add #'select-window :before #'doom*nlinum-flush)
-  (advice-add #'select-window :after  #'doom*nlinum-flush)
-  (add-hook '+evil-esc-hook #'doom*nlinum-flush-all-windows t)
-  (add-hook 'focus-in-hook  #'doom*nlinum-flush-all-windows)
-  (add-hook 'focus-out-hook #'doom*nlinum-flush-all-windows)
-
-  ;;
-  (after! web-mode
-    (advice-add #'web-mode-fold-or-unfold :after #'doom*nlinum-flush))
-
   ;; Optimization: calculate line number column width beforehand
   (add-hook! nlinum-mode
     (setq nlinum--width
           (length (save-excursion (goto-char (point-max))
                                   (format-mode-line "%l"))))))
+
+;; Highlight current line, and other nlinum tweaks/fixes
+(def-package! nlinum-hl
+  :after nlinum
+  :init (add-hook 'nlinum-mode-hook #'nlinum-hl-mode)
+  :config
+  ;; nlinum has a tendency to lose line numbers over time; a known issue. These
+  ;; hooks/advisors attempt to stave off these glitches.
+  (advice-add #'select-window :before #'nlinum-hl-do-flush)
+  (advice-add #'select-window :after  #'nlinum-hl-do-flush)
+  (add-hook '+evil-esc-hook #'nlinum-hl-flush-all-windows t))
 
 ;; Helps us distinguish stacked delimiter pairs. Especially in parentheses-drunk
 ;; languages like Lisp.

@@ -24,7 +24,6 @@
     (add-hook 'before-save-hook #'delete-trailing-whitespace nil t)
 
     (eldoc-mode +1)
-    (highlight-quoted-mode +1)
     (auto-compile-on-save-mode +1)
     (rainbow-delimiters-mode +1)
 
@@ -32,11 +31,14 @@
                (not (file-in-directory-p buffer-file-name doom-emacs-dir)))
       (flycheck-mode +1))
 
+    ;; improve fontification
+    (highlight-quoted-mode +1)
+    (highlight-numbers-mode +1)
     (font-lock-add-keywords
      nil `(;; Display "lambda" as λ
            ("(\\(lambda\\)" (1 (ignore (compose-region (match-beginning 1) (match-end 1) ?λ #'decompose-region))))
            ;; Highlight doom/module functions
-           ("\\(^\\|\\s-\\|,\\)(\\(\\(doom\\|\\+\\)[^) ]+\\)[) \n]" (2 font-lock-constant-face))))
+           ("\\(^\\|\\s-\\|,\\)(\\(\\(doom\\|\\+\\)[^) ]+\\)[) \n]" (2 font-lock-keyword-face))))
 
     (setq imenu-generic-expression
           '(("Evil Commands" "^\\s-*(evil-define-\\(?:command\\|operator\\|motion\\) +\\(\\_<[^ ()\n]+\\_>\\)" 1)

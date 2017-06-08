@@ -48,11 +48,14 @@
       ;ido             ; the other *other* search engine...
 
        :ui
-       doom            ; doom-one; a look inspired by Atom's Dark One
+       doom            ; what makes DOOM look the way it does
        doom-dashboard  ; a nifty splash screen for Emacs
        doom-modeline   ; a snazzy Atom-inspired mode-line
        doom-quit       ; DOOM quit-message prompts when you quit Emacs
        hl-todo         ; highlight TODO/FIXME/NOTE tags
+       nav-flash       ; blink the current line after jumping
+       evil-goggles    ; display visual hints when editing in evil
+      ;unicode         ; extended unicode font support for various languages
 
        :tools
        dired           ; making dired pretty [functional]
@@ -60,6 +63,7 @@
        eshell          ; a consistent, cross-platform shell (WIP)
        gist            ; interacting with github gists
        macos           ; macos-specific commands
+       neotree         ; a project drawer, like NERDTree for vim
        rotate-text     ; cycle region at point between text candidates
        term            ; terminals in Emacs
        tmux            ; an API for interacting with tmux
@@ -95,8 +99,8 @@
        typescript      ; javascript, but better
        web             ; the tubes
 
-       ;; Applications are opinionated modules that transform Emacs to fulfill a
-       ;; specific purpose. They should be loaded last.
+       ;; Applications are complex and opinionated modules that transform Emacs
+       ;; toward a specific purpose. They should be loaded last.
        :app
       ;crm             ; TODO org-mode for client relations management
        email           ; Emacs as an email client
@@ -108,7 +112,8 @@
        twitter         ; twitter client https://twitter.com/vnought
        write           ; emacs as a word processor (latex + org + markdown)
 
-       ;; Private modules aren't tracked in source control (except for mine).
-       ;; Use it as a reference for your own.
+       ;; Private modules named after your username are loaded automatically.
+       ;; Leaving this here is harmless though. Also, they are omitted from
+       ;; source control (except for mine; use it as a reference).
        :private hlissner)
 
