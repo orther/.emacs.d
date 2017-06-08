@@ -252,14 +252,15 @@ across windows."
 (def-package! evil-escape
   :commands evil-escape-mode
   :init
-  (setq evil-escape-excluded-states '(normal visual multiedit emacs)
         ;; BMACS disable escape key sequence
+  (setq evil-escape-excluded-states '(normal visual multiedit emacs motion)
         evil-escape-key-sequence nil
         evil-escape-excluded-major-modes '(neotree-mode)
         evil-escape-delay 0.25)
-
   (add-hook 'emacs-startup-hook #'evil-escape-mode)
   :config
+  ;; no `evil-escape' in minibuffer
+  (push #'minibufferp evil-escape-inhibit-functions)
   (map! :irvo "C-g" #'evil-escape))
 
 
