@@ -1,4 +1,4 @@
-;;; tools/term/autoload.el
+;;; tools/term/autoload.el -*- lexical-binding: t; -*-
 
 ;;;###autoload
 (defun +term (&optional project-root)
@@ -6,7 +6,7 @@
 non-nil, cd into the current project's root."
   (interactive "P")
   (let ((default-directory (if project-root (doom-project-root) default-directory)))
-    (call-interactively 'multi-term)))
+    (call-interactively #'multi-term)))
 
 ;; BMACS - term popup modeled after scratch buffer popup
 ;;;###autoload

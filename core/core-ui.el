@@ -1,4 +1,4 @@
-;; core-ui.el --- draw me like one of your French editors
+;; core-ui.el -*- lexical-binding: t; -*-
 
 (defvar doom-ui-fringe-size '4 "Default fringe width")
 
@@ -39,9 +39,6 @@
  confirm-kill-emacs (lambda (_) (if (doom-real-buffers-list) (y-or-n-p "››› Quit?") t)))
 
 (fset #'yes-or-no-p #'y-or-n-p) ; y/n instead of yes/no
-
-;; auto-enabled in Emacs 25+; I'd rather enable it manually
-(global-eldoc-mode -1)
 
 ;; show typed keystrokes in minibuffer
 (setq echo-keystrokes 0.02)
@@ -94,7 +91,7 @@ local value, whether or not it's permanent-local. Therefore, we cycle
 (setq show-paren-delay 0.1
       show-paren-highlight-openparen t
       show-paren-when-point-inside-paren t)
-(show-paren-mode +1)
+(add-hook 'window-setup-hook #'show-paren-mode)
 
 ;;; More reliable inter-window border
 ;; The native border "consumes" a pixel of the fringe on righter-most splits,
@@ -102,7 +99,7 @@ local value, whether or not it's permanent-local. Therefore, we cycle
 (setq-default window-divider-default-places t
               window-divider-default-bottom-width 1
               window-divider-default-right-width 1)
-(window-divider-mode +1)
+(add-hook 'window-setup-hook #'window-divider-mode)
 
 ;; like diminish, but for major-modes. [pedantry intensifies]
 (defvar doom-ui-mode-names
@@ -122,12 +119,15 @@ mode is detected.")
 ;; Bootstrap
 ;;
 
+;; auto-enabled in Emacs 25+; I'd rather enable it manually
+(global-eldoc-mode -1)
+
+;; draw me like one of your French editors
 (tooltip-mode -1) ; relegate tooltips to echo area only
 (menu-bar-mode -1)
 (when (display-graphic-p)
   (scroll-bar-mode -1)
-  (tool-bar-mode -1)
-  ;; buffer name  in frame title
+  ;; buffer name in frame title
   (setq-default frame-title-format '("DOOM Emacs"))
   ;; standardize fringe width
   (push (cons 'left-fringe  doom-ui-fringe-size) default-frame-alist)
@@ -191,7 +191,7 @@ file."
       (set-buffer-modified-p nil))
     nil)
 
-  (add-hook! (highlight-indentation-mode highlight-indentation-current-column-mode)
+  (defun doom|init-highlight-indentation ()
     (if (or highlight-indentation-mode highlight-indentation-current-column-mode)
         (progn
           (doom|inject-trailing-whitespace)
@@ -199,58 +199,9 @@ file."
           (add-hook 'after-save-hook #'doom|inject-trailing-whitespace nil t))
       (remove-hook 'before-save-hook #'delete-trailing-whitespace t)
       (remove-hook 'after-save-hook #'doom|inject-trailing-whitespace t)
-(delete-trailing-whitespace))))
-
-;; Show uninterrupted indentation markers with some whitespace voodoo.
-(def-package! highlight-indentation
-  :commands (highlight-indentation-mode highlight-indentation-current-column-mode)
-  :config
-  (defun doom|inject-trailing-whitespace (&optional start end)
-    "The opposite of `delete-trailing-whitespace'. Injects whitespace into
-buffer so that `highlight-indentation-mode' will display uninterrupted indent
-markers. This whitespace is stripped out on save, as not to affect the resulting
-file."
-    (interactive (progn (barf-if-buffer-read-only)
-                        (if (use-region-p)
-                            (list (region-beginning) (region-end))
-                          (list nil nil))))
-    (unless indent-tabs-mode
-      (save-match-data
-        (save-excursion
-          (let ((end-marker (copy-marker (or end (point-max))))
-                (start (or start (point-min))))
-            (goto-char start)
-            (while (and (re-search-forward "^$" end-marker t) (< (point) end-marker))
-              (let (line-start line-end next-start next-end)
-                (save-excursion
-                  ;; Check previous line indent
-                  (forward-line -1)
-                  (setq line-start (point)
-                        line-end (save-excursion (back-to-indentation) (point)))
-                  ;; Check next line indent
-                  (forward-line 2)
-                  (setq next-start (point)
-                        next-end (save-excursion (back-to-indentation) (point)))
-                  ;; Back to origin
-                  (forward-line -1)
-                  ;; Adjust indent
-                  (let* ((line-indent (- line-end line-start))
-                         (next-indent (- next-end next-start))
-                         (indent (min line-indent next-indent)))
-                    (insert (make-string (if (zerop indent) 0 (1+ indent)) ? )))))
-              (forward-line 1)))))
-      (set-buffer-modified-p nil))
-    nil)
-
+      (delete-trailing-whitespace)))
   (add-hook! (highlight-indentation-mode highlight-indentation-current-column-mode)
-    (if (or highlight-indentation-mode highlight-indentation-current-column-mode)
-        (progn
-          (doom|inject-trailing-whitespace)
-          (add-hook 'before-save-hook #'delete-trailing-whitespace nil t)
-          (add-hook 'after-save-hook #'doom|inject-trailing-whitespace nil t))
-      (remove-hook 'before-save-hook #'delete-trailing-whitespace t)
-      (remove-hook 'after-save-hook #'doom|inject-trailing-whitespace t)
-      (delete-trailing-whitespace))))
+    #'doom|init-highlight-indentation))
 
 ;; For modes that don't adequately highlight numbers
 (def-package! highlight-numbers :commands highlight-numbers-mode)
@@ -310,8 +261,8 @@ file."
 ;; indicators for empty lines past EOF
 (def-package! vi-tilde-fringe
   :when (display-graphic-p)
-  :demand t
-  :config (global-vi-tilde-fringe-mode t))
+  :commands global-vi-tilde-fringe-mode
+  :init (add-hook 'window-setup-hook #'global-vi-tilde-fringe-mode))
 
 ;; For a distractions-free-like UI, that dynamically resizes margets and can
 ;; center a buffer.
@@ -337,12 +288,11 @@ file."
              (byte-compile #',sym))))))
 
 (defsubst doom--prepare-modeline-segments (segments)
-  (let (segs)
-    (dolist (seg segments (nreverse segs))
-      (push (if (stringp seg)
-                seg
-              (list (intern (format "doom-modeline-segment--%s" (symbol-name seg)))))
-            segs))))
+  (cl-loop for seg in segments
+           if (stringp seg)
+            collect seg
+           else
+            collect (list (intern (format "doom-modeline-segment--%s" (symbol-name seg))))))
 
 (defmacro def-modeline! (name lhs &optional rhs)
   "Defines a modeline format and byte-compiles it. NAME is a symbol to identify

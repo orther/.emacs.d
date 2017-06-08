@@ -1,4 +1,4 @@
-;;; feature/evil/config.el
+;;; feature/evil/config.el -*- lexical-binding: t; -*-
 
 ;; I'm a vimmer at heart. Its modal philosophy suits me better, and this module
 ;; strives to make Emacs a much better vim than vim was.
@@ -41,8 +41,9 @@
         shift-select-mode nil)
 
   :config
-  (evil-mode +1)
-  (show-paren-mode +1)
+  (add-hook 'emacs-startup-hook #'evil-mode)
+  ;; BMACS - show paren mode
+  (add-hook 'emacs-startup-hook #'show-paren-mode)
   (evil-select-search-module 'evil-search-module 'evil-search)
 
   (set! :popup
@@ -163,8 +164,7 @@ across windows."
 
 
 (def-package! evil-easymotion
-  :defer 1
-  :commands evilem-define
+  :after evil-snipe
   :config
   ;;BMACS - change easymotion prefix to g
   (let ((prefix "g"))
@@ -202,7 +202,6 @@ across windows."
   (setq evil-embrace-show-help-p nil)
   (evil-embrace-enable-evil-surround-integration)
 
-  ;; Defuns
   (defun +evil--embrace-get-pair (char)
     (if-let (pair (cdr-safe (assoc (string-to-char char) evil-surround-pairs-alist)))
         pair
@@ -251,7 +250,7 @@ across windows."
 
 
 (def-package! evil-escape
-  :demand t
+  :commands evil-escape-mode
   :init
   (setq evil-escape-excluded-states '(normal visual multiedit emacs)
         ;; BMACS disable escape key sequence
@@ -259,8 +258,8 @@ across windows."
         evil-escape-excluded-major-modes '(neotree-mode)
         evil-escape-delay 0.25)
 
+  (add-hook 'emacs-startup-hook #'evil-escape-mode)
   :config
-  (evil-escape-mode +1)
   (map! :irvo "C-g" #'evil-escape))
 
 
@@ -356,7 +355,7 @@ the new algorithm is confusing, like in python or ruby."
                              (?\] "[]})]")
                              (?\; "[;:]")))
   :config
-  (evil-snipe-override-mode +1))
+  (add-hook 'emacs-startup-hook #'evil-snipe-override-mode))
 
 
 (def-package! evil-surround

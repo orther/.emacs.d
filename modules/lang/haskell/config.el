@@ -1,4 +1,4 @@
-;;; module-haskell.el
+;;; lang/haskell/config.el -*- lexical-binding: t; -*-
 
 (def-package! haskell-mode
   :mode "\\.hs$"
@@ -13,7 +13,6 @@
   (add-hook 'haskell-mode-hook #'structured-haskell-mode)
 
   (set! :repl 'haskell-mode #'switch-to-haskell)
-
   (push ".hi" completion-ignored-extensions)
 
   (custom-set-variables '(company-ghc-show-info t))

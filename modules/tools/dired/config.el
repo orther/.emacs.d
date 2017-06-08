@@ -1,3 +1,5 @@
+;;; tools/dired/config.el -*- lexical-binding: t; -*-
+
 (setq ;; Always copy/delete recursively
       dired-recursive-copies  'always
       dired-recursive-deletes 'top
@@ -37,7 +39,7 @@
   (add-hook 'dired-initial-position-hook #'dired-k)
   (add-hook 'dired-after-readin-hook #'dired-k-no-revert))
 
-;; Striped dired buffers
+
 (def-package! stripe-buffer
   :commands stripe-buffer-mode
   :init (add-hook 'dired-mode-hook #'stripe-buffer-mode))
