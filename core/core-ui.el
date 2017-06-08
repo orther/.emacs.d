@@ -144,6 +144,63 @@ mode is detected.")
 (def-package! fringe-helper
   :commands fringe-helper-define)
 
+(def-package! hideshow :demand t ; built-in
+  :commands (hs-minor-mode hs-toggle-hiding hs-already-hidden-p hs-hide-level hs-show-all)
+  :config
+  (add-hook 'prog-mode-hook #'hs-minor-mode)
+  (setq hs-hide-comments-when-hiding-all nil))
+
+;; Show uninterrupted indentation markers with some whitespace voodoo.
+(def-package! highlight-indentation
+  :commands (highlight-indentation-mode highlight-indentation-current-column-mode)
+  :config
+  (defun doom|inject-trailing-whitespace (&optional start end)
+    "The opposite of `delete-trailing-whitespace'. Injects whitespace into
+buffer so that `highlight-indentation-mode' will display uninterrupted indent
+markers. This whitespace is stripped out on save, as not to affect the resulting
+file."
+    (interactive (progn (barf-if-buffer-read-only)
+                        (if (use-region-p)
+                            (list (region-beginning) (region-end))
+                          (list nil nil))))
+    (unless indent-tabs-mode
+      (save-match-data
+        (save-excursion
+          (let ((end-marker (copy-marker (or end (point-max))))
+                (start (or start (point-min))))
+            (goto-char start)
+            (while (and (re-search-forward "^$" end-marker t) (< (point) end-marker))
+              (let (line-start line-end next-start next-end)
+                (save-excursion
+                  ;; Check previous line indent
+                  (forward-line -1)
+                  (setq line-start (point)
+                        line-end (save-excursion (back-to-indentation) (point)))
+                  ;; Check next line indent
+                  (forward-line 2)
+                  (setq next-start (point)
+                        next-end (save-excursion (back-to-indentation) (point)))
+                  ;; Back to origin
+                  (forward-line -1)
+                  ;; Adjust indent
+                  (let* ((line-indent (- line-end line-start))
+                         (next-indent (- next-end next-start))
+                         (indent (min line-indent next-indent)))
+                    (insert (make-string (if (zerop indent) 0 (1+ indent)) ? )))))
+              (forward-line 1)))))
+      (set-buffer-modified-p nil))
+    nil)
+
+  (add-hook! (highlight-indentation-mode highlight-indentation-current-column-mode)
+    (if (or highlight-indentation-mode highlight-indentation-current-column-mode)
+        (progn
+          (doom|inject-trailing-whitespace)
+          (add-hook 'before-save-hook #'delete-trailing-whitespace nil t)
+          (add-hook 'after-save-hook #'doom|inject-trailing-whitespace nil t))
+      (remove-hook 'before-save-hook #'delete-trailing-whitespace t)
+      (remove-hook 'after-save-hook #'doom|inject-trailing-whitespace t)
+(delete-trailing-whitespace))))
+
 ;; Show uninterrupted indentation markers with some whitespace voodoo.
 (def-package! highlight-indentation
   :commands (highlight-indentation-mode highlight-indentation-current-column-mode)

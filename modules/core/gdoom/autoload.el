@@ -160,3 +160,11 @@ current window."
                      (mapcar #'car (window-prev-buffers window)))
          ;; `other-buffer' honors `buffer-predicate' so no need to filter
          (other-buffer current-buffer t)))))
+
+;;;###autoload
+(defun +gdoom/toggle-fold ()
+  (interactive)
+  (let ((saved-point (point)))
+    (end-of-line)
+    (hs-toggle-hiding)
+    (goto-char saved-point)))

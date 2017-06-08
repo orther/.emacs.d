@@ -32,8 +32,9 @@
  ;; Indent on tab
  :nvi "TAB"     #'indent-for-tab-command
  ;; Fold toggle
- :nvi [C-backspace] #'yafolding-toggle-element
- :nvi [C-S-backspace] #'yafolding-toggle-all
+ :nvi [C-backspace] #'+gdoom/toggle-fold
+ :nvi [S-backspace] #'hs-hide-level
+ :nvi [C-S-backspace] #'hs-show-all
 
   ;;; <leader> and <localleader>
   :m ";" #'evil-ex
