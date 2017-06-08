@@ -241,13 +241,7 @@ file."
 ;; Highlight current line, and other nlinum tweaks/fixes
 (def-package! nlinum-hl
   :after nlinum
-  :init (add-hook 'nlinum-mode-hook #'nlinum-hl-mode)
-  :config
-  ;; nlinum has a tendency to lose line numbers over time; a known issue. These
-  ;; hooks/advisors attempt to stave off these glitches.
-  (advice-add #'select-window :before #'nlinum-hl-do-flush)
-  (advice-add #'select-window :after  #'nlinum-hl-do-flush)
-  (add-hook '+evil-esc-hook #'nlinum-hl-flush-all-windows t))
+  :init (add-hook 'nlinum-mode-hook #'nlinum-hl-mode))
 
 ;; Helps us distinguish stacked delimiter pairs. Especially in parentheses-drunk
 ;; languages like Lisp.
