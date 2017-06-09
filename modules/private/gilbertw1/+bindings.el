@@ -32,9 +32,9 @@
  ;; Indent on tab
  :nvi "TAB"     #'indent-for-tab-command
  ;; Fold toggle
- :nvi [C-backspace] #'+gdoom/toggle-fold
- :nvi [S-backspace] #'hs-hide-level
- :nvi [C-S-backspace] #'hs-show-all
+ :nv [C-backspace] #'+gdoom/toggle-fold
+ :nv [S-backspace] #'hs-hide-level
+ :nv [C-S-backspace] #'hs-show-all
 
   ;;; <leader> and <localleader>
   :m ";" #'evil-ex
@@ -452,7 +452,6 @@
  :nv "C-j"  #'smart-down
 
  ;; undo-tree -- undo/redo for visual regions
- :v "C-u" #'undo-tree-undo
  :v "C-r" #'undo-tree-redo
 
  ;; yasnippet
