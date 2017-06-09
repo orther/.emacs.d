@@ -367,6 +367,7 @@ the command buffer."
                          window t arg windmove-wrap-around t))
   (advice-add #'windmove-find-other-window :override #'doom*ignore-window-parameters-in-popups))
 
+;; BMACS - no helm
 
 (after! help-mode
   ;; Help buffers use `other-window' to decide where to open followed links,
