@@ -10,5 +10,4 @@
 (package! git-timemachine)
 (package! gist)
 (package! magit)
-(when (featurep! :feature evil)
-  (package! evil-magit))
+;(package! evil-magit)

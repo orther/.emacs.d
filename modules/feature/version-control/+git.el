@@ -41,13 +41,20 @@
   (add-hook 'git-timemachine-mode-hook #'evil-force-normal-state))
 
 (def-package! magit
-  :commands (magit-status magit-blame magit-log-buffer-file))
+:commands (magit-status magit-blame magit-log-buffer-file)
+  :config
+  (set! :evil-state 'magit-status-mode 'emacs)
+  (after!
+    ;; Switch to emacs state only while in `magit-blame-mode', then back when
+    ;; its done (since it's a minor-mode).
+    (add-hook! 'magit-blame-mode-hook
+      (evil-local-mode (if magit-blame-mode -1 +1)))))
 
 (def-package! git-link
   :commands (git-link git-link-commit git-link-homepage))
 
 ;; BMACS - don't unbind C-j/C-k
-(def-package! evil-magit
-  :when (featurep! :feature evil)
-  :after magit
-  :init (setq evil-magit-want-horizontal-movement t))
+;; (def-package! evil-magit
+;;   :when (featurep! :feature evil)
+;;   :after magit
+;;   :init (setq evil-magit-want-horizontal-movement t))
