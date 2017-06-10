@@ -10,4 +10,5 @@
 (package! git-timemachine)
 (package! gist)
 (package! magit)
-;(package! evil-magit)
+;; BMACS - evil-magit
+(package! evil-magit)
