@@ -108,7 +108,7 @@ fundamental-mode) for performance sake."
       savehist-autosave-interval nil ; save on kill only
       savehist-additional-variables '(kill-ring search-ring regexp-search-ring)
       save-place-file (concat doom-cache-dir "saveplace"))
-(add-hook! 'emacs-startup-hook #'(savehist-mode save-place-mode))
+(add-hook! 'doom-init-hook #'(savehist-mode save-place-mode))
 
 ;; Keep track of recently opened files
 (def-package! recentf
@@ -152,7 +152,7 @@ fundamental-mode) for performance sake."
               (t (error "%s is an invalid action for :editorconfig" action)))))
 
   :config
-  (add-hook 'emacs-startup-hook #'editorconfig-mode)
+  (add-hook 'doom-init-hook #'editorconfig-mode)
 
   (defun doom|editorconfig-whitespace-mode-maybe (&rest _)
     "Show whitespace-mode when file uses TABS (ew)."
@@ -170,7 +170,7 @@ fundamental-mode) for performance sake."
         sp-max-pair-length 3)
 
   :config
-  (add-hook 'emacs-startup-hook #'smartparens-global-mode)
+  (add-hook 'doom-init-hook #'smartparens-global-mode)
   (require 'smartparens-config)
   ;; Smartparens interferes with Replace mode
   (add-hook 'evil-replace-state-entry-hook #'turn-off-smartparens-mode)

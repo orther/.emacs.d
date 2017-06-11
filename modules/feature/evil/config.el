@@ -44,7 +44,7 @@
         shift-select-mode nil)
 
   :config
-  (add-hook 'emacs-startup-hook #'evil-mode)
+  (add-hook 'doom-init-hook #'evil-mode)
   ;; BMACS - show paren mode
   (add-hook 'emacs-startup-hook #'show-paren-mode)
   (evil-select-search-module 'evil-search-module 'evil-search)
@@ -260,7 +260,7 @@ across windows."
         evil-escape-key-sequence nil
         evil-escape-excluded-major-modes '(neotree-mode)
         evil-escape-delay 0.25)
-  (add-hook 'emacs-startup-hook #'evil-escape-mode)
+  (add-hook 'doom-post-init-hook #'evil-escape-mode)
   :config
   ;; no `evil-escape' in minibuffer
   (cl-pushnew #'minibufferp evil-escape-inhibit-functions)
@@ -359,7 +359,7 @@ the new algorithm is confusing, like in python or ruby."
                              (?\] "[]})]")
                              (?\; "[;:]")))
   :config
-  (add-hook 'emacs-startup-hook #'evil-snipe-override-mode))
+  (add-hook 'doom-post-init-hook #'evil-snipe-override-mode))
 
 
 (def-package! evil-surround
