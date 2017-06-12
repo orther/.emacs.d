@@ -7,6 +7,8 @@
 (defvar +orther-dir
   (file-name-directory load-file-name))
 
+(load! +eslintd)
+
 ;; ;; ;; brighter minibuffer when active
 ;; (add-hook 'minibuffer-setup-hook #'doom-brighten-minibuffer)
 
@@ -16,9 +18,13 @@
 
 ;; customize doom neotree
 (setq doom-neotree-enable-file-icons t)
-
 (after! neotree
-  (setq neo-window-width 35))
+  :config
+  (setq neo-create-file-auto-open nil
+        neo-window-width 35))
+
+; (after! neotree
+;   (setq neo-window-width 35))
 
 ;; Widen fringes (easier to see git-gutter with twm window border)
 (fringe-mode '(12 . 12))
@@ -88,47 +94,33 @@
     (+my!repeat-with-spc evil-visualstar/begin-search-backward
       evil-ex-search-previous evil-ex-search-next)))
 
-(defun +orther-javascript/eslintd-set-flycheck-executable ()
-  (interactive)
-  (when-let (eslintd-executable (executable-find "eslint_d"))
-    (make-variable-buffer-local 'flycheck-javascript-eslint-executable)
-    (setq flycheck-javascript-eslint-executable eslintd-executable)
-    (setq eslintd-fix-executable eslintd-executable)))
+;; (after! mu4e
+;;   (setq-default
+;;    smtpmail-stream-type 'starttls
+;;    smtpmail-default-smtp-server "smtp.gmail.com"
+;;    smtpmail-smtp-server "smtp.gmail.com"
+;;    smtpmail-smtp-service 587)
 
-(after! js2-mode
-  (+orther-javascript/eslintd-set-flycheck-executable))
+;;   (set! :email "gmail.com"
+;;     '((mu4e-sent-folder       . "/%s/Sent Mail")
+;;       (mu4e-drafts-folder     . "/%s/Drafts")
+;;       (mu4e-trash-folder      . "/%s/Trash")
+;;       (mu4e-refile-folder     . "/%s/All Mail")
+;;       (smtpmail-smtp-user     . "brandonorther")
+;;       (user-mail-address      . "brandon.orther@gmail.com")
+;;       (mu4e-compose-signature . "---\nBrandon Orther")))
 
-(def-package! eslintd-fix
-  :commands eslintd-fix-mode
-  :after eslintd-fix
-  :init (add-hook 'js2-mode-hook #'eslintd-fix-mode t))
-
-(after! mu4e
-  (setq-default
-   smtpmail-stream-type 'starttls
-   smtpmail-default-smtp-server "smtp.gmail.com"
-   smtpmail-smtp-server "smtp.gmail.com"
-   smtpmail-smtp-service 587)
-
-  (set! :email "gmail.com"
-    '((mu4e-sent-folder       . "/%s/Sent Mail")
-      (mu4e-drafts-folder     . "/%s/Drafts")
-      (mu4e-trash-folder      . "/%s/Trash")
-      (mu4e-refile-folder     . "/%s/All Mail")
-      (smtpmail-smtp-user     . "brandonorther")
-      (user-mail-address      . "brandon.orther@gmail.com")
-      (mu4e-compose-signature . "---\nBrandon Orther")))
-
-  (set! :email "omt.tech"
-    '((mu4e-sent-folder       . "/%s/Sent Mail")
-      (mu4e-drafts-folder     . "/%s/Drafts")
-      (mu4e-trash-folder      . "/%s/Trash")
-      (mu4e-refile-folder . "/%s/All Mail") (smtpmail-smtp-user .
-      "brandon@omt.tech")
-      (user-mail-address      . "brandon@omt.tech")
-      (mu4e-compose-signature . "---\nBrandon Orther"))
-    t))
+;;   (set! :email "omt.tech"
+;;     '((mu4e-sent-folder       . "/%s/Sent Mail")
+;;       (mu4e-drafts-folder     . "/%s/Drafts")
+;;       (mu4e-trash-folder      . "/%s/Trash")
+;;       (mu4e-refile-folder . "/%s/All Mail") (smtpmail-smtp-user .
+;;       "brandon@omt.tech")
+;;       (user-mail-address      . "brandon@omt.tech")
+;;       (mu4e-compose-signature . "---\nBrandon Orther"))
+;;     t))
 
 ;; make fullscreen on load
 (after! evil
   (doom/toggle-fullscreen))
+
