@@ -202,7 +202,8 @@
      :desc "Line numbers"             :nv "l" #'doom/toggle-line-numbers
      :desc "Indent guides"            :nv "i" #'highlight-indentation-mode
      :desc "Indent guides (column)"   :nv "I" #'highlight-indentation-current-column-mode
-     :desc "Evil goggles"             :nv "g" #'+evil-goggles/toggle)
+     :desc "Evil goggles"             :nv "g" #'+evil-goggles/toggle
+     :desc "Whitespace mode"          :nv "w" #'gdoom/toggle-whitespace)
    (:desc "code"
      :prefix "c"
      :desc "Build"                    :nv  "b" #'+eval/build

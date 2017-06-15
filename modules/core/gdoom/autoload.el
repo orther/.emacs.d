@@ -168,3 +168,10 @@ current window."
     (end-of-line)
     (hs-toggle-hiding)
     (goto-char saved-point)))
+
+;;;###autoload
+(defun gdoom/toggle-whitespace ()
+  (interactive)
+  (if (and (boundp 'whitespace-mode) whitespace-mode)
+      (whitespace-mode -1)
+    (whitespace-mode +1)))
