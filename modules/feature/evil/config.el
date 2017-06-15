@@ -314,7 +314,8 @@ the new algorithm is confusing, like in python or ruby."
              evil-mc-make-and-goto-prev-cursor evil-mc-skip-and-goto-prev-cursor
              evil-mc-make-and-goto-next-match evil-mc-skip-and-goto-next-match
              evil-mc-skip-and-goto-next-match evil-mc-make-and-goto-prev-match
-             evil-mc-skip-and-goto-prev-match)
+             evil-mc-skip-and-goto-prev-match
+             evil-mc-make-cursor-move-next-line evil-mc-make-cursor-move-prev-line)
   ;; BMACS - don't override default keybindings
   ;; :init
   ;; (defvar evil-mc-key-map (make-sparse-keymap))
