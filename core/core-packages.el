@@ -1,4 +1,4 @@
-;;; core-packages.el
+;;; core-packages.el --- package management system -*- lexical-binding: t; -*-
 
 ;; Emacs package management is opinionated. Unfortunately, so am I. I've bound
 ;; together `use-package', `quelpa' and package.el to create my own,
@@ -40,8 +40,13 @@
 ;; See core/autoload/packages.el for more functions.
 
 (defvar doom-init-p nil
-  "Non-nil if doom's package system has been initialized (by `doom-initialize').
-This will be nil if you have byte-compiled your configuration (as intended).")
+  "Non-nil if doom is done initializing (once `doom-post-init-hook' is done). If
+this is nil after Emacs has started something is wrong.")
+
+(defvar doom-package-init-p nil
+  "If non-nil, doom's package system has been initialized (by
+`doom-initialize'). This will be nill if you byte-compile your configuration (as
+intended).")
 
 (defvar doom-init-time nil
   "The time it took, in seconds, for DOOM Emacs to initialize.")
@@ -62,6 +67,9 @@ missing) and shouldn't be deleted.")
 (defvar doom-disabled-packages ()
   "A list of packages that should be ignored by `def-package!'.")
 
+(defvar doom-reload-hook nil
+  "A list of hooks to run when `doom/reload' is called.")
+
 (defvar doom--site-load-path load-path
   "The load path of built in Emacs libraries.")
 
@@ -76,7 +84,7 @@ base by `doom!' and for calculating how many packages exist.")
 
 (defvar doom--refresh-p nil)
 
-(setq load-prefer-newer noninteractive
+(setq load-prefer-newer (or noninteractive doom-debug-mode)
       package--init-file-ensured t
       package-user-dir (expand-file-name "elpa" doom-packages-dir)
       package-enable-at-startup nil
@@ -96,7 +104,6 @@ base by `doom!' and for calculating how many packages exist.")
 
       use-package-always-defer t
       use-package-always-ensure nil
-      use-package-expand-minimally (eval-when-compile (not doom-debug-mode))
       use-package-debug nil
       use-package-verbose doom-debug-mode
       use-package-minimum-reported-time (if doom-debug-mode 0 0.1)
@@ -123,7 +130,7 @@ base by `doom!' and for calculating how many packages exist.")
 are installed. If you byte-compile core/core.el, this function will be avoided
 to speed up startup."
   ;; Called early during initialization; only use native functions!
-  (when (or (not doom-init-p) force-p)
+  (when (or (not doom-package-init-p) force-p)
     (unless noninteractive
       (message "Doom initialized"))
 
@@ -144,7 +151,7 @@ to speed up startup."
     ;; Also, in some edge cases involving package initialization during a
     ;; non-interactive session, `package-initialize' fails to fill `load-path'.
     ;; If we want something done right, do it ourselves!
-    (setq doom--package-load-path (directory-files package-user-dir t "^\\w" t)
+    (setq doom--package-load-path (directory-files package-user-dir t "^[^.]" t)
           load-path (append load-path doom--package-load-path))
 
     ;; Ensure core packages are installed
@@ -162,9 +169,9 @@ to speed up startup."
     (load "quelpa" nil t)
     (load "use-package" nil t)
 
-    (setq doom-init-p t)))
+    (setq doom-package-init-p t)))
 
-(defun doom-initialize-autoloads (&optional inhibit-reload-p)
+(defun doom-initialize-autoloads ()
   "Ensures that `doom-autoload-file' exists and is loaded. Otherwise run
 `doom/reload-autoloads' to generate it."
   (unless (file-exists-p doom-autoload-file)
@@ -181,23 +188,29 @@ This aggressively reloads core autoload files."
   (let ((noninteractive t)
         (load-fn
          (lambda (file &optional noerror)
-           (condition-case ex
+           (condition-case-unless-debug ex
                (load file noerror :nomessage :nosuffix)
-             ('error (message "INIT-PACKAGES ERROR (%s): %s" file ex))))))
+             ('error
+              (error (format "(doom-initialize-packages) %s in %s: %s"
+                             (car ex)
+                             (file-relative-name file doom-emacs-dir)
+                             (error-message-string ex))
+                     :error))))))
     (when (or force-p (not doom-modules))
       (setq doom-modules nil)
       (funcall load-fn (expand-file-name "init.el" doom-emacs-dir))
-      (funcall load-fn (doom-module-path :private user-login-name "init.el"))
+      (funcall load-fn (doom-module-path :private user-login-name "init.el") t)
       (when load-p
-        (mapc (lambda (file) (funcall load-fn file t))
-              (append (nreverse (file-expand-wildcards (concat doom-core-dir "core*.el")))
-                      (file-expand-wildcards (concat doom-core-dir "autoload/*.el"))
-                      (doom--module-paths "config.el")))))
+        (cl-loop for file
+                 in (append (nreverse (file-expand-wildcards (expand-file-name "core*.el" doom-core-dir)))
+                            (file-expand-wildcards (expand-file-name "autoload/*.el" doom-core-dir))
+                            (doom--module-paths "config.el"))
+                 do (funcall load-fn file t))))
     (when (or force-p (not doom-packages))
       (setq doom-packages nil)
       (funcall load-fn (expand-file-name "packages.el" doom-core-dir))
-      (mapc (lambda (file) (funcall load-fn file t))
-            (doom--module-paths "packages.el")))))
+      (dolist (file (doom--module-paths "packages.el"))
+        (funcall load-fn file t)))))
 
 (defun doom-initialize-modules (modules)
   "Adds MODULES to `doom-modules'. MODULES must be in mplist format.
@@ -213,15 +226,12 @@ This aggressively reloads core autoload files."
              (error "No namespace specified on `doom!' for %s" m))
             ((eq m '*)
              (doom-initialize-modules
-              (cons mode
-                    (mapcar
-                     (lambda (dir) (intern (file-name-nondirectory dir)))
-                     (cl-remove-if-not
-                      #'file-directory-p
-                      (directory-files (expand-file-name
-                                        (substring (symbol-name mode) 1)
-                                        doom-modules-dir)
-                                       t "^\\w"))))))
+              (cl-loop with modpath = (expand-file-name (substring (symbol-name mode) 1) doom-modules-dir)
+                       for path in (directory-files modpath t "^\\w")
+                       if (file-directory-p path)
+                        collect (intern (file-name-nondirectory path)) into paths
+                       finally return (cons mode paths)
+                       finally do (message "== %s %s" mode paths))))
             (t
              (doom--enable-module mode m))))))
 
@@ -242,16 +252,16 @@ This aggressively reloads core autoload files."
 
 (defun doom--module-pairs ()
   "Returns `doom-modules' as a list of (MODULE . SUBMODULE) cons cells. The list
-is sorted by order of insertion."
-  (let (pairs)
-    (when (hash-table-p doom-modules)
-      (maphash (lambda (key value) (push (cons (car key) (cdr key)) pairs))
-               doom-modules)
-      (nreverse pairs))))
+is sorted by order of insertion unless ALL-P is non-nil. If ALL-P is non-nil,
+include all modules, enabled or otherwise."
+  (if (hash-table-p doom-modules)
+      (cl-loop for key being the hash-keys of doom-modules
+               collect (cons (car key) (cdr key)))
+    (error "doom-modules is uninitialized")))
 
 (defun doom--module-paths (&optional append-file)
-  "Returns a list of absolute file paths to modules, with APPEND-FILE added, if
-the file exists."
+  "Returns a list of absolute file paths to activated modules, with APPEND-FILE
+added, if the file exists."
   (let (paths)
     (dolist (pair (doom--module-pairs) (nreverse paths))
       (let ((path (doom-module-path (car pair) (cdr pair) append-file)))
@@ -286,24 +296,23 @@ Used by `require!' and `depends-on!'."
   "DOOM Emacs bootstrap macro. List the modules to load. Benefits from
 byte-compilation."
   (doom-initialize-modules modules)
+  (when (and user-login-name
+             (not (doom-module-loaded-p :private (intern user-login-name))))
+    (doom--enable-module :private user-login-name))
   `(let (file-name-handler-alist)
      (setq doom-modules ',doom-modules)
 
      (unless noninteractive
        (load ,(doom-module-path :private user-login-name "init") t t)
-       ,@(let (forms)
-           (dolist (module (doom--module-pairs))
-             (push `(require! ,(car module) ,(cdr module) t) forms))
-           (unless (doom-module-loaded-p :private (intern user-login-name))
-             (push `(require! :private ,user-login-name t) forms))
-           (nreverse forms))
+       ,@(cl-loop for (module . submodule) in (doom--module-pairs)
+                  collect `(require! ,module ,submodule t))
 
        (when (display-graphic-p)
          (require 'server)
          (unless (server-running-p)
            (server-start)))
 
-       (add-hook 'after-init-hook #'doom--display-benchmark t))))
+       (add-hook 'doom-init-hook #'doom--display-benchmark t))))
 
 (defmacro def-package! (name &rest plist)
   "A thin wrapper around `use-package'."
@@ -340,11 +349,10 @@ ignore any `def-package!' blocks for PACKAGE."
   "Loads a file relative to the current module (or PATH). FILESYM is a file path
 as a symbol. PATH is a directory to prefix it with. If NOERROR is non-nil, don't
 throw an error if the file doesn't exist."
-  (let ((path (or (and path
-                       (cond ((symbolp path) (symbol-value path))
-                             ((stringp path) path)
-                             ((listp path) (eval path))))
-                  (and load-file-name   (file-name-directory load-file-name))
+  (let ((path (or (and path (or (and (symbolp path) (symbol-value path))
+                                (and (stringp path) path)
+                                (and (listp path) (eval path))))
+                  (and load-file-name (file-name-directory load-file-name))
                   (and (bound-and-true-p byte-compile-current-file)
                        (file-name-directory byte-compile-current-file))
                   (and buffer-file-name (file-name-directory buffer-file-name)))))
@@ -359,14 +367,16 @@ throw an error if the file doesn't exist."
 (defmacro require! (module submodule &optional reload-p)
   "Like `require', but for doom modules. Will load a module's config.el file if
 it hasn't already, and if it exists."
-  (when (or (not noninteractive)
-            (bound-and-true-p byte-compile-current-file)
-            reload-p)
-    (let ((loaded-p (doom-module-loaded-p module submodule)))
-      (when (or reload-p (not loaded-p))
-        (unless loaded-p
-          (doom--enable-module module submodule t))
-        `(load! config ,(doom-module-path module submodule) t)))))
+  (let ((loaded-p (doom-module-loaded-p module submodule)))
+    (when (or reload-p (not loaded-p))
+      (unless loaded-p
+        (doom--enable-module module submodule t))
+      `(condition-case-unless-debug ex
+           (load! config ,(doom-module-path module submodule) t)
+         ('error
+          (lwarn 'doom-modules :error
+                 "%s in '%s %s' -> %s"
+                 (car ex) ,module ',submodule (error-message-string ex)))))))
 
 (defmacro featurep! (module submodule)
   "Convenience macro that wraps `doom-module-loaded-p'."
@@ -425,7 +435,7 @@ SUBMODULE is a symbol."
 ;; Commands
 ;;
 
-(defun doom/reload (&optional ignorable-p)
+(defun doom/reload ()
   "Reload `load-path' and recompile files (if necessary). Useful if you
 modify/update packages outside of emacs. Automatically called (through the
 server, if necessary) by `doom/packages-install', `doom/packages-update' and
@@ -434,7 +444,7 @@ server, if necessary) by `doom/packages-install', `doom/packages-update' and
   (cond (noninteractive
          (message "Reloading...")
          (require 'server)
-         (unless (ignore-errors (server-eval-at "server" '(doom/reload t)))
+         (unless (ignore-errors (server-eval-at "server" '(doom/reload)))
            (message "Recompiling")
            (doom/recompile)))
         (t
@@ -454,44 +464,54 @@ In modules, checks modules/*/autoload.el and modules/*/autoload/*.el.
 Rerun this whenever init.el is modified. You can also use `make autoloads` from
 the commandline."
   (interactive)
-  ;; This function must not use `cl-lib', autoloaded functions or external
-  ;; dependencies. It must assume nothing is set up!
+  ;; This function must not use autoloaded functions or external dependencies.
+  ;; It must assume nothing is set up!
   (doom-initialize-packages (not noninteractive))
-  (let ((generated-autoload-file doom-autoload-file)
-        (autoload-files
+  (let ((evil-p (featurep! :feature evil))
+        (targets
          (file-expand-wildcards
           (expand-file-name "autoload/*.el" doom-core-dir))))
     (dolist (path (doom--module-paths))
       (let ((auto-dir  (expand-file-name "autoload" path))
             (auto-file (expand-file-name "autoload.el" path)))
         (when (file-exists-p auto-file)
-          (push auto-file autoload-files))
+          (push auto-file targets))
         (when (file-directory-p auto-dir)
-          (mapc (lambda (file)
-                  ;; Make evil*.el autoload files a special case; don't load
-                  ;; them unless evil is enabled.
-                  (unless (and (string-prefix-p "evil" (file-name-nondirectory file))
-                               (not (featurep! :feature evil)))
-                    (push file autoload-files)))
-                (file-expand-wildcards (expand-file-name "*.el" auto-dir) t)))))
-    (when (file-exists-p generated-autoload-file)
-      (delete-file generated-autoload-file)
+          (dolist (file (file-expand-wildcards (expand-file-name "*.el" auto-dir) t))
+            ;; Make evil*.el autoload files a special case; don't load
+            ;; them unless evil is enabled.
+            (unless (and (string-prefix-p "evil" (file-name-nondirectory file))
+                         (not evil-p))
+              (push file targets))))))
+    (when (file-exists-p doom-autoload-file)
+      (delete-file doom-autoload-file)
       (message "Deleted old autoloads.el"))
-    (dolist (file (nreverse autoload-files))
-      (let ((inhibit-message (not doom-debug-mode)))
-        (update-file-autoloads file))
-      (message "Scanned %s" (file-relative-name file doom-emacs-dir)))
-    (condition-case ex
-        (let ((buf (get-file-buffer generated-autoload-file)))
-          (unwind-protect
+    (dolist (file (reverse targets))
+      (message (if (update-file-autoloads file nil doom-autoload-file)
+                   "Nothing in %s"
+                 "Scanned %s")
+               (file-relative-name file doom-emacs-dir)))
+    (let ((buf (get-file-buffer doom-autoload-file))
+          current-sexp)
+      (unwind-protect
+          (condition-case-unless-debug ex
               (with-current-buffer buf
                 (save-buffer)
-                (eval-buffer)
+                (goto-char (point-min))
+                (while (re-search-forward "^(" nil t)
+                  (save-excursion
+                    (backward-char)
+                    (setq current-sexp (read (thing-at-point 'sexp t)))
+                    (eval current-sexp t))
+                  (forward-char))
                 (message "Finished generating autoloads.el!"))
-            (kill-buffer buf)))
-      ('error
-       (delete-file generated-autoload-file)
-       (error "Couldn't evaluate autoloads.el: %s" (cadr ex))))))
+            ('error
+             (delete-file doom-autoload-file)
+             (error "Error in autoloads.el: (%s %s ...) %s -- %s"
+                    (nth 0 current-sexp)
+                    (nth 1 current-sexp)
+                    (car ex) (error-message-string ex))))
+        (kill-buffer buf)))))
 
 (defun doom/compile (&optional lite-p only-recompile-p)
   "Byte compile your emacs configuration (init.el, core/*.el &
@@ -506,46 +526,51 @@ If ONLY-RECOMPILE-P is non-nil, only recompile out-of-date files."
   ;; Ensure all relevant config files are loaded and up-to-date. This way we
   ;; don't need eval-when-compile and require blocks scattered all over.
   (doom-initialize-packages t t)
-  (let ((targets (append (list "init.el" doom-core-dir)
-                         (unless lite-p (doom--module-paths))))
+  (let ((targets
+         (cond ((equal (car command-line-args-left) "--")
+                (cl-loop for file in (cdr command-line-args-left)
+                         if (file-exists-p file)
+                         collect (expand-file-name file)
+                         finally do (setq command-line-args-left nil)) )
+               (t
+                (append (list (expand-file-name "init.el" doom-emacs-dir)
+                              doom-core-dir)
+                        (unless lite-p (doom--module-paths))))))
         (total-success 0)
         (total-fail 0)
         (total-nocomp 0)
-        el-files)
-    (mapc (lambda (file)
-            (when (or (not only-recompile-p)
-                      (let ((elc-file (byte-compile-dest-file file)))
-                        (and (file-exists-p elc-file)
-                             (file-newer-than-file-p file elc-file))))
-              (let ((result (byte-compile-file file))
-                    (short-name (file-relative-name file doom-emacs-dir)))
-                (cl-incf
-                 (cond ((eq result 'no-byte-compile)
-                        (message! (dark (white "Ignored %s" short-name)))
-                        total-nocomp)
-                       ((null result)
-                        (message! (red "Failed to compile %s" short-name))
-                        total-fail)
-                       (t
-                        (message! (green "Compiled %s" short-name))
-                        total-success))))))
-          (dolist (path targets (reverse el-files))
-            (let ((path (expand-file-name path doom-emacs-dir)))
-              (cond ((file-directory-p path)
-                     (setq el-files (append (directory-files-recursively path "\\.el$") el-files)))
-                    ((file-exists-p path)
-                     (push path el-files))
-                    (t
-                     (error "Invalid path: %s" path))))))
-    (message!
-     (bold
-      (color (if (zerop total-fail) 'green 'red)
-             "%s %s file(s) %s"
-             (if only-recompile-p "Recompiled" "Compiled")
-             (format (if el-files "%d/%d" "%d")
-                     total-success
-                     (- (length el-files) total-nocomp))
-             (format "(%s not compiled)" total-nocomp))))))
+        (use-package-expand-minimally t))
+    (let ((el-files (cl-loop for path in targets
+                             if (file-directory-p path)
+                               nconc (nreverse (directory-files-recursively path "\\.el$"))
+                             else if (file-exists-p path)
+                               collect path)))
+      (dolist (file el-files)
+        (when (or (not only-recompile-p)
+                  (let ((elc-file (byte-compile-dest-file file)))
+                    (and (file-exists-p elc-file)
+                         (file-newer-than-file-p file elc-file))))
+          (let ((result (byte-compile-file file))
+                (short-name (file-relative-name file doom-emacs-dir)))
+            (cl-incf
+             (cond ((eq result 'no-byte-compile)
+                    (message! (dark (white "Ignored %s" short-name)))
+                    total-nocomp)
+                   ((null result)
+                    (message! (red "Failed to compile %s" short-name))
+                    total-fail)
+                   (t
+                    (message! (green "Compiled %s" short-name))
+                    total-success))))))
+      (message!
+       (bold
+        (color (if (= total-fail 0) 'green 'red)
+               "%s %s file(s) %s"
+               (if only-recompile-p "Recompiled" "Compiled")
+               (format (if el-files "%d/%d" "%d")
+                       total-success
+                       (- (length el-files) total-nocomp))
+               (format "(%s ignored)" total-nocomp)))))))
 
 (defun doom/recompile ()
   "Recompile any compiled *.el files in your Emacs configuration."
@@ -553,12 +578,6 @@ If ONLY-RECOMPILE-P is non-nil, only recompile out-of-date files."
   (doom/compile nil :recompile)
   ;; In case `load-path' has changed (e.g. after an update)
   (byte-recompile-file (expand-file-name "core.el" doom-core-dir) t))
-
-(defun doom/compile-lite ()
-  "A light-weight version of `doom/compile' which only compiles core files in
-your emacs configuration (init.el and core/**/*.el)."
-  (interactive)
-  (doom/compile t))
 
 (defun doom/clean-cache ()
   "Clear local cache (`doom-cache-dir'). You may need to restart Emacs for some
@@ -571,16 +590,74 @@ components to feel its effects."
   "Delete all compiled elc files in DOOM emacs, excluding compiled ELPA/QUELPA
 package files."
   (interactive)
-  (let ((elc-files (append
-                    (let ((init-elc (expand-file-name "init.elc" doom-emacs-dir)))
-                      (if (file-exists-p init-elc) (list init-elc)))
-                    (directory-files-recursively doom-core-dir "\\.elc$")
-                    (directory-files-recursively doom-modules-dir "\\.elc$"))))
-    (if elc-files
-        (dolist (file elc-files)
-          (delete-file file)
-          (message "Deleting %s" (file-relative-name file doom-emacs-dir)))
+  (let ((targets (append (list (expand-file-name "init.elc" doom-emacs-dir))
+                         (directory-files-recursively doom-core-dir "\\.elc$")
+                         (directory-files-recursively doom-modules-dir "\\.elc$"))))
+    (unless (cl-loop for path in targets
+                     if (file-exists-p path)
+                       collect path
+                       and do (delete-file path)
+                       and do (message "Deleted %s" (file-relative-name path)))
       (message "Everything is clean"))))
+
+(defun doom/run-tests (&optional modules)
+  "Run all loaded tests, specified by MODULES (a list of module cons cells) or
+command line args following a double dash (each arg should be in the
+'module/submodule' format).
+
+If neither is available, run all tests in all enabled modules."
+  (interactive) ;; TODO Add completing-read selection of tests
+  ;; FIXME Refactor this
+  (condition-case-unless-debug ex
+      (let (targets)
+        ;; ensure DOOM is initialized
+        (let (noninteractive)
+          (unload-feature 'core t)
+          (load (expand-file-name "init.el" user-emacs-directory) nil t))
+        (run-hooks 'emacs-startup-hook)
+        ;; collect targets
+        (cond ((and command-line-args-left
+                    (equal (car command-line-args-left) "--"))
+               (cl-loop for arg in (cdr argv)
+                        if (equal arg "core")
+                        do (push (expand-file-name "test/" doom-core-dir) targets)
+                        else
+                        collect
+                        (cl-destructuring-bind (car cdr) (split-string arg "/" t)
+                          (cons (intern (concat ":" car))
+                                (and (cadr consp) (intern cdr))))
+                        into args
+                        finally do (setq modules args
+                                         command-line-args-left nil)))
+
+              (modules
+               (unless (cl-loop for module in modules
+                                unless (and (consp module)
+                                            (keywordp (car module))
+                                            (symbolp (cdr module)))
+                                return t)
+                 (error "Expected a list of cons, got: %s" modules)))
+
+              (t
+               (setq modules (doom--module-pairs)
+                     targets (list (expand-file-name "test/" doom-core-dir)))))
+        ;; resolve targets to a list of test files and load them
+        (cl-loop with targets =
+                 (append targets
+                         (cl-loop for (module . submodule) in modules
+                                  collect (doom-module-path module submodule "test/")))
+                 for dir in targets
+                 if (file-directory-p dir)
+                 nconc (reverse (directory-files-recursively dir "\\.el$"))
+                 into items
+                 finally do (quiet! (mapc #'load-file items)))
+        ;; run all loaded tests
+        (when noninteractive
+          (ert-run-tests-batch-and-exit)))
+    ('error
+     (lwarn 'doom-test :error
+            "%s -> %s"
+            (car ex) (error-message-string ex)))))
 
 
 ;;

@@ -1,15 +1,16 @@
-;;; core-popups.el --- taming sudden yet inevitable windows
+;;; core-popups.el -*- lexical-binding: t; -*-
 
 ;; I want a "real"-buffer-first policy in my Emacsian utpoia; popup buffers
 ;; ought to be second-class citizens to "real" buffers. No need for a wall or
-;; controversial immigration policies -- all we need is `shackle'.
+;; controversial immigration policies -- all we need is `shackle' (and it will
+;; actually work).
 ;;
-;; The gist is: popups should always be displayed on one side of the frame, away
-;; from 'real' buffers; they should be easy to dispose of when we don't want to
-;; see them; and easily brought back in case we change our minds. Also, popups
-;; should typically have no mode-line.
+;; The gist is: popups should be displayed on one side of the frame, away from
+;; 'real' buffers. They should be easy to dispose of when we don't want to see
+;; them and easily brought back in case we change our minds. Also, popups should
+;; typically have no mode-line.
 ;;
-;; Be warned, this requires a lot of hackery and voodoo that could break with an
+;; Be warned, this requires a lot of hackery voodoo that could break with an
 ;; emacs update or an update to any of the packages it tries to tame (like helm
 ;; or org-mode).
 
@@ -24,6 +25,9 @@
 (defvar doom-popup-other-window nil
   "The last window selected before a popup was opened.")
 
+(defvar doom-popup-no-fringes t
+  "If non-nil, disable fringes in popup windows.")
+
 (defvar-local doom-popup-rules nil
   "The shackle rule that caused this buffer to be recognized as a popup.")
 
@@ -34,7 +38,7 @@ is enabled/disabled.'")
 
 (def-setting! :popup (&rest rules)
   "Prepend a new popup rule to `shackle-rules'."
-  (if (cl-every 'listp rules)
+  (if (cl-every #'listp rules)
       `(setq shackle-rules (nconc ',rules shackle-rules))
     `(push ',rules shackle-rules)))
 
@@ -43,7 +47,8 @@ is enabled/disabled.'")
 ;; Bootstrap
 ;;
 
-(def-package! shackle :demand t
+(def-package! shackle
+  :demand t
   :init
   (setq shackle-default-alignment 'below
         shackle-default-size 8
@@ -68,6 +73,13 @@ is enabled/disabled.'")
           ("^\\*doom:" :regexp t :size 0.35 :noesc t :select t :modeline t)
           ("^\\*doom " :regexp t :noselect t :autokill t :autoclose t)
           ;; built-in (emacs)
+          ("*ert*" :same t :modeline t)
+          ("*info*" :size 0.5 :select t :autokill t)
+          ("*Backtrace*" :size 20 :noselect t)
+          ("*Warnings*"  :size 8  :noselect t)
+          ("*Messages*"  :size 12 :noselect t)
+          ("*Help*" :size 0.3)
+          ("^\\*.*Shell Command.*\\*$" :regexp t :size 20 :noselect t :autokill t)
           (apropos-mode :size 0.3 :autokill t :autoclose t)
           (Buffer-menu-mode :size 20 :autokill t)
           (comint-mode :noesc t)
@@ -75,20 +87,11 @@ is enabled/disabled.'")
           (profiler-report-mode :size 0.3 :regexp t :autokill t :modeline minimal)
           (tabulated-list-mode :noesc t)
           (special-mode :noselect t :autokill t :autoclose t)
-          ("*info*" :size 0.5 :select t :autokill t)
-          ("*Backtrace*" :size 20 :noselect t)
-          ("*Warnings*" :size 5 :noselect t :autokill t :autoclose t)
-          ("*Messages*" :size 12 :noselect t :autokill nil)
-          ("*Help*" :size 0.3)
-          ("^\\*.*Shell Command.*\\*$" :regexp t :size 20 :noselect t :autokill t)
           ("^\\*"  :regexp t :noselect t :autokill t)
           ("^ \\*" :regexp t :size 12 :noselect t :autokill t :autoclose t)))
 
   :config
-  (if (display-graphic-p)
-      (shackle-mode +1)
-    (add-transient-hook! 'after-make-frame-functions (shackle-mode +1))
-    (add-hook 'after-init-hook 'shackle-mode))
+  (add-hook 'doom-init-hook #'shackle-mode)
 
   (defun doom*shackle-always-align (plist)
     "Ensure popups are always aligned and selected by default. Eliminates the need
@@ -145,15 +148,21 @@ for :align t on every rule."
     ;; Makes popup window resist interactively changing its buffer.
     (set-window-dedicated-p window doom-popup-mode)
     (cond (doom-popup-mode
+           (when doom-popup-no-fringes
+             (set-window-fringes window 0 0 fringes-outside-margins))
            ;; Save metadata into window parameters so it can be saved by window
            ;; config persisting plugins like workgroups or persp-mode.
            (set-window-parameter window 'popup (or doom-popup-rules t))
            (when doom-popup-rules
-             (dolist (param doom-popup-window-parameters)
-               (when-let (val (plist-get doom-popup-rules param))
-                 (set-window-parameter window param val)))))
+             (cl-loop for param in doom-popup-window-parameters
+                      when (plist-get doom-popup-rules param)
+                      do (set-window-parameter window param it))))
 
           (t
+           (when doom-popup-no-fringes
+             (set-window-fringes window
+                                 doom-ui-fringe-size doom-ui-fringe-size
+                                 fringes-outside-margins))
            ;; Ensure window parameters are cleaned up
            (set-window-parameter window 'popup nil)
            (dolist (param doom-popup-window-parameters)
@@ -161,14 +170,14 @@ for :align t on every rule."
 
 ;; Major mode changes (and other things) may call `kill-all-local-variables',
 ;; turning off things like `doom-popup-mode'. This prevents that.
-(put 'doom-popup-mode 'permanent-local t)
+(put 'doom-popup-mode  'permanent-local t)
 (put 'doom-popup-rules 'permanent-local t)
 
-;; Don't show modeline in popup windows without a :modeline rule. If
-;; one exists and it's a symbol, use `doom-modeline' to grab the
-;; format. If non-nil, show the mode-line as normal. If nil (or
-;; omitted, by default), then hide the modeline entirely.
-(add-hook! 'doom-popup-mode-hook
+(defun doom|hide-modeline-in-popup ()
+  "Don't show modeline in popup windows without a :modeline rule. If one exists
+and it's a symbol, use `doom-modeline' to grab the format. If non-nil, show the
+mode-line as normal. If nil (or omitted, by default), then hide the modeline
+entirely."
   (if doom-popup-mode
       (let ((modeline (plist-get doom-popup-rules :modeline)))
         (cond ((or (eq modeline 'nil)
@@ -179,9 +188,9 @@ for :align t on every rule."
                (setq-local doom--modeline-format (doom-modeline modeline))
                (when doom--modeline-format
                  (doom-hide-modeline-mode +1)))))
-    ;; show modeline
     (when doom-hide-modeline-mode
       (doom-hide-modeline-mode -1))))
+(add-hook 'doom-popup-mode-hook #'doom|hide-modeline-in-popup)
 
 ;;
 (defun doom*popup-init (orig-fn &rest args)
@@ -366,6 +375,35 @@ the command buffer."
   (advice-add #'windmove-find-other-window :override #'doom*ignore-window-parameters-in-popups))
 
 
+(after! helm
+  ;; Helm tries to clean up after itself, but shackle has already done this.
+  ;; This fixes that. To reproduce, add a helm rule in `shackle-rules', open two
+  ;; splits side-by-side, move to the buffer on the right and invoke helm. It
+  ;; will close all but the left-most buffer.
+  (setq-default helm-reuse-last-window-split-state t
+                helm-split-window-in-side-p t)
+
+  (after! helm-swoop
+    (setq helm-swoop-split-window-function #'pop-to-buffer))
+
+  (after! helm-ag
+    ;; This prevents helm-ag from switching between windows and buffers.
+    (defun doom*helm-ag-edit-done (orig-fn &rest args)
+      (cl-letf (((symbol-function 'select-window) #'ignore))
+        (apply orig-fn args))
+      (doom/popup-close))
+    (advice-add #'helm-ag--edit-commit :around #'doom*helm-ag-edit-done)
+    (advice-add #'helm-ag--edit-abort  :around #'doom*helm-ag-edit-done)
+
+    (defun doom*helm-ag-edit (orig-fn &rest args)
+      (cl-letf (((symbol-function 'other-window) #'ignore)
+                ((symbol-function 'switch-to-buffer) #'doom-popup-buffer))
+        (apply orig-fn args)
+        (with-current-buffer (get-buffer "*helm-ag-edit*")
+          (use-local-map helm-ag-edit-map))))
+    (advice-add #'helm-ag--edit :around #'doom*helm-ag-edit)))
+
+
 (after! help-mode
   ;; Help buffers use `other-window' to decide where to open followed links,
   ;; which can be unpredictable. It should *only* replace the original buffer we
@@ -418,13 +456,14 @@ the command buffer."
           (t
            (magit-display-buffer-traditional buffer))))
 
-  (defun doom-magit-quit-window (kill-buffer)
+  (defun doom-magit-quit-window (_kill-buffer)
     "Close the current magit window properly."
     (let ((last (current-buffer)))
       (cond ((when-let (dest (doom-buffers-in-mode
                               'magit-mode
-                              (cl-remove-if (lambda (buf) (eq buf last))
-                                            (mapcar #'car (window-prev-buffers)))
+                              (cl-loop for buf in (window-prev-buffers)
+                                       unless (eq (car buf) last)
+                                       collect (car buf))
                               t))
                (doom-popup-switch-to-buffer (car dest)))
              (kill-buffer last))
@@ -438,7 +477,7 @@ the command buffer."
 
 
 (after! mu4e
-  (defun doom*mu4e-popup-window (buf height)
+  (defun doom*mu4e-popup-window (buf _height)
     (doom-popup-buffer buf :size 10 :noselect t)
     buf)
   (advice-add #'mu4e~temp-window :override #'doom*mu4e-popup-window))
@@ -496,12 +535,12 @@ you came from."
           (window (selected-window)))
       (apply orig-fn args)
       (when popup-p (doom/popup-close window))))
-  (advice-add 'xref-goto-xref :around 'doom*xref-follow-and-close))
+  (advice-add #'xref-goto-xref :around #'doom*xref-follow-and-close))
 
 
 ;; Ensure these settings are attached to org-load-hook as late as possible,
 ;; giving other modules a chance to add their own hooks.
-(add-hook! 'after-init-hook
+(defun doom|init-org-popups ()
   (add-hook! 'org-load-hook
     (set! :popup
       '("*Calendar*"         :size 0.4 :noselect t)
@@ -532,7 +571,7 @@ you came from."
     ;; `org-edit-src-code' simply clones and narrows the buffer to a src block,
     ;; so we are secretly manipulating the same buffer. Since truely killing it
     ;; would kill the original org buffer we've got to do things differently.
-    (defun doom*org-src-switch-to-buffer (buffer context)
+    (defun doom*org-src-switch-to-buffer (buffer _context)
       (if (eq org-src-window-setup 'switch-invisibly)
           (set-buffer buffer)
         (pop-to-buffer buffer)))
@@ -556,13 +595,13 @@ you came from."
       ;; Don't monopolize frame!
       (advice-add #'org-agenda :around #'doom*suppress-delete-other-windows)
 
-      (after! evil
-        (map! :map* org-agenda-mode-map
-              :m [escape] 'org-agenda-Quit
-              :m "ESC"    'org-agenda-Quit))
+      (map! :map org-agenda-mode-map
+            :m [escape] 'org-agenda-Quit
+            :m "ESC"    'org-agenda-Quit)
       (let ((map org-agenda-mode-map))
         (define-key map "q" 'org-agenda-Quit)
         (define-key map "Q" 'org-agenda-Quit)))))
+(add-hook 'doom-init-hook #'doom|init-org-popups)
 
 (provide 'core-popups)
 ;;; core-popups.el ends here

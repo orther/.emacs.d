@@ -1,4 +1,4 @@
-;;; app/email/config.el
+;;; app/email/config.el -*- lexical-binding: t; -*-
 
 ;; I want to live in Emacs. Living is incomplete without email, so Emacs needs
 ;; to give me the ability to read, search, write and send my email. It does so
@@ -16,9 +16,9 @@
 
 (def-setting! :email (label letvars &optional default)
   "Registers an email address for mu4e."
-  (let* ((name (or (cdr (assq 'user-full-name letvars)) user-full-name))
-         (address (cdr (assq 'user-mail-address letvars))))
-    (dolist (var letvars letvars)
+  (let ((name (or (cdr (assq 'user-full-name letvars)) user-full-name))
+        (address (cdr (assq 'user-mail-address letvars))))
+    (dolist (var letvars)
       (let ((val (cdr var)))
         (when (and (stringp val) (string-match-p "%s" val))
           (setcdr var (format val label)))))
@@ -96,15 +96,15 @@
                          ("mime:image/*" "Messages with images" ?p)))
 
   ;; Add a column to display what email account the email belongs to.
-  (push '(:account
-          :name "Account"
-          :shortname "Account"
-          :help "Which account this email belongs to"
-          :function
-          (lambda (msg)
-            (let ((maildir (mu4e-message-field msg :maildir)))
-              (format "%s" (substring maildir 1 (string-match-p "/" maildir 1))))))
-        mu4e-header-info-custom)
+  (add-to-list 'mu4e-header-info-custom
+               '(:account
+                 :name "Account"
+                 :shortname "Account"
+                 :help "Which account this email belongs to"
+                 :function
+                 (lambda (msg)
+                   (let ((maildir (mu4e-message-field msg :maildir)))
+                     (format "%s" (substring maildir 1 (string-match-p "/" maildir 1)))))))
 
   ;; In my workflow, emails won't be moved at all. Only their flags/labels are
   ;; changed. Se we redefine the trash and refile marks not to do any moving.
@@ -157,12 +157,12 @@
     (imagemagick-register-types))
 
   (after! evil
-    (mapc (lambda (str) (evil-set-initial-state (car str) (cdr str)))
-          '((mu4e-main-mode . normal)
-            (mu4e-view-mode . normal)
-            (mu4e-headers-mode . normal)
-            (mu4e-compose-mode . normal)
-            (mu4e~update-mail-mode . normal)))
+    (cl-loop for str in '((mu4e-main-mode . normal)
+                          (mu4e-view-mode . normal)
+                          (mu4e-headers-mode . normal)
+                          (mu4e-compose-mode . normal)
+                          (mu4e~update-mail-mode . normal))
+             do (evil-set-initial-state (car str) (cdr str)))
 
     (setq mu4e-view-mode-map (make-sparse-keymap)
           ;; mu4e-compose-mode-map (make-sparse-keymap)

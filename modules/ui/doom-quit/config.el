@@ -1,4 +1,4 @@
-;;; ui/doom-quit/config.el
+;;; ui/doom-quit/config.el -*- lexical-binding: t; -*-
 
 ;; A silly module that prompts you with messages when you try to quit, like DOOM
 ;; did. Some quotes are taken from Doom's quit-message list, others are random,
@@ -26,13 +26,12 @@
   "A list of quit messages, picked randomly by `+doom-quit'. Taken from
 http://doom.wikia.com/wiki/Quit_messages and elsewhere.")
 
-(defun +doom-quit (&rest _)
-  (if (doom-real-buffers-list)
-      (y-or-n-p
-       (format "%s  Quit?"
-               (nth (random (length +doom-quit-messages))
-                    +doom-quit-messages)))
-    t))
+(defun +doom|quit (&rest _)
+  (doom-quit-p
+   (format "%s  Quit?"
+           (nth (random (length +doom-quit-messages))
+                +doom-quit-messages))))
 
-(setq confirm-kill-emacs #'+doom-quit)
-
+;;
+(remove-hook 'kill-emacs-query-functions #'doom-quit-p)
+(add-hook 'kill-emacs-query-functions #'+doom|quit)

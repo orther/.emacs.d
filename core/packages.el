@@ -13,6 +13,7 @@
 (package! osx-clipboard        :ignore (not IS-MAC))
 
 ;; core-ui.el
+(package! all-the-icons)
 (package! fringe-helper)
 (package! highlight-indentation)
 (package! highlight-numbers)
@@ -33,7 +34,6 @@
 (package! avy)
 (package! command-log-mode)
 (package! expand-region)
-(package! goto-last-change)
 (package! help-fns+)
 (package! imenu-anywhere)
 (package! imenu-list)

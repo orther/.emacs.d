@@ -1,4 +1,4 @@
-;;; lang/latex/config.el
+;;; lang/latex/config.el -*- lexical-binding: t; -*-
 
 (defvar +latex-bibtex-dir "~/work/writing/biblio/"
   "Where bibtex files are kept.")
@@ -74,9 +74,11 @@
 
   (map! :map bibtex-mode-map "C-c \\" #'bibtex-fill-entry))
 
+
 (def-package! ivy-bibtex
   :when (featurep! :completion ivy)
   :commands ivy-bibtex)
+
 
 (def-package! helm-bibtex
   :when (featurep! :completion helm)

@@ -1,8 +1,4 @@
-;;; private/hlissner/+bindings.el
-
-;; I've swapped these keys on my keyboard
-(setq x-super-keysym 'alt
-      x-alt-keysym   'meta)
+;;; private/hlissner/+bindings.el -*- lexical-binding: t; -*-
 
 (defmacro find-file-in! (path &optional project-p)
   "Returns an interactive function for searching files."
@@ -62,7 +58,7 @@
  "M-b"    #'+eval/build
  "M-a"    #'mark-whole-buffer
  "M-c"    #'evil-yank
- "M-q"    #'save-buffers-kill-emacs
+ "M-q"    (if (daemonp) #'delete-frame #'save-buffers-kill-emacs)
  "M-s"    #'save-buffer
  "M-v"    #'clipboard-yank
  "M-f"    #'swiper
@@ -75,17 +71,18 @@
  (:leader
    :desc "Ex command"  :nv ";"   #'evil-ex
    :desc "M-x"         :nv ":"   #'execute-extended-command
-   :desc "Pop up scratch buffer" :nv "x"  #'+doom:scratch-buffer
-   :desc "Org Capture"           :nv "X"  #'+org/capture
+   :desc "Pop up scratch buffer"   :nv "x"  #'+doom:scratch-buffer
+   :desc "Org Capture"             :nv "X"  #'+org/capture
 
    ;; Most commonly used
-   :desc "Find file in project"  :n "SPC" #'projectile-find-file
-   :desc "Switch buffer"         :n ","   #'persp-switch-to-buffer
-   :desc "Browse files"          :n "."   #'find-file
-   :desc "Toggle last popup"     :n "~"   #'doom/popup-toggle
-   :desc "Eval expression"       :n "`"   #'eval-expression
-   :desc "Blink cursor line"     :n "DEL" #'+doom/blink-cursor
-   :desc "Jump to bookmark"      :n "RET" #'counsel-bookmark
+   :desc "Find file in project"    :n "SPC" #'projectile-find-file
+   :desc "Switch workspace buffer" :n ","   #'persp-switch-to-buffer
+   :desc "Switch buffer"           :n "<"   #'switch-to-buffer
+   :desc "Browse files"            :n "."   #'find-file
+   :desc "Toggle last popup"       :n "~"   #'doom/popup-toggle
+   :desc "Eval expression"         :n "`"   #'eval-expression
+   :desc "Blink cursor line"       :n "DEL" #'+doom/blink-cursor
+   :desc "Jump to bookmark"        :n "RET" #'counsel-bookmark
 
    ;; C-u is used by evil
    :desc "Universal argument"    :n "u"  #'universal-argument
@@ -192,6 +189,7 @@
 
    (:desc "help" :prefix "h"
      :n "h" help-map
+     :desc "Apropos"               :n "a" #'apropos
      :desc "Reload theme"          :n "R" #'+doom/reset-theme
      :desc "Toggle Emacs log"      :n "m" #'doom/popup-toggle-messages
      :desc "Find library"          :n "l" #'find-library
@@ -224,7 +222,7 @@
      :desc "Debugger"            :n  "d" #'+debug/open
      :desc "REPL"                :n  "r" #'+eval/repl
                                  :v  "r" #'+eval:repl
-     :desc "Neotree"             :n  "n" #'+neotree/open
+     :desc "Neotree"             :n  "n" #'+neotree/toggle
      :desc "Terminal"            :n  "t" #'+term/popup
      :desc "Terminal in project" :n  "T" #'+term/popup-in-project
 
@@ -347,9 +345,7 @@
    :i "C-s"   #'company-yasnippet
    :i "C-o"   #'company-capf
    :i "C-n"   #'company-dabbrev-code
-   :i "C-p"   (λ! (let ((company-selection-wrap-around t))
-                    (call-interactively #'company-dabbrev-code)
-                    (company-select-previous-or-abort))))
+   :i "C-p"   #'+company/dabbrev-code-previous)
  (:after company
    (:map company-active-map
      ;; Don't interfere with `evil-delete-backward-word' in insert mode
@@ -490,6 +486,32 @@
    :n "S"   #'gist-unstar
    :n "y"   #'gist-print-current-url)
 
+ ;; helm
+ (:after helm
+   (:map helm-map
+     "ESC"        nil
+     "C-S-n"      #'helm-next-source
+     "C-S-p"      #'helm-previous-source
+     "C-u"        #'helm-delete-minibuffer-contents
+     "C-w"        #'backward-kill-word
+     "C-r"        #'evil-paste-from-register ; Evil registers in helm! Glorious!
+     "C-b"        #'backward-word
+     [left]       #'backward-char
+     [right]      #'forward-char
+     [escape]     #'helm-keyboard-quit
+     [tab]        #'helm-execute-persistent-action)
+
+   (:after helm-files
+     (:map helm-generic-files-map
+       :e "ESC"     #'helm-keyboard-quit)
+     (:map helm-find-files-map
+       "C-w" #'helm-find-files-up-one-level
+       "TAB" #'helm-execute-persistent-action))
+
+   (:after helm-ag
+     (:map helm-ag-map
+       "<backtab>"  #'helm-ag-edit)))
+
  ;; hl-todo
  :m  "]t" #'hl-todo-next
  :m  "[t" #'hl-todo-previous
@@ -504,8 +526,8 @@
    "C-k" #'ivy-previous-line
    "C-j" #'ivy-next-line
    "C-l" #'ivy-alt-done
-   "C-w" #'+ivy/backward-kill-word
-   "C-u" #'doom/minibuffer-kill-line
+   "C-w" #'ivy-backward-kill-word
+   "C-u" #'ivy-kill-line
    "C-b" #'backward-word
    "C-f" #'forward-word)
 
@@ -516,6 +538,7 @@
    :n [tab]       #'neotree-quick-look
    :n "RET"       #'neotree-enter
    :n [backspace] #'evil-window-prev
+   :n "c"         #'neotree-create-node
    :n "j"         #'neotree-next-line
    :n "k"         #'neotree-previous-line
    :n "n"         #'neotree-next-line
@@ -608,7 +631,7 @@
    :n "SPC" #'vc-annotate-show-log-revision-at-line
    :n "]]"  #'vc-annotate-next-revision
    :n "[["  #'vc-annotate-prev-revision
-   :n [tab] #'vc-annotate-toggle-annotation-visibility
+   :n "TAB" #'vc-annotate-toggle-annotation-visibility
    :n "RET" #'vc-annotate-find-revision-at-line))
 
 

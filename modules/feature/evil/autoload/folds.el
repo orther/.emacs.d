@@ -1,9 +1,9 @@
-;;; feature/evil/autoload/folds.el
+;;; feature/evil/autoload/folds.el -*- lexical-binding: t; -*-
 
-;; It's frustrating how hideshow is a decent code folding implementation, but it
-;; won't let you create custom folds. Meanwhile, evil-vimish-fold offers custom
-;; folds, but essentially ignores any other type of folding (indent or custom
-;; markers, which hs-minor-mode gives you).
+;; `hideshow' is a decent code folding implementation, but it won't let you
+;; create custom folds. `evil-vimish-fold' offers custom folds, but essentially
+;; ignores any other type of folding (indent or custom markers, which
+;; hs-minor-mode gives you).
 ;;
 ;; So this is my effort to combine them.
 
@@ -15,6 +15,7 @@
   (unless (bound-and-true-p hs-minor-mode)
     (hs-minor-mode +1)))
 
+(require 'hideshow)
 (advice-add #'hs-toggle-hiding :before #'+evil--ensure-modes)
 (advice-add #'hs-hide-block    :before #'+evil--ensure-modes)
 (advice-add #'hs-hide-level    :before #'+evil--ensure-modes)
@@ -31,26 +32,32 @@
         (+evil--ensure-modes)
         (hs-already-hidden-p))))
 
+(defmacro +evil-from-eol (&rest body)
+  "Perform action after moving to the end of the line."
+  `(save-excursion
+     (end-of-line)
+     ,@body))
+
 ;;;###autoload (autoload '+evil:fold-toggle "feature/evil/autoload/folds" nil t)
 (evil-define-command +evil:fold-toggle ()
   (interactive)
   (if (+evil--vimish-fold-p)
       (vimish-fold-toggle)
-    (hs-toggle-hiding)))
+    (+evil-from-eol (hs-toggle-hiding))))
 
 ;;;###autoload (autoload '+evil:fold-open "feature/evil/autoload/folds" nil t)
 (evil-define-command +evil:fold-open ()
   (interactive)
   (if (+evil--vimish-fold-p)
       (vimish-fold-unfold)
-    (hs-hide-block)))
+    (+evil-from-eol (hs-hide-block))))
 
 ;;;###autoload (autoload '+evil:fold-close "feature/evil/autoload/folds" nil t)
 (evil-define-command +evil:fold-close ()
   (interactive)
   (if (+evil--vimish-fold-p)
       (vimish-fold-refold)
-    (hs-hide-block)))
+    (+evil-from-eol (hs-hide-block))))
 
 ;;;###autoload (autoload '+evil:fold-open-all "feature/evil/autoload/folds" nil t)
 (evil-define-command +evil:fold-open-all (&optional level)

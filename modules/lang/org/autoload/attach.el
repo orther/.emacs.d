@@ -1,4 +1,4 @@
-;;; lang/org/autoload/attach.el
+;;; lang/org/autoload/attach.el -*- lexical-binding: t; -*-
 
 (defun +org--attach-icon (path)
   (char-to-string (pcase (downcase (file-name-extension path))
@@ -26,8 +26,7 @@
     (user-error "Not an org buffer"))
   (org-save-outline-visibility nil
     (let ((attachments '())
-          element
-          file)
+          element)
       (when (and (file-directory-p org-attach-directory)
                  (> (length (file-expand-wildcards (expand-file-name "*" org-attach-directory))) 0))
         (save-excursion

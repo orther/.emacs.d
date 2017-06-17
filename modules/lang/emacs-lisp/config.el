@@ -1,10 +1,9 @@
-;;; lang/emacs-lisp/config.el
+;;; lang/emacs-lisp/config.el -*- lexical-binding: t; -*-
 
 (def-package! elisp-mode ; built-in
   :mode ("/Cask$" . emacs-lisp-mode)
   :init
   (add-hook 'emacs-lisp-mode-hook #'+emacs-lisp|hook)
-
   :config
   (set! :repl 'emacs-lisp-mode #'+emacs-lisp/repl)
   (set! :eval 'emacs-lisp-mode #'+emacs-lisp-eval)
@@ -17,21 +16,18 @@
                    ("add-hook" "remove-hook")
                    ("add-hook!" "remove-hook!")))
 
-  ;; Don't affect lisp indentation (only `tab-width')
-  (set! :editorconfig :remove 'emacs-lisp-mode)
-
   (defun +emacs-lisp|hook ()
     (add-hook 'before-save-hook #'delete-trailing-whitespace nil t)
 
     (eldoc-mode +1)
     (auto-compile-on-save-mode +1)
-    (rainbow-delimiters-mode +1)
 
     (when (and buffer-file-name
                (not (file-in-directory-p buffer-file-name doom-emacs-dir)))
       (flycheck-mode +1))
 
     ;; improve fontification
+    (rainbow-delimiters-mode +1)
     (highlight-quoted-mode +1)
     (highlight-numbers-mode +1)
     (font-lock-add-keywords

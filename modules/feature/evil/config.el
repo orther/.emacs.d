@@ -1,4 +1,4 @@
-;;; feature/evil/config.el
+;;; feature/evil/config.el -*- lexical-binding: t; -*-
 
 ;; I'm a vimmer at heart. Its modal philosophy suits me better, and this module
 ;; strives to make Emacs a much better vim than vim was.
@@ -22,7 +22,11 @@
 ;; evil-mode
 ;;
 
-(def-package! evil :demand t
+(autoload 'goto-last-change "goto-chg")
+(autoload 'goto-last-change-reverse "goto-chg")
+
+(def-package! evil
+  :demand t
   :init
   (setq evil-want-C-u-scroll t
         evil-want-visual-char-semi-exclusive t
@@ -41,7 +45,7 @@
         shift-select-mode nil)
 
   :config
-  (evil-mode +1)
+  (add-hook 'doom-init-hook #'evil-mode)
   (evil-select-search-module 'evil-search-module 'evil-search)
 
   (set! :popup
@@ -170,7 +174,7 @@ across windows."
 
 
 (def-package! evil-easymotion
-  :defer 1
+  :after evil-snipe
   :config
   (defvar +evil--snipe-repeat-fn
     (evilem-create #'evil-snipe-repeat
@@ -185,7 +189,6 @@ across windows."
   (setq evil-embrace-show-help-p nil)
   (evil-embrace-enable-evil-surround-integration)
 
-  ;; Defuns
   (defun +evil--embrace-get-pair (char)
     (if-let (pair (cdr-safe (assoc (string-to-char char) evil-surround-pairs-alist)))
         pair
@@ -234,15 +237,16 @@ across windows."
 
 
 (def-package! evil-escape
-  :demand t
+  :commands evil-escape-mode
   :init
-  (setq evil-escape-excluded-states '(normal visual multiedit emacs)
+  (setq evil-escape-excluded-states '(normal visual multiedit emacs motion)
         evil-escape-excluded-major-modes '(neotree-mode)
         evil-escape-key-sequence "jk"
         evil-escape-delay 0.25)
-
+  (add-hook 'doom-post-init-hook #'evil-escape-mode)
   :config
-  (evil-escape-mode +1)
+  ;; no `evil-escape' in minibuffer
+  (cl-pushnew #'minibufferp evil-escape-inhibit-functions)
   (map! :irvo "C-g" #'evil-escape))
 
 
@@ -330,7 +334,7 @@ the new algorithm is confusing, like in python or ruby."
                              (?\] "[]})]")
                              (?\; "[;:]")))
   :config
-  (evil-snipe-override-mode +1))
+  (add-hook 'doom-post-init-hook #'evil-snipe-override-mode))
 
 
 (def-package! evil-surround
@@ -346,7 +350,7 @@ the new algorithm is confusing, like in python or ruby."
   :init
   (setq vimish-fold-dir (concat doom-cache-dir "vimish-fold/")
         vimish-fold-indication-mode 'right-fringe)
-  (add-hook 'emacs-startup-hook #'evil-vimish-fold-mode t))
+  (add-hook 'doom-post-init-hook #'evil-vimish-fold-mode t))
 
 
 ;; Without `evil-visualstar', * and # grab the word at point and search, no

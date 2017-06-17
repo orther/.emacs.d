@@ -1,4 +1,4 @@
-;;; core-editor.el --- filling the editor shaped hole in the Emacs OS
+;;; core-editor.el -*- lexical-binding: t; -*-
 
 (defvar doom-large-file-size 1
   "Size (in MB) above which the user will be prompted to open the file literally
@@ -11,6 +11,7 @@ modes are active and the buffer is read-only.")
   "Major modes that `doom|check-large-file' will ignore.")
 
 (setq-default
+ vc-follow-symlinks t
  ;; Save clipboard contents into kill-ring before replacing them
  save-interprogram-paste-before-kill t
  ;; Bookmarks
@@ -32,26 +33,27 @@ modes are active and the buffer is read-only.")
  require-final-newline t
  tab-always-indent t
  tab-width 4
- tabify-regexp "^\t* [ \t]+"  ; for :retab
- whitespace-line-column fill-column
- whitespace-style
- '(face tabs tab-mark trailing lines-tail)
- whitespace-display-mappings
- '((tab-mark ?\t [?› ?\t]) (newline-mark 10  [36 10]))
+ tabify-regexp "^\t* [ \t]+" ; for :retab
  ;; Wrapping
  truncate-lines t
  truncate-partial-width-windows 50
- ;; undo-tree
- undo-tree-auto-save-history t
- undo-tree-history-directory-alist (list (cons "." (concat doom-cache-dir "undo-tree-hist/")))
- visual-fill-column-center-text nil
- vc-follow-symlinks t)
+ ;; whitespace-mode
+ whitespace-line-column fill-column
+ whitespace-style
+ '(face indentation tabs tab-mark spaces space-mark newline newline-mark
+   trailing lines-tail)
+ whitespace-display-mappings
+ '((tab-mark ?\t [?› ?\t])
+   (newline-mark ?\n [?¬ ?\n])
+   (space-mark ?\  [?·] [?.])))
 
-;; ediff: use existing frame instead of creating a new one
-(add-hook! 'ediff-load-hook
+(defun doom|ediff-use-existing-frame ()
+  "Use existing frame instead of creating a new one."
   (setq ediff-diff-options           "-w"
         ediff-split-window-function  #'split-window-horizontally
-        ediff-window-setup-function  #'ediff-setup-windows-plain)) ; no extra frames
+        ;; no extra frames
+        ediff-window-setup-function  #'ediff-setup-windows-plain))
+(add-hook 'ediff-load-hook #'doom|ediff-use-existing-frame)
 
 (defun doom|dont-kill-scratch-buffer ()
   "Don't kill the scratch buffer."
@@ -61,8 +63,7 @@ modes are active and the buffer is read-only.")
 
 (defun doom*delete-trailing-whitespace (orig-fn &rest args)
   "Don't affect trailing whitespace on current line."
-  (let ((spaces (1- (current-column)))
-        (linestr (buffer-substring-no-properties
+  (let ((linestr (buffer-substring-no-properties
                   (line-beginning-position)
                   (line-end-position))))
     (apply orig-fn args)
@@ -106,18 +107,23 @@ fundamental-mode) for performance sake."
       savehist-autosave-interval nil ; save on kill only
       savehist-additional-variables '(kill-ring search-ring regexp-search-ring)
       save-place-file (concat doom-cache-dir "saveplace"))
-(add-hook! 'after-init-hook #'(savehist-mode save-place-mode))
+(add-hook! 'doom-init-hook #'(savehist-mode save-place-mode))
 
 ;; Keep track of recently opened files
 (def-package! recentf
   :defer 1
   :config
   (setq recentf-save-file (concat doom-cache-dir "recentf")
-        recentf-exclude (list "/tmp/" "/ssh:" "\\.?ido\\.last$" "\\.revive$" "/TAGS$"
-                              "^/var/folders/.+$" doom-local-dir)
         recentf-max-menu-items 0
-        recentf-max-saved-items 250
-        recentf-filename-handlers '(abbreviate-file-name))
+        recentf-max-saved-items 300
+        recentf-filename-handlers '(abbreviate-file-name)
+        recentf-exclude
+        (list "^/tmp/" "^/ssh:" "\\.?ido\\.last$" "\\.revive$" "/TAGS$"
+              "^/var/folders/.+$"
+              ;; ignore private DOOM temp files (but not all of them)
+              (concat "^" (replace-regexp-in-string
+                           (concat "@" (regexp-quote (system-name)))
+                           "@" (abbreviate-file-name doom-host-dir)))))
   (quiet! (recentf-mode 1)))
 
 
@@ -129,7 +135,6 @@ fundamental-mode) for performance sake."
 ;; specify their own formatting rules.
 (def-package! editorconfig
   :demand t
-  :mode ("\\.?editorconfig$" . editorconfig-conf-mode)
   :init
   (def-setting! :editorconfig (action value)
     ":add or :remove an entry in `editorconfig-indentation-alist'."
@@ -145,10 +150,22 @@ fundamental-mode) for performance sake."
               (t (error "%s is an invalid action for :editorconfig" action)))))
 
   :config
-  (editorconfig-mode +1)
-  ;; Show whitespace in tabs indentation mode
-  (add-hook! 'editorconfig-custom-hooks
-    (if indent-tabs-mode (whitespace-mode +1))))
+  (add-hook 'doom-init-hook #'editorconfig-mode)
+
+  ;; Editorconfig makes indentation weird in Lisp modes, so we disable it. It
+  ;; still applies other project settings (e.g. tabs vs spaces) though.
+  (set! :editorconfig :remove 'emacs-lisp-mode)
+  (set! :editorconfig :remove 'lisp-mode)
+
+  (defun doom|editorconfig-whitespace-mode-maybe (&rest _)
+    "Show whitespace-mode when file uses TABS (ew)."
+    (when indent-tabs-mode
+      (let ((whitespace-style '(face tabs tab-mark trailing-lines tail)))
+        (whitespace-mode +1))))
+  (add-hook 'editorconfig-custom-hooks #'doom|editorconfig-whitespace-mode-maybe))
+
+(def-package! editorconfig-conf-mode
+  :mode "\\.?editorconfig$")
 
 ;; Auto-close delimiters and blocks as you type
 (def-package! smartparens
@@ -161,14 +178,17 @@ fundamental-mode) for performance sake."
         sp-max-pair-length 3)
 
   :config
-  (smartparens-global-mode 1)
+  (add-hook 'doom-init-hook #'smartparens-global-mode)
   (require 'smartparens-config)
   ;; Smartparens interferes with Replace mode
   (add-hook 'evil-replace-state-entry-hook #'turn-off-smartparens-mode)
   (add-hook 'evil-replace-state-exit-hook  #'turn-on-smartparens-mode)
   ;; Auto-close more conservatively
-  (sp-pair "'" nil :unless '(sp-point-before-word-p sp-point-after-word-p sp-point-before-same-p))
-  (sp-pair "\"" nil :unless '(sp-point-before-word-p sp-point-after-word-p sp-point-before-same-p))
+  (let ((unless-list '(sp-point-before-word-p
+                       sp-point-after-word-p
+                       sp-point-before-same-p)))
+    (sp-pair "'"  nil :unless unless-list)
+    (sp-pair "\"" nil :unless unless-list))
   (sp-pair "{" nil :post-handlers '(("||\n[i]" "RET") ("| " " "))
            :unless '(sp-point-before-word-p sp-point-before-same-p))
   (sp-pair "(" nil :post-handlers '(("||\n[i]" "RET") ("| " " "))
@@ -176,21 +196,24 @@ fundamental-mode) for performance sake."
   (sp-pair "[" nil :post-handlers '(("| " " "))
            :unless '(sp-point-before-word-p sp-point-before-same-p))
 
-  (sp-local-pair
-   'css-mode "/*" "*/" :post-handlers '(("[d-3]||\n[i]" "RET") ("| " "SPC")))
+  (sp-local-pair 'css-mode "/*" "*/"
+                 :post-handlers '(("[d-3]||\n[i]" "RET") ("| " "SPC")))
   (sp-local-pair '(sh-mode markdown-mode) "`" nil
-    :unless '(sp-point-before-word-p sp-point-before-same-p))
-  (sp-local-pair '(xml-mode nxml-mode php-mode)
-                 "<!--" "-->"   :post-handlers '(("| " "SPC"))))
+                 :unless '(sp-point-before-word-p sp-point-before-same-p))
+  (sp-local-pair '(xml-mode nxml-mode php-mode) "<!--" "-->"
+                 :post-handlers '(("| " "SPC"))))
 
 ;; Branching & persistent undo
 (def-package! undo-tree
   :demand t
   :config
-  (defun doom*silent-undo-tree-load (orig-fn &rest args)
+  (setq undo-tree-auto-save-history t
+        undo-tree-history-directory-alist
+        (list (cons "." (concat doom-cache-dir "undo-tree-hist/"))))
+  (defun doom*silence-undo-tree-load (orig-fn &rest args)
     "Silence undo-tree load errors."
     (quiet! (apply orig-fn args)))
-  (advice-add #'undo-tree-load-history-hook :around #'doom*silent-undo-tree-load))
+  (advice-add #'undo-tree-load-history-hook :around #'doom*silence-undo-tree-load))
 
 
 ;;
@@ -223,8 +246,6 @@ fundamental-mode) for performance sake."
 
 (def-package! expand-region
   :commands (er/expand-region er/contract-region er/mark-symbol er/mark-word))
-
-(def-package! goto-last-change :commands goto-last-change)
 
 (def-package! help-fns+ ; Improved help commands
   :commands (describe-buffer describe-command describe-file

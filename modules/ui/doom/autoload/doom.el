@@ -1,4 +1,4 @@
-;;; ui/doom/autoload/doom.el
+;;; ui/doom/autoload/doom.el -*- lexical-binding: t; -*-
 
 ;;;###autoload
 (defun +doom/reset-theme ()
@@ -8,7 +8,7 @@
     (when theme
       (mapc #'disable-theme custom-enabled-themes))
     (load "doom-themes-common.el" nil t)
-    (load-theme theme t)
+    (+doom|init)
     (+doom|refresh-bright-buffers)))
 
 ;;;###autoload

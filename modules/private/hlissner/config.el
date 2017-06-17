@@ -1,4 +1,4 @@
-;;; private/hlissner/config.el
+;;; private/hlissner/config.el -*- lexical-binding: t; -*-
 
 (when (featurep 'evil)
   (load! +bindings)  ; my key bindings
@@ -18,6 +18,14 @@
   (let ((auth-sources (if (equal tramp-current-method "sudo") nil auth-sources)))
     (apply orig-fn args)))
 (advice-add #'tramp-read-passwd :around #'+hlissner*no-authinfo-for-tramp)
+
+
+(after! doom-themes
+  ;; Since Fira Mono doesn't have an italicized variant, highlight it instead
+  (set-face-attribute 'italic nil
+                      :weight 'ultra-light
+                      :foreground "#ffffff"
+                      :background (doom-color 'current-line)))
 
 
 (after! evil-mc
