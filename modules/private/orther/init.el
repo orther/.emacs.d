@@ -9,9 +9,9 @@
 
       +doom-modeline-height 25
 
-      +doom-font (font-spec :family "Iosevka" :size 12 :weight 'ultralight)
-      +doom-variable-pitch-font (font-spec :family "Iosevka" :size 12 :weight 'ultralight)
-      +doom-unicode-font (font-spec :family "Iosevka" :size 12 :weight 'ultralight)
+      +doom-font (font-spec :family "Iosevka" :size 12 :weight 'light)
+      +doom-variable-pitch-font (font-spec :family "Iosevka" :size 11 :weight 'light)
+      +doom-unicode-font (font-spec :family "Iosevka" :size 12 :weight 'light)
       ;; +doom-font (font-spec :family "SF Mono" :size 12)
       ;; +doom-variable-pitch-font (font-spec :family "SF Mono" :size 13)
       )
