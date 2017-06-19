@@ -155,6 +155,7 @@ fundamental-mode) for performance sake."
   (set! :editorconfig :remove 'emacs-lisp-mode)
   (set! :editorconfig :remove 'lisp-mode)
 
+  (defvar whitespace-style)
   (defun doom|editorconfig-whitespace-mode-maybe (&rest _)
     "Show whitespace-mode when file uses TABS (ew)."
     (when indent-tabs-mode
