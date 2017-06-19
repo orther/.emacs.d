@@ -12,6 +12,10 @@
 ;; ;; ;; brighter minibuffer when active
 ;; (add-hook 'minibuffer-setup-hook #'doom-brighten-minibuffer)
 
+;; projectile ignore directories
+(setq projectile-globally-ignored-directories '("node_modules" ".happypack"))
+(setq grep-find-ignored-directories '("node_modules" ".happypack"))
+
 (require 'company)
 (setq company-idle-delay 0.2
       company-minimum-prefix-length 3)
@@ -20,11 +24,10 @@
 (setq doom-neotree-enable-file-icons t)
 (after! neotree
   :config
-  (setq neo-create-file-auto-open nil
-        neo-window-width 35))
-
-; (after! neotree
-;   (setq neo-window-width 35))
+  (setq neo-create-file-auto-open t
+        neo-window-width 35
+        neo-hidden-regexp-list (append neo-hidden-regexp-list
+                                       '(".happypack" ".vscode" ".log$"))))
 
 ;; Widen fringes (easier to see git-gutter with twm window border)
 (fringe-mode '(12 . 12))

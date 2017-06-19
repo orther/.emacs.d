@@ -1,4 +1,4 @@
-;;; private/orther/autoload/evil.el
+;;; private/orther/autoload/evil.el -*- lexical-binding: t; -*-
 
 ;;;###autoload (autoload '+orther:multi-next-line "private/orther/autoload/evil" nil t)
 (evil-define-motion +orther:multi-next-line (count)

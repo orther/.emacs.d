@@ -1,4 +1,4 @@
-;;; private/orther/autoload/orther.el
+;;; private/orther/autoload/orther.el -*- lexical-binding: t; -*-
 
 ;;;###autoload
 (defun +orther/install-snippets ()

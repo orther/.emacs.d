@@ -1,4 +1,4 @@
-;;; private/orther/+bindings.el
+;;; private/orther/+bindings.el -*- lexical-binding: t; -*-
 
 ;; I've swapped these keys on my keyboard
 ;; (setq x-super-keysym 'alt
@@ -617,7 +617,7 @@
      :desc "New empty buffer"        :n "n" #'evil-buffer-new
      :desc "Switch workspace buffer" :n "b" #'persp-switch-to-buffer
      :desc "Switch buffer"           :n "B" #'switch-to-buffer
-     :desc "Kill buffer"             :n "k" #'doom/kill-this-buffer
+     :desc "Kill buffer"             :n "d" #'doom/kill-this-buffer
      :desc "Kill other buffers"      :n "o" #'doom/kill-other-buffers
      :desc "Save buffer"             :n "s" #'save-buffer
      :desc "Pop scratch buffer"      :n "x" #'+doom:scratch-buffer
