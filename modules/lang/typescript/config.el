@@ -17,21 +17,7 @@
   ;;       '(tide-documentation-at-point      "current type documentation")
   ;;       '(tide-restart-server              "restart tide server"))
 
-  (defun +typescript|tide-setup ()
-    (when (or (eq major-mode 'typescript-mode)
-              (and (eq major-mode 'web-mode)
-                   buffer-file-name
-                   (string= (file-name-extension buffer-file-name) "tsx")))
-      (tide-setup)
-      (flycheck-mode +1)
-      (eldoc-mode +1)))
-  (add-hook! (typescript-mode web-mode) #'+typescript|tide-setup)
-
-  (advice-add #'tide-project-root :override #'doom-project-root)
-
-  (map! :map typescript-mode-map
-        :m "gd" #'tide-jump-to-definition
-        :localleader
+  (map! :localleader
         :m "fh" #'tide-documentation-at-point))
 
 
@@ -39,7 +25,24 @@
   :after typescript-mode
   :config
   (set! :company-backend 'typescript-mode '(company-tide))
+  (set! :jump 'typescript-mode
+    :definition #'tide-jump-to-definition
+    :references #'tide-references
+    :documentation #'tide-documentation-at-point)
+
   (setq tide-format-options
         '(:insertSpaceAfterFunctionKeywordForAnonymousFunctions t
-          :placeOpenBraceOnNewLineForFunctions nil)))
+          :placeOpenBraceOnNewLineForFunctions nil))
+
+  (defun +typescript|init-tide ()
+    (when (or (eq major-mode 'typescript-mode)
+              (and (eq major-mode 'web-mode)
+                   buffer-file-name
+                   (equal (file-name-extension buffer-file-name) "tsx")))
+      (tide-setup)
+      (flycheck-mode +1)
+      (eldoc-mode +1)))
+  (add-hook! (typescript-mode web-mode) #'+typescript|init-tide)
+
+  (advice-add #'tide-project-root :override #'doom*project-root))
 

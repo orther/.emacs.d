@@ -147,9 +147,11 @@ mode is detected.")
 
 ;; buffer name in frame title
 (setq-default frame-title-format '("DOOM Emacs"))
+
 ;; standardize fringe width
 (push (cons 'left-fringe  doom-ui-fringe-size) default-frame-alist)
 (push (cons 'right-fringe doom-ui-fringe-size) default-frame-alist)
+
 ;; no fringe in the minibuffer
 (defun doom|no-fringes-in-minibuffer ()
   (set-window-fringes (minibuffer-window) 0 0 nil))
@@ -198,10 +200,10 @@ mode is detected.")
 buffer so that `highlight-indentation-mode' will display uninterrupted indent
 markers. This whitespace is stripped out on save, as not to affect the resulting
 file."
-    (interactive (progn (barf-if-buffer-read-only)
-                        (if (use-region-p)
-                            (list (region-beginning) (region-end))
-                          (list nil nil))))
+    (interactive (if (use-region-p)
+                     (list (region-beginning) (region-end))
+                   (list nil nil)))
+    (barf-if-buffer-read-only)
     (unless indent-tabs-mode
       (with-silent-modifications
         (save-excursion
@@ -229,15 +231,16 @@ file."
     nil)
 
   (defun doom|init-highlight-indentation ()
-    (if (or highlight-indentation-mode highlight-indentation-current-column-mode)
-        (progn
-          (doom|inject-trailing-whitespace)
-          (add-hook 'before-save-hook #'delete-trailing-whitespace nil t)
-          (add-hook 'after-save-hook #'doom|inject-trailing-whitespace nil t))
-      (remove-hook 'before-save-hook #'delete-trailing-whitespace t)
-      (remove-hook 'after-save-hook #'doom|inject-trailing-whitespace t)
-      (with-silent-modifications
-        (delete-trailing-whitespace))))
+    (unless (or indent-tabs-mode buffer-read-only)
+      (if (or highlight-indentation-mode highlight-indentation-current-column-mode)
+          (progn
+            (doom|inject-trailing-whitespace)
+            (add-hook 'before-save-hook #'delete-trailing-whitespace nil t)
+            (add-hook 'after-save-hook #'doom|inject-trailing-whitespace nil t))
+        (remove-hook 'before-save-hook #'delete-trailing-whitespace t)
+        (remove-hook 'after-save-hook #'doom|inject-trailing-whitespace t)
+        (with-silent-modifications
+          (delete-trailing-whitespace)))))
   (add-hook! (highlight-indentation-mode highlight-indentation-current-column-mode)
     #'doom|init-highlight-indentation))
 
@@ -258,13 +261,18 @@ file."
   (add-hook! 'hl-line-mode-hook
     (remove-overlays (point-min) (point-max) 'face 'hl-line))
 
-  ;; Acts & looks weird with evil visual mode, so disable it temporarily
-  (defun doom|hl-line-off () (hl-line-mode -1))
   (after! evil
+    ;; Can get in the way of the selection region when in evil visual mode, so
+    ;; disable it temporarily.
+    (defun doom|turn-off-hl-line () (hl-line-mode -1))
+
     (add-hook! 'hl-line-mode-hook
-      (when hl-line-mode
-        (add-hook 'evil-visual-state-entry-hook #'doom|hl-line-off nil t)
-        (add-hook 'evil-visual-state-exit-hook #'hl-line-mode nil t)))))
+      (cond (hl-line-mode
+             (add-hook 'evil-visual-state-entry-hook #'doom|turn-off-hl-line nil t)
+             (add-hook 'evil-visual-state-exit-hook #'hl-line-mode nil t))
+            (t
+             (remove-hook 'evil-visual-state-entry-hook #'doom|turn-off-hl-line t)
+             (remove-hook 'evil-visual-state-exit-hook #'hl-line-mode t))))))
 
 ;; Line number column. A faster (or equivalent, in the worst case) line number
 ;; plugin than the built-in `linum'.
@@ -384,12 +392,13 @@ Example:
        (defun ,sym ()
          (let ((lhs (list ,@lhs-forms))
                (rhs (list ,@rhs-forms)))
-           (list lhs
-                 (propertize
-                  " " 'display
-                  `((space :align-to (- (+ right right-fringe right-margin)
-                                        ,(+ 1 (string-width (format-mode-line rhs)))))))
-                 rhs)))
+           (let ((rhs-str (format-mode-line rhs)))
+             (list lhs
+                   (propertize
+                    " " 'display
+                    `((space :align-to (- (+ right right-fringe right-margin)
+                                          ,(+ 1 (string-width rhs-str))))))
+                   rhs-str))))
        ,(unless (bound-and-true-p byte-compile-current-file)
           `(let (byte-compile-warnings)
              (byte-compile #',sym))))))

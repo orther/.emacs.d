@@ -292,6 +292,7 @@
  :m  "gT" #'+workspace/switch-left
  :m  "gd" #'+jump/definition
  :m  "gD" #'+jump/references
+ :m  "gh" #'+jump/documentation
  :n  "gp" #'+evil/reselect-paste
  :n  "gr" #'+eval:region
  :n  "gR" #'+eval/buffer
@@ -594,6 +595,15 @@
    (:map yas-minor-mode-map
      :i "<tab>" yas-maybe-expand
      :v "<tab>" #'+snippets/expand-on-region))
+
+
+ ;; --- Major mode bindings --------------------------
+ (:after markdown-mode
+   (:map markdown-mode-map
+     ;; fix conflicts with private bindings
+     "<backspace>" nil
+     "<M-left>"    nil
+     "<M-right>"   nil))
 
 
  ;; --- Custom evil text-objects ---------------------

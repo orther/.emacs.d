@@ -1,7 +1,5 @@
 ;;; lang/javascript/config.el -*- lexical-binding: t; -*-
 
-(load! +screeps)
-
 (def-package! js2-mode
   :mode "\\.js$"
   :interpreter "node"
@@ -13,56 +11,57 @@
   (add-hook! 'js2-mode-hook
     #'(flycheck-mode highlight-indentation-mode rainbow-delimiters-mode))
 
+  (set! :repl 'js2-mode '+javascript/repl)
+  (set! :electric 'js2-mode :chars '(?\} ?\) ?.))
+  (set! :jump 'js2-mode :xref-backend #'xref-js2-xref-backend)
+
   ;; Conform switch-case indentation to editorconfig's config
-  (add-hook! 'js2-mode-hook (setq js-switch-indent-offset js-indent-level))
+  (set! :editorconfig :add '(js2-mode js2-basic-offset js-switch-indent-offset))
 
   ;; Favor local eslint over global, if available
   (defun +javascript|init-flycheck-elint ()
     (when (derived-mode-p 'js-mode)
-      (when-let ((eslint (expand-file-name "node_modules/eslint/bin/eslint.js" (doom-project-root)))
+      (when-let ((eslint (expand-file-name "node_modules/eslint/bin/eslint.js"
+                                           (doom-project-root)))
                  (exists-p (file-exists-p eslint))
                  (executable-p (file-executable-p eslint)))
         (setq-local flycheck-javascript-eslint-executable eslint))))
   (add-hook 'flycheck-mode-hook #'+javascript|init-flycheck-elint)
-
-  (set! :repl 'js2-mode '+javascript/repl)
-  (set! :electric 'js2-mode :chars '(?\} ?\) ?.))
-  (set! :xref-backend 'js2-mode 'xref-js2-xref-backend)
 
   (sp-with-modes '(js2-mode rjsx-mode)
     (sp-local-pair "/* " " */" :post-handlers '(("| " "SPC"))))
 
   (map! :map js2-mode-map
         :localleader
-        :n  "S" '+javascript/skewer-this-buffer
+        :n  "S"  #'+javascript/skewer-this-buffer
 
         :prefix "r"
-        :n  "g"  'js2r-add-to-globals-annotation
-        :n  "ca" 'js2r-arguments-to-object
-        :n  "Xa" 'js2r-contract-array
-        :n  "Xf" 'js2r-contract-function
-        :n  "Xo" 'js2r-contract-object
-        :nv "d"  'js2r-debug-this
-        :n  "xa" 'js2r-expand-array
-        :n  "xf" 'js2r-expand-function
-        :n  "xo" 'js2r-expand-object
-        :v  "ef" 'js2r-extract-function
-        :v  "em" 'js2r-extract-method
-        :v  "ev" 'js2r-extract-var
-        :n  "F"  'js2r-forward-barf
-        :n  "f"  'js2r-forward-slurp
-        :v  "ii" 'js2r-inject-global-in-iife
-        :v  "iv" 'js2r-inline-var
-        :v  "p"  'js2r-introduce-parameter
-        :n  "p"  'js2r-localize-parameter
-        :nv "l"  'js2r-log-this
-        :n  "r"  'js2r-rename-var
-        :n  "ss" 'js2r-split-string
-        :n  "sv" 'js2r-split-var-declaration
-        :n  "ct" 'js2r-ternary-to-if
-        :v  "u"  'js2r-unwrap
-        :n  "t"  'js2r-var-to-this
-        :n  "ii" 'js2r-wrap-buffer-in-iife))
+        :n  "g"  #'js2r-add-to-globals-annotation
+        :n  "ca" #'js2r-arguments-to-object
+        :n  "Xa" #'js2r-contract-array
+        :n  "Xf" #'js2r-contract-function
+        :n  "Xo" #'js2r-contract-object
+        :nv "d"  #'js2r-debug-this
+        :n  "xa" #'js2r-expand-array
+        :n  "xf" #'js2r-expand-function
+        :n  "xo" #'js2r-expand-object
+        :v  "ef" #'js2r-extract-function
+        :v  "em" #'js2r-extract-method
+        :v  "ev" #'js2r-extract-var
+        :n  "F"  #'js2r-forward-barf
+        :n  "f"  #'js2r-forward-slurp
+        :v  "ii" #'js2r-inject-global-in-iife
+        :v  "iv" #'js2r-inline-var
+        :v  "p"  #'js2r-introduce-parameter
+        :n  "p"  #'js2r-localize-parameter
+        :nv "l"  #'js2r-log-this
+        :n  "r"  #'js2r-rename-var
+        :n  "ss" #'js2r-split-string
+        :n  "sv" #'js2r-split-var-declaration
+        :n  "ct" #'js2r-ternary-to-if
+        :v  "u"  #'js2r-unwrap
+        :n  "t"  #'js2r-var-to-this
+        :n  "ii" #'js2r-wrap-buffer-in-iife))
 
 
 ;; A find-{definition,references} backend for js2-mode. NOTE The xref API is
@@ -89,9 +88,7 @@
   :commands tern-mode
   :init (add-hook 'js2-mode-hook #'tern-mode)
   :config
-  ;; Fix project detection
-  (defun +javascript*tern-project-dir (&rest _) (doom-project-root))
-  (advice-add #'tern-project-dir :override #'+javascript*tern-project-dir))
+  (advice-add #'tern-project-dir :override #'doom*project-root))
 
 
 (def-package! company-tern
@@ -174,6 +171,11 @@
 ;;
 ;; Projects
 ;;
+
+(def-project-mode! +javascript-screeps-mode
+  :match "/screeps/.+$"
+  :modes (+javascript-npm-mode)
+  :init (load! +screeps))
 
 (def-project-mode! +javascript-gulp-mode
   :files "gulpfile.js")

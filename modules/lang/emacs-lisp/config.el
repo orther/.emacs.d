@@ -7,6 +7,7 @@
   :config
   (set! :repl 'emacs-lisp-mode #'+emacs-lisp/repl)
   (set! :eval 'emacs-lisp-mode #'+emacs-lisp-eval)
+  (set! :jump 'emacs-lisp-mode :documentation #'describe-symbol)
   (set! :rotate 'emacs-lisp-mode
         :symbols '(("t" "nil")
                    ("let" "let*")
@@ -62,6 +63,7 @@
   :config
   (setq auto-compile-display-buffer nil
         auto-compile-use-mode-line nil)
+
   (defun +emacs-lisp*load-after-compile (success)
     "Reload the current emacs-lisp file after it's recompiled, if an older
 version is loaded."
