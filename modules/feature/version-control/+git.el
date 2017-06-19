@@ -51,14 +51,13 @@
 
 
 (def-package! magit
-  :commands (magit-status magit-blame)
-  :config
-  (set! :evil-state 'magit-status-mode 'emacs)
-  (after! evil
-    ;; Switch to emacs state only while in `magit-blame-mode', then back when
-    ;; its done (since it's a minor-mode).
-    (add-hook! 'magit-blame-mode-hook
-      (evil-local-mode (if magit-blame-mode -1 +1)))))
+  :commands (magit-status magit-blame magit-log-buffer-file))
+
+;; BMACS - keep evil-magit
+(def-package! evil-magit
+  :when (featurep! :feature evil)
+  :after magit
+  :init (setq evil-magit-want-horizontal-movement t))
 
 
 (def-package! git-link
