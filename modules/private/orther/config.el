@@ -1,4 +1,4 @@
-;;; private/orther/config.el
+;;; private/orther/config.el -*- lexical-binding: t; -*-
 
 (when (featurep 'evil)
   (load! +bindings)  ; my key bindings
