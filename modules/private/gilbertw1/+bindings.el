@@ -402,7 +402,10 @@
      "C-b" #'backward-word
      "C-f" #'forward-word
      "C-o" #'ivy-dispatching-done
-     "<C-return>" #'ivy-immediate-done)
+     "<C-return>" #'ivy-immediate-done
+     "C-S-h k" #'describe-key
+     "C-S-h f" #'describe-function
+     "C-S-h v" #'describe-variable)
    (:map ivy-occur-grep-mode-map
      (:desc "ivy occur actions"
        :prefix ","
