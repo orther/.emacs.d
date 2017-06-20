@@ -7,15 +7,14 @@
   (let ((path buffer-file-name)
         (project-root (doom-project-root)))
     (require 'neotree)
-    (cond ((and (neo-global--window-exists-p)
-                (get-buffer-window neo-buffer-name t))
-           (neotree-hide)
-           (neotree-find path project-root))
-          ((not (and (neo-global--window-exists-p)
-                     (equal (file-truename (neo-global--with-buffer neo-buffer--start-node))
-                            (file-truename project-root))))
-           (neotree-dir project-root))
-          (t (neotree-find path project-root)))))
+    (if (and (neo-global--window-exists-p)
+             (get-buffer-window neo-buffer-name t))
+        (neotree-hide)
+      (progn
+        (if project-root
+            (neotree-dir project-root))
+        (if path
+            (neotree-find path))))))
 
 ;;;###autoload
 (defun +neotree/collapse-or-up ()
