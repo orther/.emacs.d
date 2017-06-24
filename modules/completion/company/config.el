@@ -31,8 +31,8 @@
 
   (push #'company-sort-by-occurrence company-transformers)
 
-  (after! yasnippet
-    (nconc company-backends '(company-yasnippet)))
+  ;; (after! yasnippet
+  ;;   (nconc company-backends '(company-yasnippet)))
 
   (global-company-mode +1))
 
