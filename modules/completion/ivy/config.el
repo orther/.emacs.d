@@ -34,7 +34,9 @@ session)."
         ;; highlight til EOL
         ivy-format-function #'ivy-format-function-line
         ;; disable magic slash on non-match
-        ivy-magic-slash-non-match-action nil)
+        ivy-magic-slash-non-match-action nil
+        ;; BMACS allow input prompt value to be selectable
+        ivy-use-selectable-prompt t)
 
   (after! magit     (setq magit-completing-read-function #'ivy-completing-read))
   (after! yasnippet (push #'+ivy-yas-prompt yas-prompt-functions))
