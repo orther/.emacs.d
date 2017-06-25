@@ -205,7 +205,8 @@ This aggressively reloads core autoload files."
                  in (append (nreverse (file-expand-wildcards (expand-file-name "core*.el" doom-core-dir)))
                             (file-expand-wildcards (expand-file-name "autoload/*.el" doom-core-dir))
                             (doom--module-paths "config.el"))
-                 do (funcall load-fn file t))))
+                 do (funcall load-fn file t)))
+      (doom|finalize))
     (when (or force-p (not doom-packages))
       (setq doom-packages nil)
       (funcall load-fn (expand-file-name "packages.el" doom-core-dir))
@@ -230,8 +231,7 @@ This aggressively reloads core autoload files."
                        for path in (directory-files modpath t "^\\w")
                        if (file-directory-p path)
                         collect (intern (file-name-nondirectory path)) into paths
-                       finally return (cons mode paths)
-                       finally do (message "== %s %s" mode paths))))
+                       finally return (cons mode paths))))
             (t
              (doom--enable-module mode m))))))
 
@@ -380,7 +380,7 @@ it hasn't already, and if it exists."
 
 (defmacro featurep! (module submodule)
   "Convenience macro that wraps `doom-module-loaded-p'."
-  `(doom-module-loaded-p ,module ',submodule))
+  (doom-module-loaded-p module submodule))
 
 
 ;;
@@ -415,13 +415,15 @@ them."
         (plist-put plist :recipe (cons name pkg-recipe)))
       (when pkg-pin
         (plist-put plist :pin nil)))
+    (dolist (prop '(:ignore :freeze))
+      (when-let (val (plist-get plist prop))
+        (plist-put plist prop (eval val))))
     `(progn
        (when ,(and pkg-pin t)
          (cl-pushnew (cons ',name ,pkg-pin) package-pinned-packages
                      :test #'eq :key #'car))
        (when ,(and old-plist t)
          (assq-delete-all ',name doom-packages))
-       ;; :ignore and :freeze are handled upstream
        (push ',(cons name plist) doom-packages))))
 
 (defmacro depends-on! (module submodule)
@@ -467,7 +469,7 @@ the commandline."
   ;; This function must not use autoloaded functions or external dependencies.
   ;; It must assume nothing is set up!
   (doom-initialize-packages (not noninteractive))
-  (let ((evil-p (featurep! :feature evil))
+  (let ((evil-p (doom-module-loaded-p :feature 'evil))
         (targets
          (file-expand-wildcards
           (expand-file-name "autoload/*.el" doom-core-dir))))
@@ -525,7 +527,7 @@ If ONLY-RECOMPILE-P is non-nil, only recompile out-of-date files."
   (interactive "P")
   ;; Ensure all relevant config files are loaded and up-to-date. This way we
   ;; don't need eval-when-compile and require blocks scattered all over.
-  (doom-initialize-packages t t)
+  (doom-initialize-packages t noninteractive)
   (let ((targets
          (cond ((equal (car command-line-args-left) "--")
                 (cl-loop for file in (cdr command-line-args-left)
@@ -599,65 +601,6 @@ package files."
                        and do (delete-file path)
                        and do (message "Deleted %s" (file-relative-name path)))
       (message "Everything is clean"))))
-
-(defun doom/run-tests (&optional modules)
-  "Run all loaded tests, specified by MODULES (a list of module cons cells) or
-command line args following a double dash (each arg should be in the
-'module/submodule' format).
-
-If neither is available, run all tests in all enabled modules."
-  (interactive) ;; TODO Add completing-read selection of tests
-  ;; FIXME Refactor this
-  (condition-case-unless-debug ex
-      (let (targets)
-        ;; ensure DOOM is initialized
-        (let (noninteractive)
-          (unload-feature 'core t)
-          (load (expand-file-name "init.el" user-emacs-directory) nil t))
-        (run-hooks 'emacs-startup-hook)
-        ;; collect targets
-        (cond ((and command-line-args-left
-                    (equal (car command-line-args-left) "--"))
-               (cl-loop for arg in (cdr argv)
-                        if (equal arg "core")
-                        do (push (expand-file-name "test/" doom-core-dir) targets)
-                        else
-                        collect
-                        (cl-destructuring-bind (car cdr) (split-string arg "/" t)
-                          (cons (intern (concat ":" car))
-                                (and (cadr consp) (intern cdr))))
-                        into args
-                        finally do (setq modules args
-                                         command-line-args-left nil)))
-
-              (modules
-               (unless (cl-loop for module in modules
-                                unless (and (consp module)
-                                            (keywordp (car module))
-                                            (symbolp (cdr module)))
-                                return t)
-                 (error "Expected a list of cons, got: %s" modules)))
-
-              (t
-               (setq modules (doom--module-pairs)
-                     targets (list (expand-file-name "test/" doom-core-dir)))))
-        ;; resolve targets to a list of test files and load them
-        (cl-loop with targets =
-                 (append targets
-                         (cl-loop for (module . submodule) in modules
-                                  collect (doom-module-path module submodule "test/")))
-                 for dir in targets
-                 if (file-directory-p dir)
-                 nconc (reverse (directory-files-recursively dir "\\.el$"))
-                 into items
-                 finally do (quiet! (mapc #'load-file items)))
-        ;; run all loaded tests
-        (when noninteractive
-          (ert-run-tests-batch-and-exit)))
-    ('error
-     (lwarn 'doom-test :error
-            "%s -> %s"
-            (car ex) (error-message-string ex)))))
 
 
 ;;

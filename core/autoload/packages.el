@@ -123,11 +123,43 @@ containing (PACKAGE-SYMBOL OLD-VERSION-LIST NEW-VERSION-LIST).
 If INCLUDE-FROZEN-P is non-nil, check frozen packages as well.
 
 Used by `doom/packages-update'."
-  (cl-loop for pkg in (doom-get-packages)
-           if (or (and (doom-package-prop (car pkg) :freeze)
+  (let (quelpa-pkgs elpa-pkgs)
+    ;; Separate quelpa from elpa packages
+    (dolist (pkg (doom-get-packages))
+      (let ((sym (car pkg)))
+        (when (and (or (not (doom-package-prop sym :freeze))
                        include-frozen-p)
-                  (doom-package-outdated-p (car pkg)))
-           collect it))
+                   (not (doom-package-prop sym :ignore)))
+          (push sym
+                (if (eq (doom-package-backend sym) 'quelpa)
+                    quelpa-pkgs
+                  elpa-pkgs)))))
+    ;; The bottleneck in this process is quelpa's version checks, so partition
+    ;; and check them asynchronously.
+    (let* ((max-threads 3) ; TODO Do real CPU core/thread count
+           (min-per-part 2)
+           (per-part (max min-per-part (ceiling (/ (length quelpa-pkgs) (float max-threads)))))
+           (leftover (mod (length quelpa-pkgs) per-part))
+           parts
+           futures)
+      (while quelpa-pkgs
+        (let (part)
+          (dotimes (_i (+ per-part leftover))
+            (when-let (p (pop quelpa-pkgs))
+              (push p part)))
+          (setq leftover 0)
+          (push (nreverse part) parts)))
+      (dolist (part (reverse parts))
+        (debug! "New thread for: %s" part)
+        (push (async-start
+               `(lambda ()
+                  (let ((noninteractive t))
+                    (load ,(expand-file-name "core.el" doom-core-dir)))
+                  (delq nil (mapcar #'doom-package-outdated-p ',part))))
+              futures))
+      (apply #'append
+             (delq nil (mapcar #'doom-package-outdated-p elpa-pkgs))
+             (mapcar #'async-get futures)))))
 
 ;;;###autoload
 (defun doom-get-orphaned-packages ()
@@ -343,9 +375,9 @@ appropriate."
                                         10)))
                                (mapconcat
                                 (lambda (pkg)
-                                  (format "+ %s %s -> %s"
-                                          (s-pad-right (+ max-len 2) " " (symbol-name (car pkg)))
-                                          (s-pad-right 14 " " (package-version-join (cadr pkg)))
+                                  (format (format "+ %%-%ds %%-%ds -> %%s" (+ max-len 2) 14)
+                                          (symbol-name (car pkg))
+                                          (package-version-join (cadr pkg))
                                           (package-version-join (cl-caddr pkg))))
                                 packages
                                 "\n"))))))
@@ -441,7 +473,7 @@ calls."
                                         nil t)
                      (user-error "All packages are up to date"))))
      (list (cdr (assq (car (assoc package package-alist)) packages)))))
-  (destructuring-bind (package old-version new-version) pkg
+  (cl-destructuring-bind (package old-version new-version) pkg
     (if-let (desc (doom-package-outdated-p package))
         (let ((old-v-str (package-version-join old-version))
               (new-v-str (package-version-join new-version)))

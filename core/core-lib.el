@@ -40,16 +40,13 @@
         (t paths)))
 
 (defun doom--resolve-hooks (hooks)
-  (let ((quoted-p (eq (car-safe hooks) 'quote)))
-    (when quoted-p
-      (setq hooks (cadr hooks)))
-    (cl-loop with hooks = (if (listp hooks) hooks (list hooks))
-             for hook in hooks
-             if (eq (car-safe hook) 'quote)
-               collect (cadr hook)
-             else if quoted-p
-               collect hook
-             else collect (intern (format "%s-hook" (symbol-name hook))))))
+  (cl-loop with quoted-p = (eq (car-safe hooks) 'quote)
+           for hook in (doom-enlist (doom-unquote hooks))
+           if (eq (car-safe hook) 'quote)
+            collect (cadr hook)
+           else if quoted-p
+            collect hook
+           else collect (intern (format "%s-hook" (symbol-name hook)))))
 
 (defun doom-unquote (exp)
   "Return EXP unquoted."
@@ -226,7 +223,7 @@ executed when called with `set!'. FORMS are not evaluated until `set!' calls it.
   (declare (indent defun) (doc-string 3))
   (unless (keywordp keyword)
     (error "Not a valid property name: %s" keyword))
-  (let ((fn (intern (format "doom-setting--setter%s" keyword))))
+  (let ((fn (intern (format "doom--set%s" keyword))))
     `(progn
        (defun ,fn ,arglist
          ,docstring
@@ -242,7 +239,8 @@ executed when called with `set!'. FORMS are not evaluated until `set!' calls it.
     (if fn
         (apply fn values)
       (when doom-debug-mode
-        (message "No setting found for %s" keyword)))))
+        (message "No setting found for %s" keyword)
+        nil))))
 
 (provide 'core-lib)
 ;;; core-lib.el ends here

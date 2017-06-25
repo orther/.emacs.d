@@ -46,7 +46,9 @@ interactive session."
                    `(,(car rule)
                      (lambda (message &rest args)
                        (apply #'doom-ansi-apply ',(car rule) message args))))
-        (color (symbol-function 'doom-ansi-apply)))
+        (color
+         (lambda (code format &rest args)
+           (apply #'doom-ansi-apply code format args))))
      (format ,message ,@args)))
 
 ;;;###autoload
@@ -66,6 +68,12 @@ interactive session."
            (ansi-color-apply-on-region beg end)))
        (with-selected-window (doom-popup-buffer buf)
          (goto-char (point-max))))))
+
+;;;###autoload
+(defmacro debug! (message &rest args)
+  "Out a debug message if `doom-debug-mode' is non-nil. Otherwise, ignore this."
+  (when doom-debug-mode
+    `(message ,message ,@args)))
 
 ;;;###autoload
 (defun doom-ansi-apply (code format &rest args)
