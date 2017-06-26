@@ -6,7 +6,6 @@
   (when (not (boundp 'imenu-auto-rescan))
       (setq imenu-auto-rescan nil))
   :config
-  (add-hook 'scala-mode-hook #'ensime-mode)
   (setq scala-indent:align-parameters t)
   (map! :mode scala-mode
         :niv "TAB" 'ensime-company-complete-or-indent
@@ -19,10 +18,22 @@
 (def-package! sbt-mode :after scala-mode)
 
 (def-package! ensime
-  :commands (ensime ensime-mode ensime-scala-mode-hook ensime-company-enable)
+  :after scala-mode
+  :commands (ensime ensime-mode ensime-scala-mode-hook)
   :config
-  ;; disable ensime startup notification
+  (set! :company-backend 'scala-mode '(ensime-company company-yasnippet))
+
   (setq ensime-startup-snapshot-notification nil
         ensime-startup-notification nil
-        ensime-eldoc-hints t)
-  (add-hook 'ensime-mode-hook #'eldoc-mode))
+        ensime-eldoc-hints t
+        ;; let DOOM handle company setup
+        ensime-completion-style nil)
+
+  (add-hook 'scala-mode-hook #'ensime-mode)
+  (add-hook 'ensime-mode-hook #'eldoc-mode)
+
+  ;; Fix void-variable imenu-auto-rescan error caused by `ensime--setup-imenu'
+  ;; trying to make imenu variables buffer local before imenu is loaded.
+  (require 'imenu))
+
+>>>>>>> 3643d9e1... Refactor lang/scala #125
