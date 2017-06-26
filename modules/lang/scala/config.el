@@ -2,10 +2,8 @@
 
 (def-package! scala-mode
   :mode "\\.s\\(cala\\|bt\\)$"
-  :init
-  (add-hook 'scala-mode-hook 'scala/configure-ensime)
-  (add-hook 'ensime-mode-hook 'scala/enable-eldoc)
   :config
+  (add-hook 'scala-mode-hook #'ensime-mode)
   (setq scala-indent:align-parameters t)
   (map! :mode scala-mode
         :niv "TAB" 'ensime-company-complete-or-indent
@@ -22,4 +20,6 @@
   :config
   ;; disable ensime startup notification
   (setq ensime-startup-snapshot-notification nil
-        ensime-startup-notification nil))
+        ensime-startup-notification nil
+        ensime-eldoc-hints t)
+  (add-hook 'ensime-mode-hook #'eldoc-mode))

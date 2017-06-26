@@ -9,9 +9,9 @@
                   collect `(defun ,def-name ()
                              (when (eq major-mode ',mode)
                                (require 'company)
-                               (cl-pushnew ',backends company-backends :test #'equal)))
+                               ,@(cl-loop for backend in backends
+                                          collect `(cl-pushnew ',backend company-backends :test #'equal))))
                   collect `(add-hook! ,mode #',def-name)))))
-
 
 (def-package! company
   :commands (company-mode global-company-mode company-complete
