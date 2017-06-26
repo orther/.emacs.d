@@ -206,9 +206,11 @@
      :desc "Whitespace mode"          :nv "w" #'gdoom/toggle-whitespace)
    (:desc "code"
      :prefix "c"
-     :desc "Build"                    :nv  "b" #'+eval/build
+     :desc "Build"                    :nv "b" #'+eval/build
      :desc "Open/Send to REPL"        :nv "r" #'+eval/repl
-     :desc "Open debugger"            :nv  "R" #'+debug/open))
+     :desc "Open debugger"            :nv "R" #'+debug/open
+     :desc "Counsel dash"             :nv "d" #'counsel-dash
+     :desc "Dash install docset"      :nv "i" #'counsel-dash-install-docset))
 
  ;; Works when I accidentally use tmux bindings
  (:desc "tmux emulation"
