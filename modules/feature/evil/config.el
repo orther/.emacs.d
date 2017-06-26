@@ -335,6 +335,19 @@ the new algorithm is confusing, like in python or ruby."
     (push (cons fn '((:default . evil-mc-execute-default-call)))
           evil-mc-custom-known-commands))
 
+  ;; BMACS add *-without-register commands
+  (dolist
+      (command '((evil-change-without-register . ((:default . evil-mc-execute-default-evil-change)))
+                 (evil-change-line-without-register . ((:default . evil-mc-execute-default-evil-change-line)))
+                 (evil-delete-without-register . ((:default . evil-mc-execute-default-evil-delete)))
+                 (evil-delete-without-register-if-whitespace . ((:default . evil-mc-execute-default-evil-delete)))
+                 (evil-delete-char-without-register . ((:default . evil-mc-execute-default-evil-delete)))
+                 (evil-delete-backward-char-without-register . ((:default . evil-mc-execute-default-evil-delete)))
+                 (evil-delete-line-without-register . ((:default . evil-mc-execute-default-evil-delete)))
+                 (evil-paste-after-witout-register . ((:default . evil-mc-execute-default-evil-paste)))
+                 (evil-paste-before-witout-register . ((:default . evil-mc-execute-default-evil-paste)))))
+    (push command evil-mc-custom-known-commands))
+
   (defun +evil|escape-multiple-cursors ()
     "Clear evil-mc cursors and restore state."
     (when (evil-mc-has-cursors-p)
