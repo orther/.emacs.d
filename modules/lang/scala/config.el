@@ -2,6 +2,9 @@
 
 (def-package! scala-mode
   :mode "\\.s\\(cala\\|bt\\)$"
+  :init
+  (when (not (boundp 'imenu-auto-rescan))
+      (setq imenu-auto-rescan nil))
   :config
   (add-hook 'scala-mode-hook #'ensime-mode)
   (setq scala-indent:align-parameters t)
