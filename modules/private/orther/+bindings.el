@@ -567,6 +567,7 @@
      :desc "Diff Hunk"           :nv "d" #'git-gutter:previous-hunk
      :desc "Todo"                :nv "t" #'hl-todo-previous
      :desc "Error"               :nv "e" #'previous-error
+     :desc "Warning"             :nv "E" #'previous-warning
      :desc "Workspace"           :nv "w" #'+workspace/switch-left
      :desc "Smart jump"          :nv "h" #'smart-backward
      :desc "Spelling error"      :nv "s" #'evil-prev-flyspell-error
@@ -578,6 +579,7 @@
      :desc "Diff Hunk"           :nv "d" #'git-gutter:next-hunk
      :desc "Todo"                :nv "t" #'hl-todo-next
      :desc "Error"               :nv "e" #'next-error
+     :desc "Warning"             :nv "E" #'next-warning
      :desc "Workspace"           :nv "w" #'+workspace/switch-right
      :desc "Smart jump"          :nv "l" #'smart-forward
      :desc "Spelling error"      :nv "s" #'evil-next-flyspell-error
@@ -640,7 +642,7 @@
    (:desc "file" :prefix "f"
      :desc "File file"             :n  "."  #'find-file
      :desc "Sudo find file"        :n  ">"  #'doom/sudo-find-file
-     :desc "Find file in project"  :n  "/"  #'projectile-find-file
+     :desc "Find file in project"  :n  "f"  #'projectile-find-file
      :desc "Find file from here"   :n  "?"  #'counsel-file-jump
      :desc "Find other file"       :n  "a"  #'projectile-find-other-file
      :desc "Find file in dotfiles" :n  "d"  #'+orther/find-in-dotfiles
@@ -717,7 +719,7 @@
 
    (:desc "project" :prefix "p"
      :desc "Browse project"          :n  "." (find-file-in! (doom-project-root))
-     :desc "Find file in project"    :n  "/" #'projectile-find-file
+     :desc "Find file in project"    :n  "f" #'projectile-find-file
      :desc "Run cmd in project root" :nv "!" #'projectile-run-shell-command-in-root
      :desc "List project tasks"      :nv "a" #'+ivy/tasks
      :desc "Switch project"          :n  "p" #'projectile-switch-project
@@ -742,7 +744,7 @@
      :desc "New snippet"           :n  "n" #'yas-new-snippet
      :desc "Insert snippet"        :nv "i" #'yas-insert-snippet
      :desc "Find snippet for mode" :n  "s" #'yas-visit-snippet-file
-     :desc "Find snippet"          :n  "S" #'+hlissner/find-in-snippets)
+     :desc "Find snippet"          :n  "S" #'+orther/find-in-snippets)
 
    (:desc "toggle" :prefix "t"
      :desc "Flyspell"               :n "s" #'flyspell-mode
