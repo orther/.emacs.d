@@ -1,17 +1,23 @@
 ;;; completion/company/config.el -*- lexical-binding: t; -*-
 
-(def-setting! :company-backend (modes backends)
-  "Register company BACKENDS to MODES."
-  (let ((backends (doom-enlist (doom-unquote backends))))
-    `(progn
-       ,@(cl-loop for mode in (doom-enlist (doom-unquote modes))
-                  for def-name = (intern (format "doom--init-company-%s" mode))
-                  collect `(defun ,def-name ()
-                             (when (eq major-mode ',mode)
-                               (require 'company)
-                               ,@(cl-loop for backend in backends
-                                          collect `(cl-pushnew ',backend company-backends :test #'equal))))
-                  collect `(add-hook! ,mode #',def-name)))))
+(def-setting! :company-backend (modes &rest backends)
+  "Prepends BACKENDS to `company-backends' in major MODES.
+
+MODES should be one major-mode symbol or a list of them."
+  `(progn
+     ,@(cl-loop for mode in (doom-enlist (doom-unquote modes))
+                for def-name = (intern (format "doom--init-company-%s" mode))
+                collect `(defun ,def-name ()
+                           (when (and (eq major-mode ',mode)
+                                      ,(not (eq backends '(nil))))
+                             (require 'company)
+                             (setq company-backends (append (list ,@backends) company-backends))))
+                collect `(add-hook! ,mode #',def-name))))
+
+
+;;
+;; Packages
+;;
 
 (def-package! company
   :commands (company-mode global-company-mode company-complete
@@ -26,14 +32,15 @@
         company-require-match 'never
         company-global-modes '(not eshell-mode comint-mode erc-mode message-mode help-mode)
         company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend)
-        company-backends '(company-capf company-dabbrev-code company-gtags company-etags company-keywords company-files company-dabbrev company-yasnippet))
+        company-backends '(company-capf))
 
   (push #'company-sort-by-occurrence company-transformers)
 
-  ;; (after! yasnippet
-  ;;   (nconc company-backends '(company-yasnippet)))
+  (after! yasnippet
+    (nconc company-backends '(company-yasnippet)))
 
   (global-company-mode +1))
+
 
 (def-package! company-statistics
   :after company
@@ -42,17 +49,13 @@
   (quiet! (company-statistics-mode +1)))
 
 
+;; Looks ugly on OSX without emacs-mac build
 (def-package! company-quickhelp
   :after company
   :config
   (setq company-quickhelp-delay nil)
-  (company-quickhelp-mode +1)
+  (company-quickhelp-mode +1))
 
-  ;; TAB auto-completion in term buffers
-  (after! comint
-    (map! :map comint-mode-map [tab] #'company-complete))
-
-  (global-company-mode +1))
 
 (def-package! company-dict
   :commands company-dict
@@ -78,3 +81,4 @@
 (autoload 'company-files "company-files")
 (autoload 'company-gtags "company-gtags")
 (autoload 'company-ispell "company-ispell")
+
