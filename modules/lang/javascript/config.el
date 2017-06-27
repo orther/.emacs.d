@@ -6,7 +6,8 @@
   :config
   (setq js2-skip-preprocessor-directives t
         js2-highlight-external-variables nil
-        js2-mode-show-parse-errors nil)
+        js2-mode-show-parse-errors nil
+        js2-strict-trailing-comma-warning nil)
 
   (add-hook! 'js2-mode-hook
     #'(flycheck-mode highlight-indentation-mode rainbow-delimiters-mode))
