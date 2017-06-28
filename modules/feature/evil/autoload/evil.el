@@ -41,7 +41,6 @@
 (evil-define-operator evil-delete-without-register-if-whitespace (beg end type reg yank-handler)
   (interactive "<R><y>")
   (let ((text (replace-regexp-in-string "\n" "" (filter-buffer-substring beg end))))
-    (message text)
     (if (string-match-p "^\\s-*$" text)
       (evil-delete beg end type ?_)
       (evil-delete beg end type reg yank-handler))))
