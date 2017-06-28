@@ -1,5 +1,14 @@
 ;;; completion/company/config.el -*- lexical-binding: t; -*-
 
+;; BMACS - hack to make flatten company backend lists
+;; I prefer dumb completions normally and only enable expensive smart ones in select scenarios
+;; TODO: revisit this and remove this hack
+(defun flatten (l)
+  (cond ((null l) nil)
+        ((atom l) (list l))
+        (t (loop for a in l appending (flatten a)))))
+
+
 (def-setting! :company-backend (modes &rest backends)
   "Prepends BACKENDS to `company-backends' in major MODES.
 
@@ -11,7 +20,9 @@ MODES should be one major-mode symbol or a list of them."
                            (when (and (eq major-mode ',mode)
                                       ,(not (eq backends '(nil))))
                              (require 'company)
-                             (setq company-backends (append (list ,@backends) company-backends))))
+                             (make-local-variable 'company-backends)
+                             ,@(cl-loop for backend in (flatten backends)
+                                        collect `(cl-pushnew ',backend company-backends :test #'equal))))
                 collect `(add-hook! ,mode #',def-name))))
 
 
@@ -32,7 +43,7 @@ MODES should be one major-mode symbol or a list of them."
         company-require-match 'never
         company-global-modes '(not eshell-mode comint-mode erc-mode message-mode help-mode)
         company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend)
-        company-backends '(company-capf))
+        company-backends '(company-capf company-dabbrev-code company-keywords company-files company-dabbrev))
 
   (push #'company-sort-by-occurrence company-transformers)
 
