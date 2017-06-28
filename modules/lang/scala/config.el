@@ -2,9 +2,6 @@
 
 (def-package! scala-mode
   :mode "\\.s\\(cala\\|bt\\)$"
-  :init
-  (when (not (boundp 'imenu-auto-rescan))
-      (setq imenu-auto-rescan nil))
   :config
   (setq scala-indent:align-parameters t)
   (map! :mode scala-mode
@@ -35,5 +32,3 @@
   ;; Fix void-variable imenu-auto-rescan error caused by `ensime--setup-imenu'
   ;; trying to make imenu variables buffer local before imenu is loaded.
   (require 'imenu))
-
->>>>>>> 3643d9e1... Refactor lang/scala #125
