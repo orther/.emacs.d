@@ -60,11 +60,8 @@ redefines its keys every time `eshell-mode' is enabled."
   (defun +eshell|cleanup ()
     "Close window (or workspace) on quit."
     (setq +eshell-buffers (delete (current-buffer) +eshell-buffers))
-    (cond ((doom-popup-p)
-           (delete-window))
-          ((and (featurep! :feature workspaces)
-                (string= "eshell" (+workspace-current-name)))
-           (+workspace/close-window-or-workspace))))
+    (when (doom-popup-p)
+      (delete-window)))
   (add-hook 'eshell-exit-hook #'+eshell|cleanup)
 
   (defun +eshell|init ()

@@ -40,6 +40,8 @@ MODES should be one major-mode symbol or a list of them."
         company-dabbrev-ignore-case nil
         company-dabbrev-code-other-buffers t
         company-tooltip-align-annotations t
+        company-idle-delay 0.1
+        company-minimum-prefix-length 3
         company-require-match 'never
         company-global-modes '(not eshell-mode comint-mode erc-mode message-mode help-mode)
         company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend)

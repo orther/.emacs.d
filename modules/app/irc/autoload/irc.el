@@ -44,9 +44,7 @@ workspace for it."
         (when +irc--defer-timer
           (cancel-timer +irc--defer-timer))
         (disable-circe-notifications)
-        (mapc #'kill-buffer (doom-buffers-in-mode 'circe-mode (buffer-list) t))
-        (when (equal (+workspace-current-name) +irc--workspace-name)
-          (+workspace/delete +irc--workspace-name)))
+        (mapc #'kill-buffer (doom-buffers-in-mode 'circe-mode (buffer-list) t)))
     (message "Aborted")))
 
 ;;;###autoload
