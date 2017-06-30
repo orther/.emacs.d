@@ -80,7 +80,15 @@
   (map! (:after wgrep
           ;; a wrapper that invokes `wgrep-mark-deletion' across lines
           ;; you use `evil-delete' on.
-          :map wgrep-mode-map [remap evil-delete] #'+evil-delete))
+          :map wgrep-mode-map [remap evil-delete] #'+evil-delete)
+
+        ;; replace native folding commands
+        [remap evil-toggle-fold]   #'+evil:fold-toggle
+        [remap evil-close-fold]    #'+evil:fold-close
+        [remap evil-open-fold]     #'+evil:fold-open
+        [remap evil-open-fold-rec] #'+evil:fold-open
+        [remap evil-close-folds]   #'+evil:fold-close-all
+        [remap evil-open-folds]    #'+evil:fold-open-all)
 
 
   ;; --- evil hacks -------------------------
