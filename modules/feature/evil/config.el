@@ -238,12 +238,13 @@ across windows."
     (cons (format "(%s " (or (read-string "(") "")) ")"))
 
   ;; Add escaped-sequence support to embrace
-  (push (cons ?\\ (make-embrace-pair-struct
-                   :key ?\\
-                   :read-function #'+evil--embrace-escaped
-                   :left-regexp "\\[[{(]"
-                   :right-regexp "\\[]})]"))
-        (default-value 'embrace--pairs-list))
+  (cl-pushnew (cons ?\\ (make-embrace-pair-struct
+                         :key ?\\
+                         :read-function #'+evil--embrace-escaped
+                         :left-regexp "\\[[{(]"
+                         :right-regexp "\\[]})]"))
+              (default-value 'embrace--pairs-list)
+              :key #'car)
 
   ;; Add extra pairs
   (add-hook 'LaTeX-mode-hook #'embrace-LaTeX-mode-hook)
@@ -322,22 +323,16 @@ the new algorithm is confusing, like in python or ruby."
   :config
   (global-evil-mc-mode +1)
 
-  (defun evil-mc-make-cursor-move-by-line (dir count)
-    "Create COUNT cursors one for each line moving in the direction DIR.
-  DIR should be 1 or -1 and COUNT should be a positive integer or nil."
-    (setq count (max 0 (or count 1)))
-    (dotimes (i count)
-      (evil-mc-run-cursors-before)
-      (evil-mc-make-cursor-at-pos (point))
-      (let (line-move-visual)
-        (evil-line-move dir))))
+  (unless doom-init-p
+    ;; Add custom commands to whitelisted commands
+    (dolist (fn '(doom/deflate-space-maybe doom/inflate-space-maybe
+                                           doom/backward-to-bol-or-indent doom/forward-to-last-non-comment-or-eol
+                                           doom/backward-kill-to-bol-and-indent doom/newline-and-indent))
+      (push (cons fn '((:default . evil-mc-execute-default-call)))
+            evil-mc-custom-known-commands))
 
-  ;; Add custom commands to whitelisted commands
-  (dolist (fn '(doom/deflate-space-maybe doom/inflate-space-maybe
-                doom/backward-to-bol-or-indent doom/forward-to-last-non-comment-or-eol
-                doom/backward-kill-to-bol-and-indent doom/newline-and-indent))
-    (push (cons fn '((:default . evil-mc-execute-default-call)))
-          evil-mc-custom-known-commands))
+    ;; disable evil-escape in evil-mc; causes unwanted text on invocation
+    (push 'evil-escape-mode evil-mc-incompatible-minor-modes))
 
   ;; BMACS add *-without-register commands
   (dolist
@@ -358,10 +353,7 @@ the new algorithm is confusing, like in python or ruby."
       (evil-mc-undo-all-cursors)
       (evil-mc-resume-cursors)
       t))
-  (add-hook '+evil-esc-hook #'+evil|escape-multiple-cursors)
-
-  ;; disable evil-escape in evil-mc; causes unwanted text on invocation
-  (push 'evil-escape-mode evil-mc-incompatible-minor-modes))
+  (add-hook '+evil-esc-hook #'+evil|escape-multiple-cursors))
 
 (def-package! evil-snipe
   :demand t
