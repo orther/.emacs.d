@@ -91,7 +91,9 @@
       :desc "Switch workspace buffer"  :nv "b" #'+ivy/switch-workspace-buffer
       :desc "Switch buffer"            :nv "B" #'+ivy/switch-buffer
       :desc "Kill buffer"              :nv "d" #'kill-this-buffer
-      :desc "Kill other buffers"       :nv "D" #'doom/kill-other-buffers
+      :desc "Kill other buffers"       :nv "D" (lambda ()
+                                                 (interactive)
+                                                 (doom/kill-other-buffers t))
       :desc "Kill a buffer"            :nv "k" #'kill-buffer
       :desc "New empty buffer"         :nv "n" #'evil-buffer-new
       :desc "Pop scratch buffer"       :nv "s" #'+doom:pop-scratch-buffer
