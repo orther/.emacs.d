@@ -27,6 +27,20 @@
   '(smerge-refined-removed ((t (:inherit 'smerge-mine))))
   '(smerge-refined-added   ((t (:inherit 'smerge-other)))))
 
+;; Override evil googles colors
+(custom-set-faces
+ '(evil-goggles-delete-face ((t (:foreground "#ff6c6b"))))
+ '(evil-goggles-paste-face  ((t (:foreground "#98be65"))))
+ '(evil-goggles-yank-face   ((t (:foreground "#51afef")))))
+
+;; Override org mode colors
+(custom-set-faces
+ '(org-level-1              ((t :foreground "#51afef" :inherit nil :bold bold :height 1.3)))
+ '(org-level-2              ((t :foreground "#a9a1e1" :inherit nil :height 1.2)))
+ '(org-level-3              ((t :foreground "#98be65" :inherit nil :height 1.1)))
+ '(org-level-4              ((t :foreground "#da8548" :inherit nil :height 1.1)))
+ '(org-level-5              ((t :foreground "#46D9FF" :inherit nil :height 1.1))))
+
 ;; Close magit buffer after following file
 (defun close-magit-buffer ()
   (when (and (boundp 'magit-mode) magit-mode)
