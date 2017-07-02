@@ -39,6 +39,7 @@
        term            ; terminals in Emacs
        eshell          ; a consistent, cross-platform shell (WIP)
        neotree         ; a project drawer, like NERDTree for vim
+       dash            ; search code documentation
 
        :app
        present         ; showing off presentations in emacs
@@ -60,7 +61,7 @@
        lua             ; one-based indices? one-based indices
        markdown        ; writing docs for people to ignore
        ocaml           ; an objective camel
-       org             ; for organized fearless leader (WIP)
+       borg            ; for organized fearless leader (not cyborgs)
        php             ; make php less awful to work with
        purescript      ; javascript, but functional
        python          ; beautiful is better than ugly
