@@ -5,6 +5,4 @@
   :commands evil-goggles-mode
   :init
   (setq evil-goggles-duration 0.2)
-  (add-hook 'doom-post-init-hook #'evil-goggles-mode t)
-  :config
-  (evil-goggles-use-diff-faces))
+  (add-hook 'doom-post-init-hook #'evil-goggles-mode t))
