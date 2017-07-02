@@ -356,17 +356,16 @@ the new algorithm is confusing, like in python or ruby."
   (add-hook '+evil-esc-hook #'+evil|escape-multiple-cursors))
 
 (def-package! evil-snipe
-  :demand t
+  :commands (evil-snipe-mode evil-snipe-override-mode
+             evil-snipe-local-mode evil-snipe-override-local-mode)
   :init
   (setq evil-snipe-smart-case t
         evil-snipe-scope 'visible
         evil-snipe-repeat-scope 'buffer
-        evil-snipe-override-evil-repeat-keys nil
         evil-snipe-char-fold t
         evil-snipe-aliases '((?\[ "[[{(]")
                              (?\] "[]})]")
                              (?\; "[;:]")))
-  :config
   (add-hook 'doom-post-init-hook #'evil-snipe-mode)
   (add-hook 'doom-post-init-hook #'evil-snipe-override-mode))
 
