@@ -1,6 +1,12 @@
 ;;; lang/borg/autoload/borg.el -*- lexical-binding: t; -*-
 
 ;;;###autoload
+(defun +borg/open-organizer ()
+  "Open the default organizer"
+  (interactive)
+  (find-file +borg-organizer))
+
+;;;###autoload
 (defun +borg/insert-item (direction)
   "Inserts a new heading, table cell or item, depending on the context.
 DIRECTION can be 'above or 'below.

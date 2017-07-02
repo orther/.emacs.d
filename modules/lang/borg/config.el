@@ -8,9 +8,12 @@
 (add-hook 'org-mode-hook #'+borg|hook)
 
 ;; Custom variables
-(defvar +borg-dir (expand-file-name "~/org")
+(defvar +borg-dir (expand-file-name "~/org/")
   "The directory where org files are kept.")
 (defvaralias 'org-directory '+borg-dir)
+
+(defvar +borg-organizer (concat +borg-dir "organizer.org")
+  "The default organizer.")
 
 (defvar +borg-attachment-dir ".attach/"
   "Where to store attachments (relative to current org file).")
@@ -20,6 +23,7 @@
   (cl-pushnew (file-name-directory path) load-path))
 
 (load! +agenda)
+(load! +capture)
 
 
 ;;
@@ -93,12 +97,12 @@ FUN function callback"
    org-hierarchical-todo-statistics t
    org-loop-over-headlines-in-active-region t
    org-refile-use-outline-path t
+   org-outline-path-complete-in-steps nil
    org-special-ctrl-a/e t
 
    ;; Sorting/refiling
    org-archive-location (concat +borg-dir "/archived/%s::")
-   org-refile-targets '((nil . (:maxlevel . 2)))) ; display full path in refile completion
-
+   org-refile-targets '((nil . (:maxlevel . 6))))
   ;; smartparens config
   (sp-with-modes '(org-mode)
     (sp-local-pair "\\[" "\\]" :post-handlers '(("| " "SPC")))

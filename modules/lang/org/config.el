@@ -120,7 +120,6 @@ FUN function callback"
 
    ;; Sorting/refiling
    org-archive-location (concat +org-dir "/archived/%s::")
-   org-refile-targets '((nil . (:maxlevel . 2))) ; display full path in refile completion
 
    ;; Latex
    org-highlight-latex-and-related '(latex)

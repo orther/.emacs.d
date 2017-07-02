@@ -17,7 +17,6 @@
                :test #'equal))
     (add-to-list 'recentf-exclude #'+org-is-agenda-file))
 
-  ;;
   (map! :map org-agenda-mode-map
         :e "<escape>" #'org-agenda-Quit
         :e "m"   #'org-agenda-month-view

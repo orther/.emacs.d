@@ -79,9 +79,9 @@
       :desc "Save buffer"              :nv "s"  #'save-buffer
       :desc "Save all buffers"         :nv "S"  #'evil-write-all
       :desc "Counsel bookmark"         :nv "b"  #'counsel-bookmark
-      :desc "Remote ssh tramp"         :nv "i"  (lambda ()
+      :desc "Remote"                   :nv "i"  (lambda ()
                                                  (interactive)
-                                                 (counsel-find-file "/ssh:"))
+                                                 (counsel-find-file "/"))
       :desc "Show and copy filename"   :nv "y" #'+gdoom/show-and-copy-buffer-filename
       )
 
@@ -191,7 +191,13 @@
         :desc "Private gist from region" :nv "R" #'gist-region-private
         :desc "List gists"               :nv "l" #'gist-list))
 
-   (:desc "quit"
+    (:desc "org"
+      :prefix "o"
+      :desc "Organizer"                  :nv "o" #'+borg/open-organizer
+      :desc "Agenda"                     :nv "a" #'org-agenda
+      :desc "Org capture"                :nv "c" #'org-capture)
+
+    (:desc "quit"
      :prefix "q"
      :desc "Quit"                     :nv "q" #'evil-save-and-quit
      :desc "Quit (forget session)"    :nv "Q" #'+workspace/kill-session-and-quit)
@@ -206,6 +212,7 @@
      :desc "Indent guides (column)"   :nv "I" #'highlight-indentation-current-column-mode
      :desc "Evil goggles"             :nv "g" #'+evil-goggles/toggle
      :desc "Whitespace mode"          :nv "w" #'gdoom/toggle-whitespace)
+
    (:desc "code"
      :prefix "c"
      :desc "Build"                    :nv "b" #'+eval/build

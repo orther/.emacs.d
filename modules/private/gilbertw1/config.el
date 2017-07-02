@@ -35,8 +35,8 @@
 
 ;; Override org mode colors
 (custom-set-faces
- '(org-level-1              ((t :foreground "#51afef" :inherit nil :bold bold :height 1.3)))
- '(org-level-2              ((t :foreground "#a9a1e1" :inherit nil :height 1.2)))
+ '(org-level-1              ((t :foreground "#51afef" :inherit nil :height 1.2)))
+ '(org-level-2              ((t :foreground "#a9a1e1" :inherit nil :height 1.1)))
  '(org-level-3              ((t :foreground "#98be65" :inherit nil :height 1.1)))
  '(org-level-4              ((t :foreground "#da8548" :inherit nil :height 1.1)))
  '(org-level-5              ((t :foreground "#46D9FF" :inherit nil :height 1.1))))
