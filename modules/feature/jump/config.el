@@ -65,6 +65,7 @@ produces an url. Used by `+jump/online'.")
   :config
   (setq dumb-jump-default-project doom-emacs-dir
         dumb-jump-aggressive nil
+        dumb-jump-use-visible-window nil
         dumb-jump-selector 'ivy))
 
 
