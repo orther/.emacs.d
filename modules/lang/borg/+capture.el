@@ -17,14 +17,20 @@
 
   (setq org-capture-templates
         '(
-          ("t" "Tasks" entry
+          ("t" "Task" entry
            (file+headline +borg-organizer "Inbox")
-           "* TODO %?\nCaptured %U\n\n%i\n" :prepend t)
+           "* TODO %?\nCAPTURED: %t\n\n%i\n")
+
+          ("T" "Quick Task" entry
+           (file+headline +borg-organizer "Inbox")
+           "* TODO %?\nSCHEDULED: %t\n\n%i\n")
 
           ("n" "Notes" entry
            (file+headline (concat +borg-dir "notes.org") "Inbox")
            "* %u %?\n%i" :prepend t)
           ))
+
+  (add-hook 'org-capture-mode-hook 'evil-insert-state)
 
   ;; Allows the Emacs mini-frame (opened from an external shell script to run
   ;; and clean up properly) if the frame is named "org-capture".
