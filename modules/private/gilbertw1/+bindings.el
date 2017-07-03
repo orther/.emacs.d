@@ -168,8 +168,8 @@
 
     (:desc "jump"
       :prefix "j"
-      :desc "Dumb jump go"            :nv "q" #'dumb-jump-go
-      :desc "Dump jump go other"      :nv "Q" #'dumb-jump-go-other-window
+      :desc "Dumb jump go"            :nv "q" #'+jump/dumb-jump-save
+      :desc "Dump jump go other"      :nv "Q" #'+jump/dumb-jump-other-window-save
       :desc "Avy go to line"          :nv "l" #'avy-goto-line
       :desc "Avy go to word"          :nv "w" #'evil-avy-goto-word-or-subword-1
       :desc "Avy go to char"          :nv "j" #'avy-goto-char-2)
