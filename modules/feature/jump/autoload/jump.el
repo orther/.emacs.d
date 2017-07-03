@@ -14,6 +14,18 @@
         (funcall fn identifier)))))
 
 ;;;###autoload
+(defun +jump/dumb-jump-save ()
+  (interactive)
+  (evil--jumps-push)
+  (dumb-jump-go))
+
+;;;###autoload
+(defun +jump/dumb-jump-other-window-save ()
+  (interactive)
+  (evil--jumps-push)
+  (dumb-jump-go-other-window))
+
+;;;###autoload
 (defun +jump/definition (identifier &optional other-window)
   "Jump to the definition of the symbol at point.
 
