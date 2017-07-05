@@ -96,7 +96,7 @@
                                                  (doom/kill-other-buffers t))
       :desc "Kill a buffer"            :nv "k" #'kill-buffer
       :desc "New empty buffer"         :nv "n" #'evil-buffer-new
-      :desc "Pop scratch buffer"       :nv "s" #'+doom:pop-scratch-buffer
+      :desc "Scratch buffer"       :nv "s" #'doom/scratch-buffer
       ;; TODO spacemacs/copy-whole-buffer-to-clipboard y
       ;; TODO spacemacs/paste-whole-file-to-clipboard p
       )

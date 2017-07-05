@@ -225,19 +225,21 @@ for function signatures or notes. Run again to clear the header line."
                     content)))))
 
 ;;;###autoload
-(defun doom/scratch-buffer (&optional beg end arg)
+(defun doom/scratch-buffer (&optional arg)
   "Opens the scratch buffer in a popup window.
 
 If ARG (universal argument) is non-nil, open it in the current window instead of
 a popup.
 
 If a region is active, copy it into the scratch buffer."
-  (interactive "rP")
-  (let ((text (and beg end (buffer-substring beg end)))
+  (interactive)
+  (let ((text (if (region-active-p)
+                  (and (region-beginning) (region-end)
+                       (buffer-substring (region-beginning) (region-end)))))
         (mode major-mode)
         (derived-p (derived-mode-p 'prog-mode 'text-mode))
         (old-project (doom-project-root))
-        (new-buf (get-buffer-create "*doom:scratch*")))
+        (new-buf (get-buffer-create "*doom-esc:scratch*")))
     (if arg
         (switch-to-buffer new-buf)
       (doom-popup-buffer new-buf))
