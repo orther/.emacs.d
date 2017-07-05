@@ -197,6 +197,17 @@ across windows."
   ;; BMACS - rebind gg
   (map! :nv "gg" 'evil-goto-first-line)
 
+
+  (defun evil-mc-make-cursor-move-by-line (dir count)
+    "Create COUNT cursors one for each line moving in the direction DIR.
+  DIR should be 1 or -1 and COUNT should be a positive integer or nil."
+    (setq count (max 0 (or count 1)))
+    (dotimes (i count)
+      (evil-mc-run-cursors-before)
+      (evil-mc-make-cursor-at-pos (point))
+      (let (line-move-visual)
+        (evil-line-move dir))))
+
   (defvar +evil--snipe-repeat-fn
     (evilem-create #'evil-snipe-repeat
                    :bind ((evil-snipe-scope 'whole-buffer)
@@ -319,7 +330,7 @@ the new algorithm is confusing, like in python or ruby."
              evil-mc-skip-and-goto-prev-cursor evil-mc-make-and-goto-next-match
              evil-mc-skip-and-goto-next-match evil-mc-skip-and-goto-next-match
              evil-mc-make-and-goto-prev-match evil-mc-skip-and-goto-prev-match)
-;; BMACS - don't override default keybindings
+  ;; BMACS - don't override default keybindings
   :config
   (global-evil-mc-mode +1)
 
