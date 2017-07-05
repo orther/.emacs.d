@@ -9,15 +9,13 @@
        evil            ; come to the dark side, we have cookies
        jump            ; helping you navigate your code base
        snippets        ; my elves. They type so I don't have to
-       file-templates  ; auto-snippets for empty files
-       spellcheck      ; tasing you for misspelling mispelling
        syntax-checker  ; tasing you for every forgotten semicolon
        version-control ; remember, remember that commit in November
-       workspaces      ; tab emulation, persistence and separate workspaces
+       workspaces      ; persistence and separate workspaces
        eval            ; repls, runners 'n builders; run code, run
-       debug           ; stepping through code, to help you add bugs
        search          ; search specific configurations
        editor          ; non-core editor changes (primarily indentation)
+       ;debug           ; stepping through code, to help you add bugs
 
 
        :completion
@@ -40,9 +38,8 @@
        eshell          ; a consistent, cross-platform shell (WIP)
        neotree         ; a project drawer, like NERDTree for vim
        dash            ; search code documentation
-
-       :app
-       present         ; showing off presentations in emacs
+       impatient-mode  ; show off code over HTTP
+       password-store  ; password manager for nerds
 
        :lang
        assembly        ; assembly for fun or debugging
@@ -54,14 +51,15 @@
        emacs-lisp      ; drown in parentheses
        go              ; the hipster dialect
        haskell         ; a language that's lazier than I am
+       hy              ; readability of scheme w/ speed of python
        java            ; the poster child for carpal tunnel syndrome
        javascript      ; all(hope(abandon(ye(who(enter(here))))))
        julia           ; a better, faster MATLAB
        latex           ; writing papers in Emacs has never been so fun
        lua             ; one-based indices? one-based indices
        markdown        ; writing docs for people to ignore
+       borg            ; for organized fearless leader (WIP)
        ocaml           ; an objective camel
-       borg            ; for organized fearless leader (not cyborgs)
        php             ; make php less awful to work with
        purescript      ; javascript, but functional
        python          ; beautiful is better than ugly
