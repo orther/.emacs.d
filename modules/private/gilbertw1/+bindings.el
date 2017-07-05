@@ -149,8 +149,8 @@
       :desc "Split window vertical"   :nv "/" #'split-window-right
       :desc "Split window horizontal" :nv "-" #'split-window-below
       :desc "Balance windows"         :nv "=" #'balance-windows
-      :desc "Ace delete window"       :nv "d" #'ace-delete-window
-      :desc "Delete current window"   :nv "D" #'delete-window
+      :desc "Delete current window"   :nv "d" #'delete-window
+      :desc "Ace delete window"       :nv "D" #'ace-delete-window
       :desc "Window left"             :nv "h" #'evil-window-left
       :desc "Window down"             :nv "j" #'evil-window-down
       :desc "Window right"            :nv "l" #'evil-window-right
@@ -168,28 +168,28 @@
 
     (:desc "jump"
       :prefix "j"
-      :desc "Dumb jump go"            :nv "q" #'+jump/dumb-jump-save
-      :desc "Dump jump go other"      :nv "Q" #'+jump/dumb-jump-other-window-save
-      :desc "Avy go to line"          :nv "l" #'avy-goto-line
-      :desc "Avy go to word"          :nv "w" #'evil-avy-goto-word-or-subword-1
-      :desc "Avy go to char"          :nv "j" #'avy-goto-char-2)
+      :desc "Go definition"                :nv "q" #'+jump/definition
+      :desc "Go definition other window"   :nv "Q" #'+jump/definition-other-window
+      :desc "Avy go to line"               :nv "l" #'avy-goto-line
+      :desc "Avy go to word"               :nv "w" #'evil-avy-goto-word-or-subword-1
+      :desc "Avy go to char"               :nv "j" #'avy-goto-char-2)
 
     (:desc "git"
       :prefix "g"
-      :desc "Git status"              :nv "s" #'magit-status
-      :desc "Git blame"               :nv "b" #'magit-blame
-      :desc "Git time machine"        :nv "t" #'git-timemachine
-      :desc "Git log file"            :nv "l" #'magit-log-buffer-file
-      :desc "Show and copy git link"  :nv "y" #'git-link
-      :desc "Open git link"           :nv "o" #'+vcs/git-browse
-      :desc "Delete git index lock"   :nv "X" #'+gilbertw1/delete-git-index-lock
+      :desc "Git status"                   :nv "s" #'magit-status
+      :desc "Git blame"                    :nv "b" #'magit-blame
+      :desc "Git time machine"             :nv "t" #'git-timemachine
+      :desc "Git log file"                 :nv "l" #'magit-log-buffer-file
+      :desc "Show and copy git link"       :nv "y" #'git-link
+      :desc "Open git link"                :nv "o" #'+vcs/git-browse
+      :desc "Delete git index lock"        :nv "X" #'+gilbertw1/delete-git-index-lock
       (:desc "gist"
         :prefix "g"
-        :desc "Gist from buffer"         :nv "b" #'gist-buffer
-        :desc "Private gist from buffer" :nv "B" #'gist-buffer-private
-        :desc "Gist from region"         :nv "r" #'gist-region
-        :desc "Private gist from region" :nv "R" #'gist-region-private
-        :desc "List gists"               :nv "l" #'gist-list))
+        :desc "Gist from buffer"           :nv "b" #'gist-buffer
+        :desc "Private gist from buffer"   :nv "B" #'gist-buffer-private
+        :desc "Gist from region"           :nv "r" #'gist-region
+        :desc "Private gist from region"   :nv "R" #'gist-region-private
+        :desc "List gists"                 :nv "l" #'gist-list))
 
     (:desc "org"
       :prefix "o"
@@ -199,8 +199,8 @@
 
     (:desc "quit"
      :prefix "q"
-     :desc "Quit"                     :nv "q" #'evil-save-and-quit
-     :desc "Quit (forget session)"    :nv "Q" #'+workspace/kill-session-and-quit)
+     :desc "Quih"                     :nv "q" #'evil-save-and-quit
+     :desc "Quih (forget session)"    :nv "Q" #'+workspace/kill-session-and-quit)
 
    (:desc "toggle"
      :prefix "t"
