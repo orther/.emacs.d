@@ -117,54 +117,56 @@
 
     (:desc "ivy"
       :prefix "i"
-      :desc "Ivy resume"               :nv "r" #'ivy-resume)
+      :desc "Ivy resume"                    :nv "r" #'ivy-resume)
 
     (:desc "project"
       :prefix "p"
-      :desc "Find file in project"     :nv "f" #'counsel-projectile-find-file
-      :desc "Run cmd in project root"  :nv "!" #'projectile-run-shell-command-in-root
-      :desc "Toggle project neotree"   :nv "t" #'+neotree/toggle
-      :desc "Switch project"           :nv "p" #'counsel-projectile-switch-project
-      :desc "Switch project workspace" :nv "l" #'+workspace-switch-project
-      :desc "Kill project buffers"     :nv "k" #'projectile-kill-buffers
-      :desc "Recent project files"     :nv "r" #'projectile-recentf
-      :desc "Invalidate cache"         :nv "I" #'projectile-invalidate-cache
-      :desc "List project tasks"       :nv "a" #'+ivy/tasks
-      :desc "Pop term in project root" :nv "'" #'+term/popup-in-project)
+      :desc "Find file in project"          :nv "f" #'counsel-projectile-find-file
+      :desc "Run cmd in project root"       :nv "!" #'projectile-run-shell-command-in-root
+      :desc "Toggle project neotree"        :nv "t" #'+neotree/toggle
+      :desc "Switch project"                :nv "p" #'counsel-projectile-switch-project
+      :desc "Switch project workspace"      :nv "l" #'+workspace-switch-project
+      :desc "Kill project buffers"          :nv "k" #'projectile-kill-buffers
+      :desc "Recent project files"          :nv "r" #'projectile-recentf
+      :desc "Invalidate cache"              :nv "I" #'projectile-invalidate-cache
+      :desc "List project tasks"            :nv "a" #'+ivy/tasks
+      :desc "Pop term in project root"      :nv "'" #'+term/popup-in-project)
 
     (:desc "search"
       :prefix "s"
-      :desc "IEdit mode"              :nv "e" #'evil-iedit-state/iedit-mode
-      :desc "Swiper search"           :nv "s" #'swiper)
+      :desc "IEdit mode"                    :nv "e" #'evil-iedit-state/iedit-mode
+      :desc "Swiper search"                 :nv "s" #'swiper
+      :desc "Search online"                 :nv "o" #'+search/online
+      :desc "Search online same source"     :nv "O" #'+search/online-use-last)
 
     (:desc "workspace"
       :prefix "l"
-      :desc "Switch to workspace"    :nv "l" #'persp-switch
-      :desc "Save workspace state"   :nv "s" #'persp-save-state-to-file
-      :desc "Switch last workspace"  :nv "TAB" #'+workspace-switch-last
-      :desc "Kill workspace"         :nv "d" #'persp-kill)
+      :desc "Switch to workspace"          :nv "l" #'persp-switch
+      :desc "Save workspace state"         :nv "s" #'persp-save-state-to-file
+      :desc "Switch last workspace"        :nv "TAB" #'+workspace-switch-last
+      :desc "Kill workspace"               :nv "d" #'persp-kill)
 
     (:desc "window"
       :prefix "w"
-      :desc "Split window vertical"   :nv "/" #'split-window-right
-      :desc "Split window horizontal" :nv "-" #'split-window-below
-      :desc "Balance windows"         :nv "=" #'balance-windows
-      :desc "Delete current window"   :nv "d" #'delete-window
-      :desc "Ace delete window"       :nv "D" #'ace-delete-window
-      :desc "Window left"             :nv "h" #'evil-window-left
-      :desc "Window down"             :nv "j" #'evil-window-down
-      :desc "Window right"            :nv "l" #'evil-window-right
-      :desc "Window up"               :nv "k" #'evil-window-up
-      :desc "Move window left"        :nv "H" #'evil-window-move-far-left
-      :desc "Move window down"        :nv "J" #'evil-window-move-very-bottom
-      :desc "Move window right"       :nv "L" #'evil-window-move-far-right
-      :desc "Move window up"          :nv "K" #'evil-window-move-very-top
-      :desc "Ace swap window"         :nv "s" #'ace-swap-window
-      :desc "Winner undo"             :nv "u" #'winner-undo
-      :desc "Winner redo"             :nv "U" #'winner-redo
-      :desc "Ace window"              :nv "w" #'ace-window
-      :desc "Toggle maximize window"  :nv "m" #'doom/window-zoom
-      :desc "Refresh line numbers"    :nv "r" #'+gdoom/refresh-line-numbers)
+      :desc "Split window vertical"        :nv "/" #'split-window-right
+      :desc "Split window horizontal"      :nv "-" #'split-window-below
+      :desc "Balance windows"              :nv "=" #'balance-windows
+      :desc "Delete current window"        :nv "d" #'delete-window
+      :desc "Ace delete window"            :nv "D" #'ace-delete-window
+      :desc "Window left"                  :nv "h" #'evil-window-left
+      :desc "Window down"                  :nv "j" #'evil-window-down
+      :desc "Window right"                 :nv "l" #'evil-window-right
+      :desc "Window up"                    :nv "k" #'evil-window-up
+      :desc "Move window left"             :nv "H" #'evil-window-move-far-left
+      :desc "Move window down"             :nv "J" #'evil-window-move-very-bottom
+      :desc "Move window right"            :nv "L" #'evil-window-move-far-right
+      :desc "Move window up"               :nv "K" #'evil-window-move-very-top
+      :desc "Ace swap window"              :nv "s" #'ace-swap-window
+      :desc "Winner undo"                  :nv "u" #'winner-undo
+      :desc "Winner redo"                  :nv "U" #'winner-redo
+      :desc "Ace window"                   :nv "w" #'ace-window
+      :desc "Toggle maximize window"       :nv "m" #'doom/window-zoom
+      :desc "Refresh line numbers"         :nv "r" #'+gdoom/refresh-line-numbers)
 
     (:desc "jump"
       :prefix "j"
@@ -172,7 +174,9 @@
       :desc "Go definition other window"   :nv "Q" #'+jump/definition-other-window
       :desc "Avy go to line"               :nv "l" #'avy-goto-line
       :desc "Avy go to word"               :nv "w" #'evil-avy-goto-word-or-subword-1
-      :desc "Avy go to char"               :nv "j" #'avy-goto-char-2)
+      :desc "Avy go to char"               :nv "j" #'avy-goto-char-2
+      :desc "Lookup online"                :nv "o" #'+jump/online
+      :desc "Lookup online same source"    :nv "O" #'+jump/online-use-last)
 
     (:desc "git"
       :prefix "g"
