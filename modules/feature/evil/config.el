@@ -331,9 +331,6 @@ the new algorithm is confusing, like in python or ruby."
       (push (cons fn '((:default . evil-mc-execute-default-call)))
             evil-mc-custom-known-commands))
 
-    ;; disable evil-escape in evil-mc; causes unwanted text on invocation
-    (push 'evil-escape-mode evil-mc-incompatible-minor-modes))
-
   ;; BMACS add *-without-register commands
   (dolist
       (command '((evil-change-without-register . ((:default . evil-mc-execute-default-evil-change)))
@@ -346,6 +343,9 @@ the new algorithm is confusing, like in python or ruby."
                  (evil-paste-after-witout-register . ((:default . evil-mc-execute-default-evil-paste)))
                  (evil-paste-before-witout-register . ((:default . evil-mc-execute-default-evil-paste)))))
     (push command evil-mc-custom-known-commands))
+
+    ;; disable evil-escape in evil-mc; causes unwanted text on invocation
+    (push 'evil-escape-mode evil-mc-incompatible-minor-modes))
 
   (defun +evil|escape-multiple-cursors ()
     "Clear evil-mc cursors and restore state."
