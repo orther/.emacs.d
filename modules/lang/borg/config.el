@@ -268,7 +268,9 @@ FUN function callback"
            :n  "T"   #'org-todo
            :n  "v"   #'variable-pitch-mode
            :nv "l"   #'org-insert-link
-           :nv "L"   #'org-store-link)
+           :nv "L"   #'org-store-link
+           :n  "+"   #'org-timestamp-up-day
+           :n  "-"   #'org-timestamp-down-day)
 
           :n  "<"   #'org-metaleft
           :n  ">"   #'org-metaright
