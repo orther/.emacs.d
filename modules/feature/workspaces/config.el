@@ -21,6 +21,7 @@
         (setq +workspaces-last-persp before-persp))))
 
   (advice-add #'persp-switch :around #'+workspaces*track-last-persp)
+  (advice-add #'doom-buffer-list :override #'persp-buffer-list-restricted)
 
   (add-hook 'after-init-hook #'(lambda () (persp-mode 1))))
 
