@@ -6,8 +6,8 @@
   (setq counsel-dash-docsets-path (concat doom-cache-dir "docsets"))
   ;; Language Hooks
   (add-hook 'emacs-lisp-mode-hook (lambda () (setq-local counsel-dash-docsets '("Emacs Lisp"))))
-  (add-hook 'scala-mode-hook (lambda () (setq-local counsel-dash-docsets '("Scala" "Akka" "Play_Scala"))))
-  (add-hook 'java-mode-hook (lambda () (setq-local counsel-dash-docsets '("Java_SE8" "Play_Java"))))
+  (add-hook 'scala-mode-hook (lambda () (setq-local counsel-dash-docsets '("Scala" "Akka" "Play_Scala" "Java"))))
+  (add-hook 'java-mode-hook (lambda () (setq-local counsel-dash-docsets '("Java" "Play_Java"))))
   (add-hook 'rust-mode-hook (lambda () (setq-local counsel-dash-docsets '("Rust"))))
   (add-hook 'clojure-mode-hook (lambda () (setq-local counsel-dash-docsets '("Clojure"))))
   (add-hook 'haskell-mode-hook (lambda () (setq-local counsel-dash-docsets '("Haskell"))))

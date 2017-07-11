@@ -223,15 +223,17 @@ FUN function callback"
           :ni [C-return]   (λ! (+borg/insert-item 'below))
           :ni [S-C-return] (λ! (+borg/insert-item 'above))
 
+          :ni "M-S-SPC" #'org-cycle
+
           ;; Evil-org
-          :niv "M-h" 'org-metaleft
-          :niv "M-l" 'org-metaright
-          :niv "M-k" 'org-metaup
-          :niv "M-j" 'org-metadown
-          :niv "M-L" 'org-shiftmetaright
-          :niv "M-H" 'org-shiftmetaleft
-          :niv "M-K" 'org-shiftmetaup
-          :niv "M-J" 'org-shiftmetadown
+          :niv "M-h" #'org-metaleft
+          :niv "M-l" #'org-metaright
+          :niv "M-k" #'org-metaup
+          :niv "M-j" #'org-metadown
+          :niv "M-L" #'org-shiftmetaright
+          :niv "M-H" #'org-shiftmetaleft
+          :niv "M-K" #'org-shiftmetaup
+          :niv "M-J" #'org-shiftmetadown
           :niv "M-o" '(lambda () (interactive)
                         (evil-org-eol-call
                          '(lambda()
@@ -263,7 +265,7 @@ FUN function callback"
            :n  "r"   #'org-refile
            :n  "R"   (λ! (org-metaleft) (org-archive-to-archive-sibling)) ; archive to parent sibling
            :n  "s"   #'org-schedule
-           :n  "t"   (λ! (org-todo (if (org-entry-is-todo-p) 'none 'todo)))
+           :n  "t"   #'counsel-org-tag
            :v  "t"   (λ! (evil-ex-normal evil-visual-beginning evil-visual-end "\\t"))
            :n  "T"   #'org-todo
            :n  "v"   #'variable-pitch-mode

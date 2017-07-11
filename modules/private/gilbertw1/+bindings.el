@@ -297,24 +297,30 @@
  ;; company-mode (+ vim-like omnicompletion)
  :i "C-SPC"  #'+company/complete
 
+ (:after evil-mc
+   (:map evil-mc-key-map
+     "C-S-j"        #'evil-mc-make-cursor-move-next-line
+     "C-S-k"        #'evil-mc-make-cursor-move-prev-line))
+
  (:after company
    (:map company-active-map
      ;; Don't interfere with `evil-delete-backward-word' in insert mode
-     "C-w"        nil
-     "C-o"        #'company-search-kill-others
-     "C-n"        #'company-select-next
-     "C-p"        #'company-select-previous
-     "C-j"        #'company-select-next
-     "C-k"        #'company-select-previous
-     "C-h"        #'company-quickhelp-manual-begin
-     "C-S-h"      #'company-show-doc-buffer
-     "C-S-s"      #'company-search-candidates
-     "C-s"        #'company-filter-candidates
-     [enter]      #'company-complete-common
-     "C-h"        #'company-quickhelp-manual-begin
-     [tab]        #'company-complete-common-or-cycle
-     [backtab]    #'company-select-previous
-     [escape]     (λ! (company-abort) (evil-normal-state 1)))
+     "C-w"           nil
+     "C-o"           #'company-search-kill-others
+     "C-n"           #'company-select-next
+     "C-p"           #'company-select-previous
+     "C-j"           #'company-select-next
+     "C-k"           #'company-select-previous
+     "C-h"           #'company-quickhelp-manual-begin
+     "C-S-h"         #'company-show-doc-buffer
+     "C-S-s"         #'company-search-candidates
+     "C-s"           #'company-filter-candidates
+     [enter]         #'company-complete-common
+     "C-h"           #'company-quickhelp-manual-begin
+     "C-g"           #'company-abort
+     [tab]           #'company-complete-common-or-cycle
+     [backtab]       #'company-select-previous
+     [escape]        (λ! (company-abort) (evil-normal-state 1)))
    ;; Automatically applies to `company-filter-map'
    (:map company-search-map
      "C-j"        #'company-search-repeat-forward
@@ -486,7 +492,7 @@
      [backspace]     #'+snippets/delete-backward-char
      [delete]        #'+snippets/delete-forward-char-or-field)
    (:map yas-minor-mode-map
-     :i "M-SPC" yas-maybe-expand)))
+     :i "M-SPC" #'yas-expand)))
 
 
 ;;

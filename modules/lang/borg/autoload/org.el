@@ -137,6 +137,20 @@ fragments, opening links, or refreshing images."
     (set-window-start nil scroll-pt)))
 
 ;;;###autoload
+(defun +borg/indent ()
+  "Indent the current item (header or item). Otherwise, forward to
+`self-insert-command'."
+  (interactive)
+  (cond ((org-at-item-p)
+         (org-indent-item-tree))
+        ((org-at-heading-p)
+         (ignore-errors (org-demote)))
+        ((org-in-src-block-p t)
+         (doom/dumb-indent))
+        (t
+         (call-interactively #'self-insert-command))))
+
+;;;###autoload
 (defun +borg/indent-or-next-field-or-yas-expand ()
   "Depending on the context either a) indent the current line, b) go the next
 table field or c) run `yas-expand'."
@@ -148,4 +162,4 @@ table field or c) run `yas-expand'."
          ((org-at-table-p)
           #'org-table-next-field)
          (t
-          #'+org/indent))))
+          #'+borg/indent))))
