@@ -215,10 +215,12 @@
      :desc "Indent guides"            :nv "i" #'highlight-indentation-mode
      :desc "Indent guides (column)"   :nv "I" #'highlight-indentation-current-column-mode
      :desc "Evil goggles"             :nv "g" #'+evil-goggles/toggle
-     :desc "Whitespace mode"          :nv "w" #'gdoom/toggle-whitespace)
+     :desc "Whitespace mode"          :nv "w" #'gdoom/toggle-whitespace
+     :desc "Fullscreen"               :n "f" #'doom/toggle-fullscreen)
 
    (:desc "code"
      :prefix "c"
+     :desc "List errors"              :n  "x" #'flycheck-list-errors
      :desc "Build"                    :nv "b" #'+eval/build
      :desc "Open/Send to REPL"        :nv "r" #'+eval/repl
      :desc "Open debugger"            :nv "R" #'+debug/open
