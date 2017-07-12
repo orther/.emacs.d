@@ -615,6 +615,28 @@
      :desc "Switch to 9th workspace"  :n "9"   (λ! (+workspace/switch-to 8))
      :desc "Switch to last workspace" :n "0"   #'+workspace/switch-to-last)
 
+   (:desc "window"
+     :prefix "w"
+     :desc "Split window vertical"   :nv "/" #'split-window-right
+     :desc "Split window horizontal" :nv "-" #'split-window-below
+     :desc "Balance windows"         :nv "=" #'balance-windows
+     :desc "Ace delete window"       :nv "D" #'ace-delete-window
+     :desc "Delete current window"   :nv "d" #'delete-window
+     :desc "Window left"             :nv "h" #'evil-window-left
+     :desc "Window down"             :nv "j" #'evil-window-down
+     :desc "Window right"            :nv "l" #'evil-window-right
+     :desc "Window up"               :nv "k" #'evil-window-up
+     :desc "Move window left"        :nv "H" #'evil-window-move-far-left
+     :desc "Move window down"        :nv "J" #'evil-window-move-very-bottom
+     :desc "Move window right"       :nv "L" #'evil-window-move-far-right
+     :desc "Move window up"          :nv "K" #'evil-window-move-very-top
+     :desc "Winner undo"             :nv "u" #'winner-undo
+     :desc "Winner redo"             :nv "U" #'winner-redo
+     :desc "Ace window"              :nv "w" #'ace-window
+     :desc "Toggle maximize window"  :nv "m" #'doom/window-zoom
+     ;; :desc "Refresh line numbers"    :nv "r" #'+gdoom/refresh-line-numbers
+     )
+
    (:desc "buffer" :prefix "b"
      :desc "New empty buffer"        :n "n" #'evil-buffer-new
      :desc "Switch workspace buffer" :n "b" #'persp-switch-to-buffer
@@ -802,7 +824,7 @@
    "C-r"     #'winner-redo
    "o"       #'doom/window-enlargen
    ;; Delete window
-   "c"       #'+workspace/close-window-or-workspace
+   "d"       #'+workspace/close-window-or-workspace
    "C-C"     #'ace-delete-window)
 
 
