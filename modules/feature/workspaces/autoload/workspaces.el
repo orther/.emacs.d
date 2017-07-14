@@ -17,14 +17,40 @@
 
 ;;;###autoload
 (defun +workspace-list ()
-  "Retrieve a list of names of open workspaces (strings)."
+  "Return a list of workspace structs."
+  (mapcar #'persp-get-by-name (+workspace-list-names)))
+
+;;;###autoload
+(defun +workspace-list-names ()
+  "Return a list of workspace names (strings)."
   (delete persp-nil-name (persp-names-current-frame-fast-ordered)))
+
+;;;###autoload
+(defun +workspace-buffer-list (&optional persp)
+  "Return a list of buffers in PERSP (defaults to the current perspective).
+
+The buffer list is ordered by recency (same as `buffer-list').
+
+PERSP can be a string (name of a workspace) or a perspective hash (satisfies
+`+workspace-p').
+
+If PERSP is t, then return a list of orphaned buffers associated with no
+perspectives."
+  (unless persp
+    (setq persp (get-current-persp)))
+  (if (eq persp t)
+      (cl-remove-if #'persp--buffer-in-persps (buffer-list))
+    (when (stringp persp)
+      (setq persp (+workspace-get persp t)))
+    (cl-loop for buf in (buffer-list)
+             if (persp-contain-buffer-p buf persp)
+             collect buf)))
 
 ;;;###autoload
 (defun +workspace-p (obj)
   "Return t if OBJ is a perspective hash table."
   (and obj
-       (hash-table-p obj)
+       (cl-struct-p obj)
        (perspective-p obj)))
 
 ;;;###autoload
@@ -34,21 +60,33 @@
     (setq name (symbol-name name)))
   (unless (stringp name)
     (error "Expected a string, got a %s" (type-of name)))
-  (member name (+workspace-list)))
+  (member name (+workspace-list-names)))
 
 ;;;###autoload
 (defun +workspace-get (name &optional noerror)
   "Returns a workspace (perspective hash table) named NAME."
   (unless (equal name persp-nil-name)
     (let ((persp (persp-get-by-name name)))
-      (unless (or persp noerror)
+      (when (and (not noerror)
+                 (or (null persp)
+                     (equal persp persp-not-persp)))
         (error "%s is not an available workspace" name))
       persp)))
+
+;;;###autoload
+(defalias '+workspace-current #'get-current-persp)
 
 ;;;###autoload
 (defun +workspace-current-name ()
   "Get the name of the currently active workspace."
   (safe-persp-name (get-current-persp)))
+
+;;;###autoload
+(defun +workspace-contains-buffer-p (&optional buffer workspace)
+  "Return non-nil if buffer is in workspace (defaults to current workspace)."
+  (unless workspace
+    (setq workspace (+workspace-current)))
+  (persp-contain-buffer-p buffer workspace nil))
 
 ;;;###autoload
 (defun +workspace-load (name)
@@ -131,7 +169,7 @@ perspective or its hash table."
   (persp-frame-switch name))
 
 (defun +workspace--generate-id ()
-  (or (cl-loop for name in (+workspace-list)
+  (or (cl-loop for name in (+workspace-list-names)
                when (string-match-p "^#[0-9]+$" name)
                maximize (string-to-number (substring name 1)) into max
                finally return (if max (1+ max)))
@@ -187,7 +225,7 @@ workspace."
    (list
     (if current-prefix-arg
         (+workspace-current-name)
-      (completing-read "Workspace to save: " (+workspace-list)))))
+      (completing-read "Workspace to save: " (+workspace-list-names)))))
   (if (+workspace-save name)
       (+workspace-message (format "'%s' workspace saved" name) 'success)
     (+workspace-error (format "Couldn't save workspace %s" name))))
@@ -230,7 +268,7 @@ workspace to delete."
      (list
       (if current-prefix-arg
           (completing-read (format "Delete workspace (default: %s): " current-name)
-                           (+workspace-list)
+                           (+workspace-list-names)
                            nil nil current-name)
         current-name))))
   (condition-case ex
@@ -246,7 +284,8 @@ workspace to delete."
 (defun +workspace/kill-session ()
   "Delete the current session, clears all workspaces, windows and buffers."
   (interactive)
-  (unless (cl-every '+workspace-delete (delete +workspaces-main (+workspace-list)))
+  (unless (cl-every #'+workspace-delete
+                    (delete +workspaces-main (+workspace-list-names)))
     (+workspace-error "Could not clear session"))
   (+workspace-switch +workspaces-main t)
   (doom/kill-all-buffers)
@@ -286,12 +325,12 @@ pre-existing workspace."
 end of the workspace list."
   (interactive
    (list (or current-prefix-arg
-             (completing-read "Switch to workspace: " (+workspace-list)))))
+             (completing-read "Switch to workspace: " (+workspace-list-names)))))
   (when (and (stringp index)
              (string-match-p "^[0-9]+$" index))
     (setq index (string-to-number index)))
   (condition-case ex
-      (let ((names (+workspace-list))
+      (let ((names (+workspace-list-names))
             (old-name (+workspace-current-name)))
         (cond ((numberp index)
                (let ((dest (nth index names)))
@@ -314,7 +353,7 @@ end of the workspace list."
 (defun +workspace/switch-to-last ()
   "Switch to the last workspace."
   (interactive)
-  (+workspace/switch-to (car (last (+workspace-list)))))
+  (+workspace/switch-to (car (last (+workspace-list-names)))))
 
 ;;;###autoload
 (defun +workspace/cycle (n)
@@ -324,7 +363,7 @@ end of the workspace list."
     (if (equal current-name persp-nil-name)
         (+workspace-switch +workspaces-main t)
       (condition-case ex
-          (let* ((persps (+workspace-list))
+          (let* ((persps (+workspace-list-names))
                  (perspc (length persps))
                  (index (cl-position current-name persps)))
             (when (= perspc 1)
@@ -354,8 +393,19 @@ the workspace and move to the next."
              (if (bound-and-true-p evil-mode)
                  (evil-window-delete)
                (delete-window)))
-            ((> (length (+workspace-list)) 1)
+            ((> (length (+workspace-list-names)) 1)
              (+workspace/delete current-persp-name))))))
+
+;;;###autoload
+(defun +workspace/cleanup ()
+  "Clean up orphaned buffers and processes."
+  (interactive)
+  (let ((buffers (cl-remove-if #'persp--buffer-in-persps (buffer-list)))
+        (n (doom-kill-process-buffers)))
+    (mapc #'kill-buffer buffers)
+    (when (called-interactively-p 'any)
+      (message "Cleaned up %d buffers and %d processes"
+               (length buffers) n))))
 
 
 ;;
@@ -363,7 +413,7 @@ the workspace and move to the next."
 ;;
 
 (defun +workspace--tabline (&optional names)
-  (let ((names (or names (+workspace-list)))
+  (let ((names (or names (+workspace-list-names)))
         (current-name (+workspace-current-name)))
     (mapconcat
      #'identity
@@ -402,3 +452,31 @@ the workspace and move to the next."
   (interactive)
   (message "%s" (+workspace--tabline)))
 
+;;;###autoload
+(defun +workspace-on-new-frame (frame &optional _new-frame-p)
+  "Spawn a perspective for each new frame."
+  (select-frame frame)
+  (+workspace/new)
+  (set-frame-parameter frame 'assoc-persp (+workspace-current-name)))
+
+;;;###autoload
+(defun +workspaces|create-project-workspace ()
+  "Create a new workspace when switching project with `projectile'."
+  (when persp-mode
+    (+workspace-switch (projectile-project-name) t)))
+
+;;;###autoload
+(defun +workspaces|delete-associated-workspace-maybe (frame)
+  "Delete workspace associated with current frame IF it has no real buffers."
+  (when persp-mode
+    (let ((frame-persp (frame-parameter frame 'assoc-persp)))
+      (when (and (equal frame-persp (+workspace-current-name))
+                 (not (equal frame-persp +workspaces-main)))
+        (+workspace/delete frame-persp)))))
+
+;;;###autoload
+(defun +workspaces*autosave-real-buffers (orig-fn &rest args)
+    "Don't autosave if no real buffers are open."
+    (when (doom-real-buffer-list)
+      (apply orig-fn args))
+    t)

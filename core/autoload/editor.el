@@ -224,3 +224,29 @@ for function signatures or notes. Run again to clear the header line."
                     (setq content (replace-regexp-in-string "\\s-+" " " content))
                     content)))))
 
+;;;###autoload
+(defun doom/scratch-buffer (&optional arg)
+  "Opens the scratch buffer in a popup window.
+
+If ARG (universal argument) is non-nil, open it in the current window instead of
+a popup.
+
+If a region is active, copy it into the scratch buffer."
+  (interactive "P")
+  (let ((text (and (region-active-p)
+                   (buffer-substring-no-properties
+                    (region-beginning) (region-end))))
+        (mode major-mode)
+        (derived-p (derived-mode-p 'prog-mode 'text-mode))
+        (old-project (doom-project-root))
+        (new-buf (get-buffer-create "*doom:scratch*")))
+    (if arg
+        (switch-to-buffer new-buf)
+      (doom-popup-buffer new-buf))
+    (with-current-buffer new-buf
+      (setq default-directory old-project)
+      (when (and (not (eq major-mode mode))
+                 derived-p
+                 (functionp mode))
+        (funcall mode))
+      (if text (insert text)))))

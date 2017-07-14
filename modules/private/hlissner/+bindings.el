@@ -66,12 +66,15 @@
  :m "A-j" #'+hlissner:multi-next-line
  :m "A-k" #'+hlissner:multi-previous-line
 
+ (:prefix "C-x"
+   "p" #'doom/other-popup)
+
 
  ;; --- <leader> -------------------------------------
  (:leader
    :desc "Ex command"  :nv ";"   #'evil-ex
    :desc "M-x"         :nv ":"   #'execute-extended-command
-   :desc "Pop up scratch buffer"   :nv "x"  #'+doom:scratch-buffer
+   :desc "Pop up scratch buffer"   :nv "x"  #'doom/scratch-buffer
    :desc "Org Capture"             :nv "X"  #'+org/capture
 
    ;; Most commonly used
@@ -147,7 +150,7 @@
      :desc "Kill buffer"             :n "k" #'doom/kill-this-buffer
      :desc "Kill other buffers"      :n "o" #'doom/kill-other-buffers
      :desc "Save buffer"             :n "s" #'save-buffer
-     :desc "Pop scratch buffer"      :n "x" #'+doom:scratch-buffer
+     :desc "Pop scratch buffer"      :n "x" #'doom/scratch-buffer
      :desc "Bury buffer"             :n "z" #'bury-buffer
      :desc "Next buffer"             :n "]" #'doom/next-buffer
      :desc "Previous buffer"         :n "[" #'doom/previous-buffer
@@ -191,7 +194,7 @@
    (:desc "help" :prefix "h"
      :n "h" help-map
      :desc "Apropos"               :n "a" #'apropos
-     :desc "Reload theme"          :n "R" #'+doom/reset-theme
+     :desc "Reload theme"          :n "R" #'doom/reload-theme
      :desc "Find library"          :n "l" #'find-library
      :desc "Toggle Emacs log"      :n "m" #'doom/popup-toggle-messages
      :desc "Command log"           :n "L" #'global-command-log-mode
@@ -281,8 +284,8 @@
      :desc "Fullscreen"             :n "f" #'doom/toggle-fullscreen
      :desc "Indent guides"          :n "i" #'highlight-indentation-mode
      :desc "Indent guides (column)" :n "I" #'highlight-indentation-current-column-mode
-     :desc "Impatient mode"         :n "h" #'+present/impatient-mode
-     :desc "Big mode"               :n "b" #'+present/big-mode
+     :desc "Impatient mode"         :n "h" #'+impatient-mode/toggle
+     :desc "Big mode"               :n "b" #'doom-big-font-mode
      :desc "Evil goggles"           :n "g" #'+evil-goggles/toggle))
 
 
@@ -437,7 +440,11 @@
    ;; Binding to switch to evil-easymotion/avy after a snipe
    :map evil-snipe-parent-transient-map
    "C-;" (λ! (require 'evil-easymotion)
-             (call-interactively +evil--snipe-repeat-fn)))
+             (call-interactively
+              (evilem-create #'evil-snipe-repeat
+                             :bind ((evil-snipe-scope 'whole-buffer)
+                                    (evil-snipe-enable-highlight)
+                                    (evil-snipe-enable-incremental-highlight))))))
 
  ;; evil-surround
  :v  "S"  #'evil-surround-region
@@ -628,6 +635,7 @@
    ;; For elisp debugging
    :map debugger-mode-map
    :n "RET" #'debug-help-follow
+   :n "e"   #'debugger-eval-expression
    :n "n"   #'debugger-step-through
    :n "c"   #'debugger-continue)
 
@@ -695,7 +703,7 @@
     (evilem-default-keybindings prefix)
     (evilem-define (kbd (concat prefix " n")) #'evil-ex-search-next)
     (evilem-define (kbd (concat prefix " N")) #'evil-ex-search-previous)
-    (evilem-define (kbd (concat prefix " s")) 'evil-snipe-repeat
+    (evilem-define (kbd (concat prefix " s")) #'evil-snipe-repeat
                    :pre-hook (save-excursion (call-interactively #'evil-snipe-s))
                    :bind ((evil-snipe-scope 'buffer)
                           (evil-snipe-enable-highlight)
@@ -748,7 +756,9 @@
 
       (:after org-mode
         (:map org-mode-map
-          :i [remap doom/inflate-space-maybe] #'org-self-insert-command))
+          :i [remap doom/inflate-space-maybe] #'org-self-insert-command
+          :i "C-e" #'org-end-of-line
+          :i "C-a" #'org-beginning-of-line))
 
       ;; Make ESC quit all the things
       (:map (minibuffer-local-map

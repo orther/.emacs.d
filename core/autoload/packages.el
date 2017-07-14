@@ -13,11 +13,7 @@
     (condition-case-unless-debug ex
         (progn
           (message "Refreshing package archives")
-          (package-refresh-contents (not doom-debug-mode))
-          (cl-loop for i from 0
-                   while (and package--downloads-in-progress
-                              (<= i 10))
-                   do (sleep-for 0 250))
+          (package-refresh-contents)
           (persistent-soft-store 'last-pkg-refresh t "emacs" 900))
     ('error
      (doom-refresh-clear-cache)
@@ -84,7 +80,7 @@ list of the package."
   (plist-get (cdr (assq name doom-packages)) prop))
 
 ;;;###autoload
-(defun doom-get-packages ()
+(defun doom-get-packages (&optional installed-only-p)
   "Retrieves a list of explicitly installed packages (i.e. non-dependencies).
 Each element is a cons cell, whose car is the package symbol and whose cdr is
 the quelpa recipe (if any).
@@ -93,13 +89,17 @@ BACKEND can be 'quelpa or 'elpa, and will instruct this function to return only
 the packages relevant to that backend.
 
 Warning: this function is expensive; it re-evaluates all of doom's config files.
-Be careful not to use it in a loop."
+Be careful not to use it in a loop.
+
+If INSTALLED-ONLY-P, only return packages that are installed."
   (doom-initialize-packages t)
   (cl-loop with packages = (append doom-core-packages (mapcar #'car doom-packages))
            for sym in (cl-delete-duplicates packages)
-           if (or (assq sym doom-packages)
-                  (and (assq sym package-alist)
-                       (list sym)))
+           if (and (or (not installed-only-p)
+                       (package-installed-p sym))
+                   (or (assq sym doom-packages)
+                       (and (assq sym package-alist)
+                            (list sym))))
            collect it))
 
 ;;;###autoload
@@ -125,7 +125,7 @@ If INCLUDE-FROZEN-P is non-nil, check frozen packages as well.
 Used by `doom/packages-update'."
   (let (quelpa-pkgs elpa-pkgs)
     ;; Separate quelpa from elpa packages
-    (dolist (pkg (doom-get-packages))
+    (dolist (pkg (doom-get-packages t))
       (let ((sym (car pkg)))
         (when (and (or (not (doom-package-prop sym :freeze))
                        include-frozen-p)
@@ -228,16 +228,16 @@ Used by `doom/packages-install'."
          ('file-error
           (message! (bold (red "  FILE ERROR: %s" (error-message-string ex2))))
           (message! "  Trying again...")
-          (doom-refresh-packages t)
+          (quiet! (doom-refresh-packages t))
           ,@body))
      ('user-error
       (message! (bold (red "  ERROR: (%s) %s"
-                           (upcase (symbol-name (car ex)))
+                           (car ex)
                            (error-message-string ex)))))
      ('error
       (doom-refresh-clear-cache)
       (message! (bold (red "  FATAL ERROR: (%s) %s"
-                           (upcase (symbol-name (car ex)))
+                           (car ex)
                            (error-message-string ex)))))))
 
 
@@ -262,8 +262,8 @@ example; the package name can be omitted)."
       t)))
 
 (defun doom-update-package (name &optional force-p)
-  "Updates package NAME if it is out of date, using quelpa or package.el as
-appropriate."
+  "Updates package NAME (a symbol) if it is out of date, using quelpa or
+package.el as appropriate."
   (doom-initialize)
   (unless (package-installed-p name)
     (user-error "%s isn't installed" name))

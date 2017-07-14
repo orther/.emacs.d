@@ -42,7 +42,7 @@
       ;debug           ; FIXME stepping through code, to help you add bugs
 
        :completion
-       company         ; code completion backend
+       company         ; the ultimate code completion backend
        ivy             ; a search engine for love and life
       ;helm            ; the *other* search engine for love and life
       ;ido             ; the other *other* search engine...
@@ -55,14 +55,16 @@
        hl-todo         ; highlight TODO/FIXME/NOTE tags
        nav-flash       ; blink the current line after jumping
        evil-goggles    ; display visual hints when editing in evil
-      ;unicode         ; extended unicode font support for various languages
+      ;unicode         ; extended unicode support for various languages
+      ;tabbar          ; FIXME an (incomplete) tab bar for Emacs
 
        :tools
        dired           ; making dired pretty [functional]
        electric-indent ; smarter, keyword-based electric-indent
        eshell          ; a consistent, cross-platform shell (WIP)
        gist            ; interacting with github gists
-       macos           ; macos-specific commands
+       impatient-mode  ; show off code over HTTP
+      ;macos           ; MacOS-specific commands
        neotree         ; a project drawer, like NERDTree for vim
        password-store  ; password manager for nerds
        rotate-text     ; cycle region at point between text candidates
@@ -88,8 +90,10 @@
        latex           ; writing papers in Emacs has never been so fun
        lua             ; one-based indices? one-based indices
        markdown        ; writing docs for people to ignore
-       org             ; for organized fearless leader (WIP)
+       ocaml           ; an objective camel
+       perl            ; write code no one else can comprehend
        php             ; make php less awful to work with
+       plantuml        ; diagrams for confusing people more
        purescript      ; javascript, but functional
        python          ; beautiful is better than ugly
        rest            ; Emacs as a REST client
@@ -101,15 +105,23 @@
        typescript      ; javascript, but better
        web             ; the tubes
 
+       :org
+       org             ; organize your plain life in plain text
+       org-babel       ; executable code snippets in org-mode
+      ;org-attach      ; FIXME my own, simpler attachment system
+       org-capture     ; a better org-capture, in or outside of Emacs
+       org-export      ; a custom, centralized export system
+       org-notebook    ; org-mode as a notebook
+       org-present     ; using org-mode for presentations
+      ;org-sync        ; TODO sync with mobile
+      ;org-publish     ; TODO org + blogs
+
        ;; Applications are complex and opinionated modules that transform Emacs
-       ;; toward a specific purpose. They should be loaded last.
+       ;; toward a specific purpose. They may have additional dependencies and
+       ;; should be loaded last.
        :app
-      ;crm             ; TODO org-mode for client relations management
-       email           ; Emacs as an email client
-      ;finance         ; TODO keeping track of my shekels
+       email           ; emacs as an email client
        irc             ; how neckbeards socialize
-       present         ; showing off presentations in emacs
-      ;regex           ; TODO emacs as a regexp IDE
        rss             ; emacs as an RSS reader
        twitter         ; twitter client https://twitter.com/vnought
        write           ; emacs as a word processor (latex + org + markdown)

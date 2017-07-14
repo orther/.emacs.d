@@ -32,7 +32,9 @@
 (ex! "sh[ell]"     #'+eshell:run)
 (ex! "t[mux]"      #'+tmux:run)              ; send to tmux
 (ex! "tcd"         #'+tmux:cd-here)          ; cd to default-directory in tmux
-(ex! "x"           #'+doom:scratch-buffer)
+
+(evil-set-command-properties #'doom/scratch-buffer :ex-bang t)
+(ex! "x" #'doom/scratch-buffer)
 
 ;; GIT
 (ex! "gist"        #'+gist:send)  ; send current buffer/region to gist
@@ -46,14 +48,16 @@
 (ex! "grevert"     #'git-gutter:revert-hunk)
 
 ;; Dealing with buffers
-(ex! "clean[up]"   #'doom/cleanup-buffers)
+(evil-set-command-properties #'+workspace/cleanup :ex-bang t)
+
+(ex! "clean[up]"   #'+workspace/cleanup)
 (ex! "k[ill]"      #'doom/kill-this-buffer)
 (ex! "k[ill]all"   #'+hlissner:kill-all-buffers)
 (ex! "k[ill]m"     #'+hlissner:kill-matching-buffers)
 (ex! "k[ill]o"     #'doom/kill-other-buffers)
 (ex! "l[ast]"      #'doom/popup-restore)
 (ex! "m[sg]"       #'view-echo-area-messages)
-(ex! "pop[up]"     #'doom/popup) ; open current buffer in popup
+(ex! "pop[up]"     #'doom/popup-this-buffer)
 
 ;; Project navigation
 (ex! "a"           #'projectile-find-other-file)

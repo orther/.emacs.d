@@ -81,12 +81,12 @@
           :map wgrep-mode-map [remap evil-delete] #'+evil-delete)
 
         ;; replace native folding commands
-        :n "zo" #'+evil:fold-open
-        :n "zO" #'+evil:fold-open
-        :n "zc" #'+evil:fold-close
-        :n "za" #'+evil:fold-toggle
-        :n "zr" #'+evil:fold-open-all
-        :n "zm" #'+evil:fold-close-all)
+        [remap evil-toggle-fold]   #'+evil:fold-toggle
+        [remap evil-close-fold]    #'+evil:fold-close
+        [remap evil-open-fold]     #'+evil:fold-open
+        [remap evil-open-fold-rec] #'+evil:fold-open
+        [remap evil-close-folds]   #'+evil:fold-close-all
+        [remap evil-open-folds]    #'+evil:fold-open-all)
 
 
   ;; --- evil hacks -------------------------
@@ -112,7 +112,7 @@ ignored.")
     "If in anything but normal or motion mode when moving to another window,
 restore normal mode. This prevents insert state from bleeding into other modes
 across windows."
-    (unless (memq evil-state '(normal motion))
+    (unless (memq evil-state '(normal motion emacs))
       (evil-normal-state +1))
     (apply orig-fn args))
   (advice-add #'windmove-do-window-select :around #'+evil*restore-normal-state-on-windmove)
@@ -170,12 +170,7 @@ across windows."
 
 (def-package! evil-easymotion
   :after evil-snipe
-  :config
-  (defvar +evil--snipe-repeat-fn
-    (evilem-create #'evil-snipe-repeat
-                   :bind ((evil-snipe-scope 'whole-buffer)
-                          (evil-snipe-enable-highlight)
-                          (evil-snipe-enable-incremental-highlight)))))
+  :commands evilem-create)
 
 
 (def-package! evil-embrace
@@ -213,12 +208,13 @@ across windows."
     (cons (format "(%s " (or (read-string "(") "")) ")"))
 
   ;; Add escaped-sequence support to embrace
-  (push (cons ?\\ (make-embrace-pair-struct
-                   :key ?\\
-                   :read-function #'+evil--embrace-escaped
-                   :left-regexp "\\[[{(]"
-                   :right-regexp "\\[]})]"))
-        (default-value 'embrace--pairs-list))
+  (cl-pushnew (cons ?\\ (make-embrace-pair-struct
+                         :key ?\\
+                         :read-function #'+evil--embrace-escaped
+                         :left-regexp "\\[[{(]"
+                         :right-regexp "\\[]})]"))
+              (default-value 'embrace--pairs-list)
+              :key #'car)
 
   ;; Add extra pairs
   (add-hook 'LaTeX-mode-hook #'embrace-LaTeX-mode-hook)
@@ -288,24 +284,27 @@ the new algorithm is confusing, like in python or ruby."
              evil-mc-resume-cursors evil-mc-make-and-goto-first-cursor
              evil-mc-make-and-goto-last-cursor evil-mc-make-cursor-here
              evil-mc-make-cursor-move-next-line
-             evil-mc-make-cursor-move-prev-line
-             evil-mc-make-cursor-at-pos
-             evil-mc-make-and-goto-next-cursor evil-mc-skip-and-goto-next-cursor
-             evil-mc-make-and-goto-prev-cursor evil-mc-skip-and-goto-prev-cursor
-             evil-mc-make-and-goto-next-match evil-mc-skip-and-goto-next-match
-             evil-mc-skip-and-goto-next-match evil-mc-make-and-goto-prev-match
-             evil-mc-skip-and-goto-prev-match)
+             evil-mc-make-cursor-move-prev-line evil-mc-make-cursor-at-pos
+             evil-mc-has-cursors-p evil-mc-make-and-goto-next-cursor
+             evil-mc-skip-and-goto-next-cursor evil-mc-make-and-goto-prev-cursor
+             evil-mc-skip-and-goto-prev-cursor evil-mc-make-and-goto-next-match
+             evil-mc-skip-and-goto-next-match evil-mc-skip-and-goto-next-match
+             evil-mc-make-and-goto-prev-match evil-mc-skip-and-goto-prev-match)
   :init
   (defvar evil-mc-key-map (make-sparse-keymap))
   :config
   (global-evil-mc-mode +1)
 
-  ;; Add custom commands to whitelisted commands
-  (dolist (fn '(doom/deflate-space-maybe doom/inflate-space-maybe
-                doom/backward-to-bol-or-indent doom/forward-to-last-non-comment-or-eol
-                doom/backward-kill-to-bol-and-indent doom/newline-and-indent))
-    (push (cons fn '((:default . evil-mc-execute-default-call)))
-          evil-mc-custom-known-commands))
+  (unless doom-init-p
+    ;; Add custom commands to whitelisted commands
+    (dolist (fn '(doom/deflate-space-maybe doom/inflate-space-maybe
+                                           doom/backward-to-bol-or-indent doom/forward-to-last-non-comment-or-eol
+                                           doom/backward-kill-to-bol-and-indent doom/newline-and-indent))
+      (push (cons fn '((:default . evil-mc-execute-default-call)))
+            evil-mc-custom-known-commands))
+
+    ;; disable evil-escape in evil-mc; causes unwanted text on invocation
+    (push 'evil-escape-mode evil-mc-incompatible-minor-modes))
 
   (defun +evil|escape-multiple-cursors ()
     "Clear evil-mc cursors and restore state."
@@ -313,24 +312,21 @@ the new algorithm is confusing, like in python or ruby."
       (evil-mc-undo-all-cursors)
       (evil-mc-resume-cursors)
       t))
-  (add-hook '+evil-esc-hook #'+evil|escape-multiple-cursors)
-
-  ;; disable evil-escape in evil-mc; causes unwanted text on invocation
-  (push 'evil-escape-mode evil-mc-incompatible-minor-modes))
+  (add-hook '+evil-esc-hook #'+evil|escape-multiple-cursors))
 
 
 (def-package! evil-snipe
-  :demand t
+  :commands (evil-snipe-mode evil-snipe-override-mode
+             evil-snipe-local-mode evil-snipe-override-local-mode)
   :init
   (setq evil-snipe-smart-case t
         evil-snipe-scope 'line
         evil-snipe-repeat-scope 'visible
-        evil-snipe-override-evil-repeat-keys nil
         evil-snipe-char-fold t
         evil-snipe-aliases '((?\[ "[[{(]")
                              (?\] "[]})]")
                              (?\; "[;:]")))
-  :config
+  (add-hook 'doom-post-init-hook #'evil-snipe-mode)
   (add-hook 'doom-post-init-hook #'evil-snipe-override-mode))
 
 

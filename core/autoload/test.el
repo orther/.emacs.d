@@ -21,15 +21,14 @@ command line args following a double dash (each arg should be in the
 'module/submodule' format).
 
 If neither is available, run all tests in all enabled modules."
-  (interactive) ;; TODO Add completing-read selection of tests
+  (interactive) ; must be interactive to be run from batch
   ;; FIXME Refactor this
   (condition-case-unless-debug ex
       (let (targets)
         ;; ensure DOOM is initialized
         (let (noninteractive)
-          (unload-feature 'core t)
           (load (expand-file-name "init.el" user-emacs-directory) nil t))
-        (run-hooks 'emacs-startup-hook)
+        (remove-hook 'doom-init-hook #'doom--display-benchmark)
         ;; collect targets
         (cond ((and command-line-args-left
                     (equal (car command-line-args-left) "--"))
@@ -54,8 +53,11 @@ If neither is available, run all tests in all enabled modules."
                  (error "Expected a list of cons, got: %s" modules)))
 
               (t
-               (setq modules (doom--module-pairs)
-                     targets (list (expand-file-name "test/" doom-core-dir)))))
+               (let ((noninteractive t)
+                     doom-modules)
+                 (load (expand-file-name "init.test.el" user-emacs-directory) nil t)
+                 (setq modules (doom--module-pairs)
+                       targets (list (expand-file-name "test/" doom-core-dir))))))
         ;; resolve targets to a list of test files and load them
         (cl-loop with targets =
                  (append targets

@@ -4,18 +4,26 @@
 ;; together `use-package', `quelpa' and package.el to create my own,
 ;; rolling-release, lazily-loaded package management system for Emacs.
 ;;
-;; The three key commands are `doom/packages-install', `doom/packages-update'
-;; and `doom/packages-autoremove', which can be called via `make' on the command
-;; line (make {install,update,autoremove}). These read packages.el files in each
-;; activated module in `doom-modules-dir' (and one in `doom-core-dir') which
-;; tell DOOM what plugins to install and where from.
+;; The three key commands are:
+;;
+;; + `make install` or `doom/packages-install': Installs packages that are
+;;   wanted, but not installed.
+;; + `make update` or `doom/packages-update': Updates packages that are
+;;   out-of-date.
+;; + `make autoremove` or `doom/packages-autoremove': Uninstalls packages that
+;;   are no longer needed.
+;;
+;; This system reads packages.el files located in each activated module (and one
+;; in `doom-core-dir'). These contain `package!` blocks that tell DOOM what
+;; plugins to install and where from.
 ;;
 ;; Why all the trouble? Because:
 ;; 1. Scriptability: I live in the command line. I want a programmable
 ;;    alternative to `list-packages' for updating and installing packages.
 ;; 2. Flexibility: I want packages from sources other than ELPA. Primarily
 ;;    github, because certain plugins are out-of-date through official channels,
-;;    have changed hands, or simply aren't in any ELPA repo.
+;;    have changed hands, have a superior fork, or simply aren't in any ELPA
+;;    repo.
 ;; 3. Stability: I used Cask before this. It would error out with cyrptic errors
 ;;    depending on the version of Emacs I used and the alignment of the planets.
 ;;    No more.
@@ -177,7 +185,7 @@ to speed up startup."
   (unless (file-exists-p doom-autoload-file)
     (quiet! (doom/reload-autoloads))))
 
-(defun doom-initialize-packages (&optional force-p load-p)
+(defun doom-initialize-packages (&optional force-p)
   "Crawls across your emacs.d to fill `doom-modules' (from init.el) and
 `doom-packages' (from packages.el files), if they aren't set already.
 
@@ -185,33 +193,28 @@ If FORCE-P is non-nil, do it even if they are.
 
 This aggressively reloads core autoload files."
   (doom-initialize force-p)
-  (let ((noninteractive t)
-        (load-fn
-         (lambda (file &optional noerror)
-           (condition-case-unless-debug ex
-               (load file noerror :nomessage :nosuffix)
-             ('error
-              (error (format "(doom-initialize-packages) %s in %s: %s"
-                             (car ex)
-                             (file-relative-name file doom-emacs-dir)
-                             (error-message-string ex))
-                     :error))))))
-    (when (or force-p (not doom-modules))
-      (setq doom-modules nil)
-      (funcall load-fn (expand-file-name "init.el" doom-emacs-dir))
-      (funcall load-fn (doom-module-path :private user-login-name "init.el") t)
-      (when load-p
-        (cl-loop for file
-                 in (append (nreverse (file-expand-wildcards (expand-file-name "core*.el" doom-core-dir)))
-                            (file-expand-wildcards (expand-file-name "autoload/*.el" doom-core-dir))
-                            (doom--module-paths "config.el"))
-                 do (funcall load-fn file t)))
-      (doom|finalize))
-    (when (or force-p (not doom-packages))
-      (setq doom-packages nil)
-      (funcall load-fn (expand-file-name "packages.el" doom-core-dir))
-      (dolist (file (doom--module-paths "packages.el"))
-        (funcall load-fn file t)))))
+  (unwind-protect
+      (let ((noninteractive t)
+            (load-fn
+             (lambda (file &optional noerror)
+               (condition-case-unless-debug ex
+                   (load file noerror :nomessage :nosuffix)
+                 ('error
+                  (error (format "(doom-initialize-packages) %s in %s: %s"
+                                 (car ex)
+                                 (file-relative-name file doom-emacs-dir)
+                                 (error-message-string ex))))))))
+        (when (or force-p (not doom-modules))
+          (setq doom-modules nil)
+          (funcall load-fn (expand-file-name "init.el" doom-emacs-dir))
+          (dolist (file (directory-files doom-core-dir t "core-[^.]+\\.el$" t))
+            (funcall load-fn file)))
+        (when (or force-p (not doom-packages))
+          (setq doom-packages nil)
+          (funcall load-fn (expand-file-name "packages.el" doom-core-dir))
+          (dolist (file (doom--module-paths "packages.el"))
+            (funcall load-fn file t))))
+    (doom|finalize)))
 
 (defun doom-initialize-modules (modules)
   "Adds MODULES to `doom-modules'. MODULES must be in mplist format.
@@ -293,8 +296,9 @@ Used by `require!' and `depends-on!'."
 (autoload 'use-package "use-package" nil nil 'macro)
 
 (defmacro doom! (&rest modules)
-  "DOOM Emacs bootstrap macro. List the modules to load. Benefits from
-byte-compilation."
+  "Bootstrap DOOM Emacs.
+
+MODULES is an malformed plist of modules to load."
   (doom-initialize-modules modules)
   (when (and user-login-name
              (not (doom-module-loaded-p :private (intern user-login-name))))
@@ -303,6 +307,12 @@ byte-compilation."
      (setq doom-modules ',doom-modules)
 
      (unless noninteractive
+       (require 'core-ui)         ; draw me like one of your French editors
+       (require 'core-popups)     ; taming sudden yet inevitable windows
+       (require 'core-editor)     ; baseline configuration for text editing
+       (require 'core-projects)   ; making Emacs project-aware
+       (require 'core-keybinds)   ; centralized keybind system + which-key
+
        (load ,(doom-module-path :private user-login-name "init") t t)
        ,@(cl-loop for (module . submodule) in (doom--module-pairs)
                   collect `(require! ,module ,submodule t))
@@ -315,21 +325,29 @@ byte-compilation."
        (add-hook 'doom-init-hook #'doom--display-benchmark t))))
 
 (defmacro def-package! (name &rest plist)
-  "A thin wrapper around `use-package'."
+  "A thin wrapper around `use-package'.
+
+Ignores the package if its NAME is present in `doom-disabled-packages'."
   (when (and (memq name doom-disabled-packages)
              (not (memq :disabled plist)))
     (setq plist (append (list :disabled t) plist)))
   `(use-package ,name ,@plist))
 
 (defmacro def-package-hook! (package when &rest body)
-  "Configure a package using use-package hooks (see `use-package-inject-hooks').
+  "Reconfigures a package's `def-package!' block.
 
-PACKAGE is the package name.
+Under the hood, this uses use-package's `use-package-inject-hooks'.
+
+PACKAGE is a symbol; the package's name.
 WHEN should be one of the following:
-  :pre-init :post-init :pre-config :post-config
+  :pre-init :post-init :pre-config :post-config :disable
 
-WHEN can also be :disable (then BODY is ignored), which will instruct DOOM to
-ignore any `def-package!' blocks for PACKAGE."
+If WHEN is :disable then BODY is ignored, and DOOM will be instructed to ignore
+all `def-package!' blocks for PACKAGE.
+
+WARNING: If :pre-init or :pre-config hooks return nil, the original
+`def-package!''s :init/:config block (respectively) is overwritten, so remember
+to have them return non-nil (or exploit that to overwrite Doom's config)."
   (declare (indent defun))
   (cond ((eq when :disable)
          (push package doom-disabled-packages)
@@ -346,27 +364,37 @@ ignore any `def-package!' blocks for PACKAGE."
          (error "'%s' isn't a valid hook for def-package-hook!" when))))
 
 (defmacro load! (filesym &optional path noerror)
-  "Loads a file relative to the current module (or PATH). FILESYM is a file path
-as a symbol. PATH is a directory to prefix it with. If NOERROR is non-nil, don't
-throw an error if the file doesn't exist."
+  "Load a file relative to the current executing file (`load-file-name').
+
+FILESYM is either a symbol or string representing the file to load. PATH is
+where to look for the file (a string representing a directory path), by default
+it is relative to `load-file-name', `byte-compile-current-file' or
+`buffer-file-name' (in that order).
+
+If NOERROR is non-nil, don't throw an error if the file doesn't exist."
   (let ((path (or (and path (or (and (symbolp path) (symbol-value path))
                                 (and (stringp path) path)
                                 (and (listp path) (eval path))))
                   (and load-file-name (file-name-directory load-file-name))
                   (and (bound-and-true-p byte-compile-current-file)
                        (file-name-directory byte-compile-current-file))
-                  (and buffer-file-name (file-name-directory buffer-file-name)))))
+                  (and buffer-file-name (file-name-directory buffer-file-name))))
+        (filename (cond ((stringp filesym) filesym)
+                        ((symbolp filesym) (symbol-name filesym))
+                        (t (error "load! expected a string or symbol, got %s (a %s)"
+                                  filesym (type-of filesym))))))
     (unless path
-      (error "Could not find %s" filesym))
-    (let ((file (expand-file-name (concat (symbol-name filesym) ".el") path)))
+      (error "Could not find %s" filename))
+    (let ((file (expand-file-name (concat filename ".el") path)))
       (if (file-exists-p file)
           `(load ,(file-name-sans-extension file) ,noerror ,(not doom-debug-mode))
         (unless noerror
           (error "Could not load! file %s" file))))))
 
 (defmacro require! (module submodule &optional reload-p)
-  "Like `require', but for doom modules. Will load a module's config.el file if
-it hasn't already, and if it exists."
+  "Loads the module specified by MODULE (a property) and SUBMODULE (a symbol).
+
+The module is only loaded once. If RELOAD-P is non-nil, load it again."
   (let ((loaded-p (doom-module-loaded-p module submodule)))
     (when (or reload-p (not loaded-p))
       (unless loaded-p
@@ -379,7 +407,7 @@ it hasn't already, and if it exists."
                  (car ex) ,module ',submodule (error-message-string ex)))))))
 
 (defmacro featurep! (module submodule)
-  "Convenience macro that wraps `doom-module-loaded-p'."
+  "Convenience macro wrapper for `doom-module-loaded-p'."
   (doom-module-loaded-p module submodule))
 
 
@@ -388,8 +416,13 @@ it hasn't already, and if it exists."
 ;;
 
 (defmacro package! (name &rest plist)
-  "Declares a package and how to install it (if applicable). This does not load
-nor install them.
+  "Declares a package and how to install it (if applicable).
+
+This macro is declarative and does not load nor install packages. It is used to
+populate `doom-packages' with metadata about the packages Doom needs to keep
+track of.
+
+Only use this macro in a module's packages.el file.
 
 Accepts the following properties:
 
@@ -398,12 +431,8 @@ Accepts the following properties:
                        from external sources.
  :pin ARCHIVE-NAME     Instructs ELPA to only look for this package in
                        ARCHIVE-NAME. e.g. \"org\". Ignored if RECIPE is present.
- :ignore t             Do not install this package.
- :freeze t             Do not update this package.
-
-This macro serves a purely declarative purpose, and are used to fill
-`doom-packages', so that functions like `doom/packages-install' can operate on
-them."
+ :ignore FORM          Do not install this package if FORM is non-nil.
+ :freeze FORM          Do not update this package if FORM is non-nil."
   (declare (indent defun))
   (let* ((old-plist (assq name doom-packages))
          (pkg-recipe (or (plist-get plist :recipe)
@@ -427,8 +456,12 @@ them."
        (push ',(cons name plist) doom-packages))))
 
 (defmacro depends-on! (module submodule)
-  "Declares that this module depends on another. MODULE is a keyword, and
-SUBMODULE is a symbol."
+  "Declares that this module depends on another.
+
+Only use this macro in a module's packages.el file.
+
+MODULE is a keyword, and SUBMODULE is a symbol. Under the hood, this simply
+loads MODULE SUBMODULE's packages.el file."
   (doom--enable-module module submodule)
   `(load! packages ,(doom-module-path module submodule) t))
 
@@ -438,10 +471,14 @@ SUBMODULE is a symbol."
 ;;
 
 (defun doom/reload ()
-  "Reload `load-path' and recompile files (if necessary). Useful if you
-modify/update packages outside of emacs. Automatically called (through the
-server, if necessary) by `doom/packages-install', `doom/packages-update' and
-`doom/packages-autoremove'. "
+  "Reload `load-path' and recompile files (if necessary).
+
+Use this when `load-path' is out of sync with your plugins. This should only
+happen if you manually modify/update/install packages from outside Emacs, while
+an Emacs session is running.
+
+This isn't necessary if you use Doom's package management commands because they
+call `doom/reload' remotely (through emacsclient)."
   (interactive)
   (cond (noninteractive
          (message "Reloading...")
@@ -457,14 +494,15 @@ server, if necessary) by `doom/packages-install', `doom/packages-update' and
          (run-hooks 'doom-reload-hook))))
 
 (defun doom/reload-autoloads ()
-  "Refreshes the autoloads.el file, which tells Emacs where to find all the
-autoloaded functions in enabled modules or among the core libraries, e.g.
-core/autoload/*.el.
+  "Refreshes the autoloads.el file, specified by `doom-autoload-file'.
 
-In modules, checks modules/*/autoload.el and modules/*/autoload/*.el.
+It scans and reads core/autoload/*.el, modules/*/*/autoload.el and
+modules/*/*/autoload/*.el, and generates an autoloads file at the path specified
+by `doom-autoload-file'. This file tells Emacs where to find lazy-loaded
+functions.
 
-Rerun this whenever init.el is modified. You can also use `make autoloads` from
-the commandline."
+This should be run whenever init.el or an autoload file is modified. Running
+'make autoloads' from the commandline executes this command."
   (interactive)
   ;; This function must not use autoloaded functions or external dependencies.
   ;; It must assume nothing is set up!
@@ -516,18 +554,24 @@ the commandline."
         (kill-buffer buf)))))
 
 (defun doom/compile (&optional lite-p only-recompile-p)
-  "Byte compile your emacs configuration (init.el, core/*.el &
-modules/*/*/**.el). DOOM Emacs was designed to benefit from this, but it may
-take a while.
+  "Byte compiles your emacs configuration.
 
-If LITE-P is non-nil, only compile the essential, core DOOM files (init.el &
-core/**/*.el).
+Specifically, this byte-compiles init.el, core/*.el, core/autoload/*.el &
+modules/*/*/**.el. It ignores unit tests and files with `no-byte-compile'
+enabled.
+
+DOOM Emacs was designed to benefit from byte-compilation, but the process may
+take a while. Also, while your config files are byte-compiled, changes to them
+will not take effect! Use `doom/clean-compiled' or `make clean' to undo
+byte-compilation.
+
+If LITE-P is non-nil, only compile the core DOOM files (init.el & core/**/*.el).
 
 If ONLY-RECOMPILE-P is non-nil, only recompile out-of-date files."
   (interactive "P")
   ;; Ensure all relevant config files are loaded and up-to-date. This way we
   ;; don't need eval-when-compile and require blocks scattered all over.
-  (doom-initialize-packages t noninteractive)
+  (doom-initialize-packages t)
   (let ((targets
          (cond ((equal (car command-line-args-left) "--")
                 (cl-loop for file in (cdr command-line-args-left)
@@ -548,10 +592,11 @@ If ONLY-RECOMPILE-P is non-nil, only recompile out-of-date files."
                              else if (file-exists-p path)
                                collect path)))
       (dolist (file el-files)
-        (when (or (not only-recompile-p)
-                  (let ((elc-file (byte-compile-dest-file file)))
-                    (and (file-exists-p elc-file)
-                         (file-newer-than-file-p file elc-file))))
+        (when (and (not (string-match-p "/test/.+\\.el$" file))
+                   (or (not only-recompile-p)
+                       (let ((elc-file (byte-compile-dest-file file)))
+                         (and (file-exists-p elc-file)
+                              (file-newer-than-file-p file elc-file)))))
           (let ((result (byte-compile-file file))
                 (short-name (file-relative-name file doom-emacs-dir)))
             (cl-incf
@@ -575,22 +620,25 @@ If ONLY-RECOMPILE-P is non-nil, only recompile out-of-date files."
                (format "(%s ignored)" total-nocomp)))))))
 
 (defun doom/recompile ()
-  "Recompile any compiled *.el files in your Emacs configuration."
+  "Recompile any out-of-date compiled *.el files in your Emacs configuration."
   (interactive)
   (doom/compile nil :recompile)
-  ;; In case `load-path' has changed (e.g. after an update)
+  ;; Forcibly recompile core.el in case `load-path' has changed
   (byte-recompile-file (expand-file-name "core.el" doom-core-dir) t))
 
-(defun doom/clean-cache ()
-  "Clear local cache (`doom-cache-dir'). You may need to restart Emacs for some
-components to feel its effects."
+(defun doom/reset ()
+  "Clear the local cache completely (in `doom-cache-dir').
+
+This resets Emacs to a blank slate. You must restart Emacs for some components
+to feel its effects."
   (interactive)
   (delete-directory doom-cache-dir t)
   (make-directory doom-cache-dir t))
 
-(defun doom/clean-compiled ()
-  "Delete all compiled elc files in DOOM emacs, excluding compiled ELPA/QUELPA
-package files."
+(defun doom/clean-compiled-files ()
+  "Delete all compiled elc files in your Emacs configuration.
+
+This excludes compiled packages in `doom-packages-dir'."
   (interactive)
   (let ((targets (append (list (expand-file-name "init.elc" doom-emacs-dir))
                          (directory-files-recursively doom-core-dir "\\.elc$")

@@ -28,6 +28,9 @@
 (defvar doom-popup-no-fringes t
   "If non-nil, disable fringes in popup windows.")
 
+(defvar doom-popup-windows ()
+  "A list of open popup windows.")
+
 (defvar-local doom-popup-rules nil
   "The shackle rule that caused this buffer to be recognized as a popup.")
 
@@ -94,7 +97,7 @@ recognized by DOOM's popup system. They are:
           ("^ \\*" :regexp t :size 12 :noselect t :autokill t :autoclose t)))
 
   :config
-  (add-hook 'doom-init-hook #'shackle-mode)
+  (add-hook 'doom-post-init-hook #'shackle-mode)
 
   (defun doom*shackle-always-align (plist)
     "Ensure popups are always aligned and selected by default. Eliminates the need
@@ -164,7 +167,7 @@ for :align t on every rule."
           (t
            (when doom-popup-no-fringes
              (set-window-fringes window
-                                 doom-ui-fringe-size doom-ui-fringe-size
+                                 doom-fringe-size doom-fringe-size
                                  fringes-outside-margins))
            ;; Ensure window parameters are cleaned up
            (set-window-parameter window 'popup nil)
@@ -215,6 +218,7 @@ and setting `doom-popup-rules' within it. Returns the window."
       (setcar args (clone-indirect-buffer (buffer-name (car args)) nil t)))
     (unless (setq window (apply orig-fn args))
       (error "No popup window was found for %s: %s" (car args) plist))
+    (cl-pushnew window doom-popup-windows :test #'eq)
     (with-selected-window window
       (unless (eq plist t)
         (setq-local doom-popup-rules plist))
@@ -241,6 +245,7 @@ prevent the popup(s) from messing up the UI (or vice versa)."
 properties."
   (let ((window (or window (selected-window))))
     (when (doom-popup-p window)
+      (setq doom-popup-windows (delq window doom-popup-windows))
       (when doom-popup-remember-history
         (setq doom-popup-history (list (doom--popup-data window))))
       (let ((autokill-p (plist-get doom-popup-rules :autokill)))
@@ -407,19 +412,19 @@ the command buffer."
     (advice-add #'helm-ag--edit :around #'doom*helm-ag-edit)))
 
 
+(defsubst doom--switch-from-popup (location)
+  (doom/popup-close)
+  (switch-to-buffer (car location) nil t)
+  (if (not (cdr location))
+      (message "Unable to find location in file")
+    (goto-char (cdr location))
+    (recenter)))
+
 (after! help-mode
   ;; Help buffers use `other-window' to decide where to open followed links,
   ;; which can be unpredictable. It should *only* replace the original buffer we
   ;; opened the popup from. To fix this these three button types need to be
   ;; redefined to set aside the popup before following a link.
-  (defsubst doom--switch-from-popup (location)
-    (doom/popup-close)
-    (switch-to-buffer (car location) nil t)
-    (if (not (cdr location))
-        (message "Unable to find location in file")
-      (goto-char (cdr location))
-      (recenter)))
-
   (define-button-type 'help-function-def
     :supertype 'help-xref
     'help-function
@@ -514,6 +519,18 @@ that `doom*popup-save' won't break it."
   (add-hook 'doom-popup-mode-hook #'+evil|neotree-fix-popup))
 
 
+(after! persp-mode
+  (defun doom*persp-mode-restore-popups (&rest _)
+    "Restore popup windows when loading a perspective from file."
+    (dolist (window (window-list))
+      (when-let (plist (window-parameter window 'popup))
+        (with-selected-window window
+          (unless doom-popup-mode
+            (setq-local doom-popup-rules plist)
+            (doom-popup-mode +1))))))
+  (advice-add #'persp-load-state-from-file :after #'doom*persp-mode-restore-popups))
+
+
 (after! quickrun
   ;; don't auto-focus quickrun windows, shackle handles that
   (setq quickrun-focus-p nil))
@@ -540,6 +557,18 @@ you came from."
       (when popup-p (doom/popup-close window))))
   (advice-add #'xref-goto-xref :around #'doom*xref-follow-and-close))
 
+
+;;
+;; Major modes
+;;
+
+(after! plantuml-mode
+  (defun doom*plantuml-preview-in-popup-window (orig-fn &rest args)
+    (save-window-excursion
+      (apply orig-fn args))
+    (pop-to-buffer plantuml-preview-buffer))
+  (advice-add #'plantuml-preview-string
+              :around #'doom*plantuml-preview-in-popup-window))
 
 ;; Ensure these settings are attached to org-load-hook as late as possible,
 ;; giving other modules a chance to add their own hooks.

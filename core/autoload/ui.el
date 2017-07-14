@@ -13,7 +13,9 @@
 (defun doom/toggle-line-numbers (&optional arg)
   "Toggle `linum-mode'."
   (interactive "P")
-  (cond ((featurep 'nlinum)
+  (cond ((boundp 'display-line-numbers)
+         (setq display-line-numbers (not display-line-numbers)))
+        ((featurep 'nlinum)
          (nlinum-mode (or arg (if nlinum-mode -1 +1))))
         ((featurep 'linum)
          (linum-mode (or arg (if linum-mode -1 +1))))
@@ -59,3 +61,27 @@ window changes before then, the undo expires."
       (when (doom-quit-p "Close frame?")
         (delete-frame))
     (save-buffers-kill-emacs)))
+
+;;;###autoload
+(defun doom/reload-theme ()
+  "Reset the color theme currently in use."
+  (interactive)
+  (let ((theme (or (car-safe custom-enabled-themes) doom-theme)))
+    (when theme
+      (mapc #'disable-theme custom-enabled-themes))
+    (run-hooks 'doom-pre-reload-theme-hook)
+    (doom|init-ui)
+    (run-hooks 'doom-post-reload-theme-hook)))
+
+;;;###autoload
+(define-minor-mode doom-big-font-mode
+  "A global mode that resizes the font, for streams, screen-sharing and
+presentations."
+  :init-value nil
+  :lighter " BIG"
+  :global t
+  (unless (fontp doom-big-font)
+    (user-error "`doom-big-font' isn't set to a valid font"))
+  (if doom-big-font-mode
+      (set-frame-font doom-big-font t t)
+    (set-frame-font doom-font t t)))

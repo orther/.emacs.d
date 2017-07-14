@@ -1,16 +1,21 @@
 ;;; completion/company/config.el -*- lexical-binding: t; -*-
 
-(def-setting! :company-backend (modes backends)
-  "Register company BACKENDS to MODES."
-  (let ((backends (doom-enlist (doom-unquote backends))))
-    `(progn
-       ,@(cl-loop for mode in (doom-enlist (doom-unquote modes))
-                  for def-name = (intern (format "doom--init-company-%s" mode))
-                  collect `(defun ,def-name ()
-                             (when (eq major-mode ',mode)
-                               (require 'company)
-                               (cl-pushnew ',backends company-backends :test #'equal)))
-                  collect `(add-hook! ,mode #',def-name)))))
+(def-setting! :company-backend (modes &rest backends)
+  "Prepends BACKENDS to `company-backends' in major MODES.
+
+MODES should be one major-mode symbol or a list of them."
+  `(progn
+     ,@(cl-loop for mode in (doom-enlist (doom-unquote modes))
+                for def-name = (intern (format "doom--init-company-%s" mode))
+                collect
+                `(defun ,def-name ()
+                   (when (and (eq major-mode ',mode)
+                              ,(not (eq backends '(nil))))
+                     (require 'company)
+                     (make-variable-buffer-local 'company-backends)
+                     (dolist (backend (list ,@(reverse backends)))
+                       (cl-pushnew backend company-backends :test #'equal))))
+                collect `(add-hook! ,mode #',def-name))))
 
 
 ;;
@@ -30,9 +35,8 @@
         company-require-match 'never
         company-global-modes '(not eshell-mode comint-mode erc-mode message-mode help-mode)
         company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend)
-        company-backends '(company-capf))
-
-  (push #'company-sort-by-occurrence company-transformers)
+        company-backends '(company-capf company-dabbrev company-ispell)
+        company-transformers '(company-sort-by-occurrence))
 
   (after! yasnippet
     (nconc company-backends '(company-yasnippet)))
@@ -58,10 +62,10 @@
 (def-package! company-dict
   :commands company-dict
   :config
-  ;; Project-specific dictionaries
   (defun +company|enable-project-dicts (mode &rest _)
+    "Enable per-project dictionaries."
     (if (symbol-value mode)
-        (push mode company-dict-minor-mode-list)
+        (cl-pushnew mode company-dict-minor-mode-list :test #'eq)
       (setq company-dict-minor-mode-list (delq mode company-dict-minor-mode-list))))
   (add-hook 'doom-project-hook #'+company|enable-project-dicts))
 
