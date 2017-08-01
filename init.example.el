@@ -34,6 +34,7 @@
        jump            ; helping you get around
        snippets        ; my elves. They type so I don't have to
        file-templates  ; auto-snippets for empty files
+       hydra           ; keybindings that stick around
        spellcheck      ; tasing you for misspelling mispelling
        syntax-checker  ; tasing you for every semicolon you forget
        version-control ; remember, remember that commit in November
@@ -67,6 +68,7 @@
       ;macos           ; MacOS-specific commands
        neotree         ; a project drawer, like NERDTree for vim
        password-store  ; password manager for nerds
+       prodigy         ; manage external services from within emacs
        rotate-text     ; cycle region at point between text candidates
        term            ; terminals in Emacs
        tmux            ; an API for interacting with tmux

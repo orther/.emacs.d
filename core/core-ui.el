@@ -25,21 +25,6 @@
 return a string). This changes the 'long' name of a major-mode, allowing for
 shorter major mode name in the mode-line. See `doom|set-mode-name'.")
 
-;; Line numbers
-(defvar doom-line-number-lpad 4
-  "How much padding to place before line numbers.")
-
-(defvar doom-line-number-rpad 1
-  "How much padding to place after line numbers.")
-
-(defvar doom-line-number-pad-char 32
-  "Character to use for padding line numbers.
-
-By default, this is a space key. If you use `whitespace-mode' with `space-mark',
-the whitespace in line numbers will be affected (this can look ugly). In this
-case, you can change this to ?\u2002, which is a unicode character that looks
-like a space that `whitespace-mode' won't affect.")
-
 
 ;; Hook(s)
 (defvar doom-init-ui-hook nil
@@ -73,6 +58,7 @@ like a space that `whitespace-mode' won't affect.")
  bidi-display-reordering nil ; disable bidirectional text for tiny performance boost
  blink-matching-paren nil    ; don't blink--too distracting
  cursor-in-non-selected-windows nil  ; hide cursors in other windows
+ display-line-numbers-width 3
  frame-inhibit-implied-resize t
  ;; remove continuation arrow on right fringe
  fringe-indicator-alist (delq (assq 'continuation fringe-indicator-alist)
@@ -168,7 +154,7 @@ local value, whether or not it's permanent-local. Therefore, we cycle
 (setq show-paren-delay 0.1
       show-paren-highlight-openparen t
       show-paren-when-point-inside-paren t)
-(add-hook 'doom-init-hook #'show-paren-mode)
+(add-hook 'doom-init-ui-hook #'show-paren-mode)
 
 ;;; More reliable inter-window border
 ;; The native border "consumes" a pixel of the fringe on righter-most splits,
@@ -176,7 +162,7 @@ local value, whether or not it's permanent-local. Therefore, we cycle
 (setq-default window-divider-default-places t
               window-divider-default-bottom-width 0
               window-divider-default-right-width 1)
-(add-hook 'doom-init-hook #'window-divider-mode)
+(add-hook 'doom-init-ui-hook #'window-divider-mode)
 
 ;; like diminish, but for major-modes. [pedantry intensifies]
 (defun doom|set-mode-name ()
@@ -226,7 +212,7 @@ local value, whether or not it's permanent-local. Therefore, we cycle
       (run-with-timer 0.1 nil #'doom|init-ui))))
 
 ;; register UI init hooks
-(add-hook 'doom-init-hook #'doom|init-ui)
+(add-hook 'doom-post-init-hook #'doom|init-ui)
 (add-hook! 'after-make-frame-functions #'(doom|init-ui doom|reload-ui-in-daemon))
 
 
@@ -255,13 +241,6 @@ local value, whether or not it's permanent-local. Therefore, we cycle
   (set-window-fringes (minibuffer-window) 0 0 nil))
 (add-hook! '(doom-post-init-hook minibuffer-setup-hook)
   #'doom|no-fringes-in-minibuffer)
-
-;; line numbers in newer version of Emacs
-(when (boundp 'display-line-numbers)
-  (defun doom|init-line-numbers ()
-    (unless (eq major-mode 'org-mode)
-      (setq display-line-numbers t)))
-  (add-hook! (prog-mode text-mode) #'doom|init-line-numbers))
 
 
 ;;
@@ -296,91 +275,28 @@ local value, whether or not it's permanent-local. Therefore, we cycle
   :config
   (setq hs-hide-comments-when-hiding-all nil))
 
-;; Show uninterrupted indentation markers with some whitespace voodoo.
 (def-package! highlight-indentation
   :commands (highlight-indentation-mode highlight-indentation-current-column-mode))
 
-;; For modes that don't adequately highlight numbers
+;; For modes with sub-par number fontification
 (def-package! highlight-numbers :commands highlight-numbers-mode)
 
-;; Line highlighting
+;; Highlights the current line
 (def-package! hl-line ; built-in
-  :init (add-hook! (linum-mode nlinum-mode) #'hl-line-mode)
+  :init (add-hook! (prog-mode text-mode conf-mode) #'hl-line-mode)
   :config
   ;; I don't need hl-line showing in other windows. This also offers a small
   ;; speed boost when buffer is displayed in multiple windows.
   (setq hl-line-sticky-flag nil
         global-hl-line-sticky-flag nil)
 
-  ;; Fix lingering hl-line overlays
-  (add-hook! 'hl-line-mode-hook
-    (remove-overlays (point-min) (point-max) 'face 'hl-line))
-
   (after! evil
     ;; Disable `hl-line' in evil-visual mode (temporarily). `hl-line' can make
     ;; the selection region harder to see while in evil visual mode.
-    (defun doom|turn-off-hl-line () (hl-line-mode -1))
+    (defun doom|disable-hl-line () (hl-line-mode -1))
 
-    (add-hook 'evil-visual-state-entry-hook #'doom|turn-off-hl-line)
+    (add-hook 'evil-visual-state-entry-hook #'doom|disable-hl-line)
     (add-hook 'evil-visual-state-exit-hook #'hl-line-mode)))
-
-;; Line number column. A faster (or equivalent, in the worst case) line number
-;; plugin than the built-in `linum'. This will be ignored if you're using Emacs
-;; 26.1+, which has native line number support.
-(def-package! nlinum
-  :unless (boundp 'display-line-numbers)
-  :commands nlinum-mode
-  :init
-  (defun doom|init-nlinum-mode ()
-    "Turn on `nlinum-mode', except in org-mode"
-    (unless (eq major-mode 'org-mode)
-      (nlinum-mode +1)))
-  (add-hook! (prog-mode text-mode) #'doom|init-nlinum-mode)
-  :config
-  (setq nlinum-highlight-current-line t)
-
-  (defun doom-nlinum-format-fn (line _width)
-    "A more customizable `nlinum-format-function'. See `doom-line-number-lpad',
-`doom-line-number-rpad' and `doom-line-number-pad-char'. Allows a fix for
-`whitespace-mode' space-marks appearing inside the line number."
-    (let ((str (number-to-string line)))
-      (setq str (concat (make-string (max 0 (- doom-line-number-lpad (length str)))
-                                     doom-line-number-pad-char)
-                        str
-                        (make-string doom-line-number-rpad doom-line-number-pad-char)))
-      (put-text-property 0 (length str) 'face
-                         (if (and nlinum-highlight-current-line
-                                  (= line nlinum--current-line))
-                             'nlinum-current-line
-                           'linum)
-                         str)
-      str))
-  (setq nlinum-format-function #'doom-nlinum-format-fn)
-
-  (defun doom|init-nlinum-width ()
-    "Calculate line number column width beforehand (optimization)."
-    (setq nlinum--width
-          (length (save-excursion (goto-char (point-max))
-                                  (format-mode-line "%l")))))
-  (add-hook 'nlinum-mode-hook #'doom|init-nlinum-width))
-
-;; Fixes disappearing line numbers in nlinum and other quirks
-(def-package! nlinum-hl
-  :unless (boundp 'display-line-numbers)
-  :after nlinum
-  :config
-  ;; With `markdown-fontify-code-blocks-natively' enabled in `markdown-mode',
-  ;; line numbers tend to vanish next to code blocks.
-  (advice-add #'markdown-fontify-code-block-natively
-              :after #'nlinum-hl-do-markdown-fontify-region)
-
-  ;; When using `web-mode's code-folding an entire range of line numbers will
-  ;; vanish in the affected area.
-  (advice-add #'web-mode-fold-or-unfold :after #'nlinum-hl-do-generic-flush)
-
-  ;; Changing fonts can leave nlinum line numbers in their original size; this
-  ;; forces them to resize.
-  (advice-add #'set-frame-font :after #'nlinum-hl-flush-all-windows))
 
 ;; Helps us distinguish stacked delimiter pairs. Especially in parentheses-drunk
 ;; languages like Lisp.
@@ -391,8 +307,10 @@ local value, whether or not it's permanent-local. Therefore, we cycle
 
 ;; indicators for empty lines past EOF
 (def-package! vi-tilde-fringe
-  :commands global-vi-tilde-fringe-mode
-  :init (add-hook 'doom-init-hook #'global-vi-tilde-fringe-mode))
+  :commands (global-vi-tilde-fringe-mode vi-tilde-fringe-mode)
+  :init
+  (add-hook 'doom-init-ui-hook #'global-vi-tilde-fringe-mode)
+  (defun doom|disable-vi-tilde-fringe () (vi-tilde-fringe-mode -1)))
 
 ;; For a distractions-free-like UI, that dynamically resizes margets and can
 ;; center a buffer.
@@ -401,6 +319,118 @@ local value, whether or not it's permanent-local. Therefore, we cycle
   :config
   (setq-default visual-fill-column-center-text nil
                 visual-fill-column-width fill-column))
+
+
+;;
+;; Line numbers
+;;
+
+(defvar doom-line-numbers-style t
+  "The style to use for the line number display.
+
+Accepts the same arguments as `display-line-numbers', which are:
+
+nil         No line numbers
+t           Ordinary line numbers
+'relative   Relative line numbers")
+
+(defun doom|enable-line-numbers (&optional arg)
+  "Enables the display of line numbers, using `display-line-numbers' (in Emacs
+26+) or `nlinum-mode'.
+
+See `doom-line-numbers-style' to control the style of line numbers to display."
+  (cond ((boundp 'display-line-numbers)
+         (setq display-line-numbers
+               (pcase arg
+                 (+1 doom-line-numbers-style)
+                 (-1 nil)
+                 (_ doom-line-numbers-style))))
+        ((eq doom-line-numbers-style 'relative)
+         (if (= arg -1)
+             (nlinum-relative-off)
+           (nlinum-relative-on)))
+        ((not (null doom-line-numbers-style))
+         (nlinum-mode (or arg +1)))))
+
+(defun doom|disable-line-numbers ()
+  "Disable the display of line numbers."
+  (doom|enable-line-numbers -1))
+
+(add-hook! (prog-mode text-mode conf-mode) #'doom|enable-line-numbers)
+
+;; Emacs 26+ has native line number support.
+(unless (boundp 'display-line-numbers)
+  ;; Line number column. A faster (or equivalent, in the worst case) line number
+  ;; plugin than `linum-mode'.
+  (def-package! nlinum
+    :commands nlinum-mode
+    :init
+    (defvar doom-line-number-lpad 4
+      "How much padding to place before line numbers.")
+    (defvar doom-line-number-rpad 1
+      "How much padding to place after line numbers.")
+    (defvar doom-line-number-pad-char 32
+      "Character to use for padding line numbers.
+
+By default, this is a space character. If you use `whitespace-mode' with
+`space-mark', the whitespace in line numbers will be affected (this can look
+ugly). In this case, you can change this to ?\u2002, which is a unicode
+character that looks like a space that `whitespace-mode' won't affect.")
+
+    :config
+    (setq nlinum-highlight-current-line t)
+
+    ;; Fix lingering hl-line overlays (caused by nlinum)
+    (add-hook! 'hl-line-mode-hook
+      (remove-overlays (point-min) (point-max) 'face 'hl-line))
+
+    (defun doom-nlinum-format-fn (line _width)
+      "A more customizable `nlinum-format-function'. See `doom-line-number-lpad',
+`doom-line-number-rpad' and `doom-line-number-pad-char'. Allows a fix for
+`whitespace-mode' space-marks appearing inside the line number."
+      (let ((str (number-to-string line)))
+        (setq str (concat (make-string (max 0 (- doom-line-number-lpad (length str)))
+                                       doom-line-number-pad-char)
+                          str
+                          (make-string doom-line-number-rpad doom-line-number-pad-char)))
+        (put-text-property 0 (length str) 'face
+                           (if (and nlinum-highlight-current-line
+                                    (= line nlinum--current-line))
+                               'nlinum-current-line
+                             'linum)
+                           str)
+        str))
+    (setq nlinum-format-function #'doom-nlinum-format-fn)
+
+    (defun doom|init-nlinum-width ()
+      "Calculate line number column width beforehand (optimization)."
+      (setq nlinum--width
+            (length (save-excursion (goto-char (point-max))
+                                    (format-mode-line "%l")))))
+    (add-hook 'nlinum-mode-hook #'doom|init-nlinum-width))
+
+  ;; Fixes disappearing line numbers in nlinum and other quirks
+  (def-package! nlinum-hl
+    :after nlinum
+    :config
+    ;; With `markdown-fontify-code-blocks-natively' enabled in `markdown-mode',
+    ;; line numbers tend to vanish next to code blocks.
+    (advice-add #'markdown-fontify-code-block-natively
+                :after #'nlinum-hl-do-markdown-fontify-region)
+
+    ;; When using `web-mode's code-folding an entire range of line numbers will
+    ;; vanish in the affected area.
+    (advice-add #'web-mode-fold-or-unfold :after #'nlinum-hl-do-generic-flush)
+
+    ;; Changing fonts can leave nlinum line numbers in their original size; this
+    ;; forces them to resize.
+    (advice-add #'set-frame-font :after #'nlinum-hl-flush-all-windows))
+
+  (def-package! nlinum-relative
+    :commands nlinum-relative-mode
+    :config
+    (after! evil
+      (nlinum-relative-setup-evil))))
 
 
 ;;
@@ -462,12 +492,11 @@ error if it doesn't exist."
 (defun doom-set-modeline (key &optional default)
   "Set the modeline format. Does nothing if the modeline KEY doesn't exist. If
 DEFAULT is non-nil, set the default mode-line for all buffers."
-  (let ((modeline (doom-modeline key)))
-    (when modeline
-      (setf (if default
-                (default-value 'mode-line-format)
-              (buffer-local-value 'mode-line-format (current-buffer)))
-            modeline))))
+  (when-let (modeline (doom-modeline key))
+    (setf (if default
+              (default-value 'mode-line-format)
+            (buffer-local-value 'mode-line-format (current-buffer)))
+          modeline)))
 
 (provide 'core-ui)
 ;;; core-ui.el ends here

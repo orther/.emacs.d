@@ -14,7 +14,7 @@
 ;; in the future. When xref can't be depended on it will fall back to
 ;; `dumb-jump' to find what you want.
 
-(defvar +jump-search-url-alist
+(defvar +jump-search-provider-alist
   '(("Google"        . "https://google.com/search?q=%s")
     ("DuckDuckGo"    . "https://duckduckgo.com/?q=%s")
     ("DevDocs.io"    . "http://devdocs.io/#q=%s")
@@ -29,7 +29,18 @@ produces an url. Used by `+jump/online'.")
   "TODO")
 
 (def-setting! :jump (modes &rest plist)
-  "TODO"
+  "Definies a jump target for major MODES. PLIST accepts the following
+properties:
+
+  :definition FN
+    Run when jumping to a symbol's definition.
+    Used by `+jump/definition'.
+  :references FN
+    Run when looking for usage references of a symbol in the current project.
+    Used by `+jump/references'.
+  :documentation FN
+    Run when looking up documentation for a symbol.
+    Used by `+jump/documentation'."
   `(dolist (mode (doom-enlist ,modes))
      (push (cons mode (list ,@plist)) +jump-function-alist)))
 
