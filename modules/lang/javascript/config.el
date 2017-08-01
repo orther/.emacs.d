@@ -98,6 +98,11 @@
   :config
   (set! :company-backend 'js2-mode '(company-tern)))
 
+(def-package! company-flow
+  :when (featurep! :completion company)
+  :after company
+  :config
+  (set! :company-backend 'js2-mode '(company-flow)))
 
 (def-package! rjsx-mode
   :commands rjsx-mode

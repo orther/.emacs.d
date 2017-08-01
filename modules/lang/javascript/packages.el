@@ -11,9 +11,14 @@
 (package! tern)
 (package! web-beautify)
 (package! skewer-mode)
+(package! eslintd-fix)
+
+(package! flow)
 
 (when (featurep! :completion company)
-  (package! company-tern))
+  (package! company-tern)
+  (package! company-flow)
+  )
 
 (when (featurep! :feature jump)
   (package! xref-js2))
