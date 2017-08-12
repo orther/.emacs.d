@@ -37,6 +37,7 @@
        jump            ; helping you get around
        snippets        ; my elves. They type so I don't have to
        file-templates  ; auto-snippets for empty files
+       hydra           ; keybindings that stick around
        spellcheck      ; tasing you for misspelling mispelling
        syntax-checker  ; tasing you for every semicolon you forget
        version-control ; remember, remember that commit in November
@@ -74,6 +75,7 @@
        term            ; terminals in Emacs
        ;; tmux            ; an API for interacting with tmux
        upload          ; map local to remote projects via ssh/ftp
+       rgb
 
        :lang
        ;; assembly        ; assembly for fun or debugging
