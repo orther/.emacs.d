@@ -494,6 +494,12 @@ session)."
  :o  "s"  #'evil-surround-edit
  :o  "S"  #'evil-Surround-edit
 
+ ;; jest
+ (:prefix "gj"
+   :nv "f" #'mocha-test-file
+   :nv "l" #'mocha-test-at-point
+   :nv "p" #'mocha-test-project)
+
  ;; expand-region
  :v  "v"  #'er/expand-region
  :v  "V"  #'er/contract-region

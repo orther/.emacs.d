@@ -1,24 +1,24 @@
-;; -*- no-byte-compile: t; -*-
-;;; feature/debug-js/config.el -*- lexical-binding: t; -*-
-
-(def-package! realgud
-  :commands realgud:nodejs)
+;;; private/orther/+jest.el -*- lexical-binding: t; -*-
 
 (def-package! mocha
   :commands (mocha-test-project
-             mocha-debug-project
              mocha-test-file
-             mocha-debug-file
              mocha-test-at-point
-             mocha-debug-at-point)
+             ;; FIXME poppup and bindings
+             ;; mocha-debug-project
+             ;; mocha-debug-file
+             ;; mocha-debug-at-point
+             ;; NOTE debugger works with --inspect=PORT && --inspect-brk
+             )
+  :after mocha
   :config
   ;; Clear up stray ansi escape sequences.
   (defvar jj*--mocha-ansi-escape-sequences
     ;; https://emacs.stackexchange.com/questions/18457/stripping-stray-ansi-escape-sequences-from-eshell
     (rx (or
          "^[\\[[0-9]+[a-z]"
-         "�[1A"
-         "�[999D")))
+         "[1A"
+         "[999D")))
 
   (defun jj*--mocha-compilation-filter ()
     "Filter function for compilation output."
@@ -50,8 +50,7 @@ IF TESTNAME is specified run jest with a pattern for just that test."
                   ""))
           (node-command
            (concat mocha-which-node
-                   ;; (if debug (concat " --debug=" mocha-debug-port) ""))))
-                   (if debug (concat " --inspect=" mocha-debug-port " --inspect-brk") ""))))
+                   (if debug (concat " --debug=" mocha-debug-port) ""))))
       (concat node-command " "
               mocha-jest-command
               target

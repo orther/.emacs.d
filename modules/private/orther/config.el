@@ -22,6 +22,7 @@
 ;;   "The font currently in use.")
 
 (load! +eslintd)
+(load! +jest)
 
 ;; projectile ignore directories
 ; (setq projectile-globally-ignored-directories '("target" ".ensime_cache" ".fingerprint" "project/target"))

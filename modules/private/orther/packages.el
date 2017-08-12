@@ -6,3 +6,5 @@
 
 ;; ;; requires prettier-js
 ;; (package! prettier-js)
+
+(package! mocha)

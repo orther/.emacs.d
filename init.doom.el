@@ -43,8 +43,7 @@
        version-control ; remember, remember that commit in November
        workspaces      ; tab emulation, persistence & separate workspaces
        eval            ; repls, runners 'n builders; run code, run
-       ;; debug           ; FIXME stepping through code, to help you add bugs
-       ;; debug-js        ; NOTE (orther) js2 step debugging w/ mocha.el & Jest adapted commands
+      ;debug           ; FIXME stepping through code, to help you add bugs
 
        :completion
        company         ; the ultimate code completion backend
