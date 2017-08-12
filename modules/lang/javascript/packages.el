@@ -13,7 +13,7 @@
 (package! skewer-mode)
 (package! eslintd-fix)
 
-(package! flow)
+;; (package! flow)
 
 (when (featurep! :completion company)
   (package! company-tern)
