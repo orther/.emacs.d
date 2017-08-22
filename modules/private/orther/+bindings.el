@@ -10,16 +10,6 @@
                #'projectile-find-file
              #'find-file))))))
 
-(defmacro +ivy-do-action! (action)
-  "A factory function that returns an interactive lamba that sets the current
-ivy action and immediately runs it on the current candidate (ending the ivy
-session)."
-  `(lambda ()
-     (interactive)
-     (ivy-set-action ,action)
-     (setq ivy-exit 'done)
-     (exit-minibuffer)))
-
 (setq doom-leader-key "SPC")
 (setq doom-localleader-key "SPC m")
 
@@ -148,6 +138,7 @@ session)."
    (:desc "workspace" :prefix "TAB"
      :desc "Display tab bar"          :n "TAB" #'+workspace/display
      :desc "New workspace"            :n "n"   #'+workspace/new
+     :desc "Rename workspace"         :n "r"   #'+workspace/rename
      :desc "Load workspace from file" :n "l"   #'+workspace/load
      :desc "Load last session"        :n "L"   (λ! (+workspace/load-session))
      :desc "Save workspace to file"   :n "s"   #'+workspace/save
@@ -280,19 +271,20 @@ session)."
      :desc "Terminal in project" :n  "T" #'+term/popup-in-project
 
      ;; applications
-     :desc "APP: elfeed"  :n "E" #'=rss
-     :desc "APP: email"   :n "M" #'=email
-     :desc "APP: twitter" :n "T" #'=twitter
-     :desc "APP: regex"   :n "X" #'=regex
+     ;; :desc "APP: elfeed"  :n "E" #'=rss
+     ;; :desc "APP: email"   :n "M" #'=email
+     ;; :desc "APP: twitter" :n "T" #'=twitter
+     ;; :desc "APP: regex"   :n "X" #'=regex
 
      ;; macos
      (:when IS-MAC
        :desc "Reveal in Finder"          :n "o" #'+macos/reveal
        :desc "Reveal project in Finder"  :n "O" #'+macos/reveal-project
-       :desc "Send to Transmit"          :n "u" #'+macos/send-to-transmit
-       :desc "Send project to Transmit"  :n "U" #'+macos/send-project-to-transmit
-       :desc "Send to Launchbar"         :n "l" #'+macos/send-to-launchbar
-       :desc "Send project to Launchbar" :n "L" #'+macos/send-project-to-launchbar))
+       ;; :desc "Send to Transmit"          :n "u" #'+macos/send-to-transmit
+       ;; :desc "Send project to Transmit"  :n "U" #'+macos/send-project-to-transmit
+       ;; :desc "Send to Launchbar"         :n "l" #'+macos/send-to-launchbar
+       ;; :desc "Send project to Launchbar" :n "L" #'+macos/send-project-to-launchbar
+       ))
 
    (:desc "project" :prefix "p"
      :desc "Browse project"          :n  "." (find-file-in! (doom-project-root))
@@ -331,7 +323,7 @@ session)."
      :desc "Indent guides"          :n "i" #'highlight-indentation-mode
      :desc "Indent guides (column)" :n "I" #'highlight-indentation-current-column-mode
      :desc "Impatient mode"         :n "h" #'+present/impatient-mode
-     :desc "Big mode"               :n "b" #'+present/big-mode
+     :desc "Big mode"               :n "b" #'doom-big-font-mode
      :desc "Evil goggles"           :n "g" #'+evil-goggles/toggle))
 
 
@@ -383,11 +375,6 @@ session)."
    "C-C"     #'ace-delete-window)
 
 
- ;; --- Plugin bindings ------------------------------
- ;; auto-yasnippet
- :i  [C-tab] #'aya-expand
- :nv [C-tab] #'aya-create
-
  ;; company-mode (vim-like omnicompletion)
  :i "C-SPC"  #'+company/complete
  (:prefix "C-x"
@@ -399,9 +386,7 @@ session)."
    :i "C-s"   #'company-yasnippet
    :i "C-o"   #'company-capf
    :i "C-n"   #'company-dabbrev-code
-   :i "C-p"   (λ! (let ((company-selection-wrap-around t))
-                    (call-interactively #'company-dabbrev-code)
-                    (company-select-previous-or-abort))))
+   :i "C-p"   #'+company/dabbrev-code-previous)
  (:after company
    (:map company-active-map
      ;; Don't interfere with `evil-delete-backward-word' in insert mode
@@ -487,7 +472,11 @@ session)."
    ;; Binding to switch to evil-easymotion/avy after a snipe
    :map evil-snipe-parent-transient-map
    "C-;" (λ! (require 'evil-easymotion)
-             (call-interactively +evil--snipe-repeat-fn)))
+             (call-interactively
+              (evilem-create #'evil-snipe-repeat
+                             :bind ((evil-snipe-scope 'whole-buffer)
+                                    (evil-snipe-enable-highlight)
+                                    (evil-snipe-enable-incremental-highlight))))))
 
  ;; evil-surround
  :v  "S"  #'evil-surround-region
@@ -631,6 +620,15 @@ session)."
      :v "<tab>" #'+snippets/expand-on-region))
 
 
+ ;; --- Major mode bindings --------------------------
+ (:after markdown-mode
+   (:map markdown-mode-map
+     ;; fix conflicts with private bindings
+     "<backspace>" nil
+     "<M-left>"    nil
+     "<M-right>"   nil))
+
+
  ;; --- Custom evil text-objects ---------------------
  :textobj "a" #'evil-inner-arg                    #'evil-outer-arg
  :textobj "B" #'evil-textobj-anyblock-inner-block #'evil-textobj-anyblock-a-block
@@ -768,7 +766,9 @@ session)."
 
       (:after org-mode
         (:map org-mode-map
-          :i [remap doom/inflate-space-maybe] #'org-self-insert-command))
+          :i [remap doom/inflate-space-maybe] #'org-self-insert-command
+          :i "C-e" #'org-end-of-line
+          :i "C-a" #'org-beginning-of-line))
 
       ;; Make ESC quit all the things
       (:map (minibuffer-local-map

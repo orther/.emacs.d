@@ -8,13 +8,6 @@ private/orther/snippets."
   (doom-fetch :github "orther/emacs-snippets"
               (expand-file-name "snippets" (doom-module-path :private 'orther))))
 
-;; ;;;###autoload
-;; (defun +orther/C-u-M-x ()
-;;   "Invokes `execute-extended-command' with the universal argument."
-;;   (interactive)
-;;   (let ((current-prefix-arg 4))
-;;     (call-interactively #'execute-extended-command)))
-
 ;;;###autoload
 (defun +orther/yank-buffer-filename ()
   "Copy the current buffer's path to the kill ring."

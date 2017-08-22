@@ -14,9 +14,10 @@
 
 ;; Editing
 (ex! "@"            #'+evil:macro-on-all-lines)   ; TODO Test me
+(ex! "al[ign]"      #'+evil:align)
 (ex! "enhtml"       #'+web:encode-html-entities)
 (ex! "dehtml"       #'+web:decode-html-entities)
-(ex! "ie[dit]"      #'evil-multiedit-ex-match)
+(ex! "mc"           #'+evil:mc)
 (ex! "na[rrow]"     #'+evil:narrow-buffer)
 (ex! "retab"        #'+evil:retab)
 
@@ -29,9 +30,11 @@
 (ex! "repl"        #'+eval:repl)             ; invoke or send to repl
 ;; TODO (ex! "rx"          'doom:regex)             ; open re-builder
 (ex! "sh[ell]"     #'+eshell:run)
-(ex! "t[mux]"      #'+tmux:run)              ; send to tmux
-(ex! "tcd"         #'+tmux:cd-here)          ; cd to default-directory in tmux
-(ex! "x"           #'+doom:scratch-buffer)
+;; (ex! "t[mux]"      #'+tmux:run)              ; send to tmux
+;; (ex! "tcd"         #'+tmux:cd-here)          ; cd to default-directory in tmux
+
+(evil-set-command-properties #'doom/scratch-buffer :ex-bang t)
+(ex! "x"           #'doom/scratch-buffer)
 
 ;; GIT
 (ex! "gist"        #'+gist:send)  ; send current buffer/region to gist
@@ -45,7 +48,9 @@
 (ex! "grevert"     #'git-gutter:revert-hunk)
 
 ;; Dealing with buffers
-(ex! "clean[up]"   #'doom/cleanup-buffers)
+(evil-set-command-properties #'+workspace/cleanup :ex-bang t)
+
+(ex! "clean[up]"   #'+workspace/cleanup)
 (ex! "k[ill]"      #'doom/kill-this-buffer)
 (ex! "k[ill]all"   #'+orther:kill-all-buffers)
 (ex! "k[ill]m"     #'+orther:kill-matching-buffers)
@@ -56,12 +61,22 @@
 
 ;; Project navigation
 (ex! "a"           #'projectile-find-other-file)
-(ex! "ag"          #'+ivy:ag)
-(ex! "agc[wd]"     #'+ivy:ag-cwd)
-(ex! "rg"          #'+ivy:rg)
-(ex! "rgc[wd]"     #'+ivy:rg-cwd)
 (ex! "cd"          #'+orther:cd)
-(ex! "sw[iper]"    #'+ivy:swiper)     ; in-file search
+(cond ((featurep! :completion ivy)
+       (ex! "ag"       #'+ivy:ag)
+       (ex! "agc[wd]"  #'+ivy:ag-cwd)
+       (ex! "rg"       #'+ivy:rg)
+       (ex! "rgc[wd]"  #'+ivy:rg-cwd)
+       (ex! "sw[iper]" #'+ivy:swiper)
+       (ex! "todo"     #'+ivy:todo))
+      ((featurep! :completion helm)
+       (ex! "ag"       #'+helm:ag)
+       (ex! "agc[wd]"  #'+helm:ag-cwd)
+       (ex! "rg"       #'+helm:rg)
+       (ex! "rgc[wd]"  #'+helm:rg-cwd)
+       (ex! "sw[oop]"  #'+helm:swoop)
+       (ex! "todo"     #'+helm:todo)))
+
 
 ;; Project tools
 (ex! "build"       #'+eval/build)

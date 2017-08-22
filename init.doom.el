@@ -70,7 +70,7 @@
        impatient-mode  ; show off code over HTTP
       ;macos           ; MacOS-specific commands
        neotree         ; a project drawer, like NERDTree for vim
-       ;; password-store  ; password manager for nerds
+       password-store  ; password manager for nerds
        rotate-text     ; cycle region at point between text candidates
        term            ; terminals in Emacs
        ;; tmux            ; an API for interacting with tmux
@@ -86,7 +86,7 @@
        elixir          ; erlang done right
        ;; elm             ; care for a cup of TEA?
        emacs-lisp      ; drown in parentheses
-       ;; go              ; the hipster dialect
+       go              ; the hipster dialect
        ;; haskell         ; a language that's lazier than I am
        ;; hy              ; readability of scheme w/ speed of python
        ;; java            ; the poster child for carpal tunnel syndrome
@@ -126,7 +126,7 @@
        ;; should be loaded last.
        :app
        ;; email           ; emacs as an email client
-       ;; irc             ; how neckbeards socialize
+       irc             ; how neckbeards socialize
        ;; rss             ; emacs as an RSS reader
        twitter         ; twitter client https://twitter.com/vnought
        ;; write           ; emacs as a word processor (latex + org + markdown)

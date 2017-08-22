@@ -7,34 +7,22 @@
 (defvar +orther-dir
   (file-name-directory load-file-name))
 
-;; (setq doom-font
-;;   (font-spec :family "SF Mono"
-;;              :size 10
-;;              :weight light
-;;              :width normal)
-;;   "The font currently in use.")
+(defvar +orther-snippets-dir
+  (expand-file-name "snippets/" +orther-dir))
 
-;; (setq +doom-variable-pitch-font
-;;   (font-spec :family "SF Mono"
-;;              :size 12
-;;              :weight heavy
-;;              :width normal)
-;;   "The font currently in use.")
+;; Don't use default snippets, use mine.
+(after! yasnippet
+  (setq yas-snippet-dirs (append (list '+orther-snippets-dir)
+                                 (delete 'yas-installed-snippets-dir yas-snippet-dirs))))
 
 (load! +eslintd)
 (load! +jest)
-
-;; projectile ignore directories
-; (setq projectile-globally-ignored-directories '("target" ".ensime_cache" ".fingerprint" "project/target"))
-; (setq grep-find-ignored-directories '("target" ".ensime_cache" ".fingerprint"))
 
 ;; projectile ignore directories
 (setq projectile-globally-ignored-directories '("node_modules" ".happypack" "flow-typed"))
 (setq grep-find-ignored-directories '("node_modules" ".happypack"))
 
 ;; customize doom neotree
-(setq doom-neotree-file-icons t)
-
 ;; set indentation
 (setq-default tab-width 2
               tab-width 2
@@ -94,12 +82,13 @@
 
 ;; customize doom neotree
 (setq doom-neotree-enable-file-icons t)
+(setq doom-neotree-file-icons t)
 (after! neotree
   :config
   (setq neo-create-file-auto-open t
         neo-window-width 35
         neo-hidden-regexp-list (append neo-hidden-regexp-list
-                                       '(".happypack" ".vscode" ".log$"))))
+                                       '(".happypack" ".vscode" ".log$" ".DS_Store"))))
 
 ;; Widen fringes (easier to see git-gutter with twm window border)
 (fringe-mode '(12 . 12))
@@ -110,9 +99,6 @@
   '(git-gutter:modified ((t (:foreground "#ECBE7B"))))
   '(git-gutter+-modified ((t (:foreground "#ECBE7B"))))
   '(git-gutter-fr:modified ((t (:foreground "#ECBE7B")))))
-
-(defvar +orther-snippets-dir
-  (expand-file-name "snippets/" +orther-dir))
 
 ;; (setq user-mail-address "brandon@omt.tech"
 ;;       user-full-name "Brandon Orther"
@@ -125,11 +111,6 @@
 ;;     (apply orig-fn args)))
 ;; (advice-add #'tramp-read-passwd :around #'+orther*no-authinfo-for-tramp)
 
-
-;; Don't use default snippets, use mine.
-(after! yasnippet
-  (setq yas-snippet-dirs (append (list '+orther-snippets-dir)
-                                 (delete 'yas-installed-snippets-dir yas-snippet-dirs))))
 
 ;; ;; Repeat all sorts of motion and searches with SPC & C-SPC
 ;; (defmacro +my!repeat-with-spc (command next-func prev-func)
@@ -195,7 +176,32 @@
 ;; ;;       (mu4e-compose-signature . "---\nBrandon Orther"))
 ;; ;;     t))
 
-;; make fullscreen on load
-(after! evil
-  (doom/toggle-fullscreen))
+;; ;; app/irc
+;; (setq +irc-notifications-watch-strings '("aka" "aka-" "aka--"))
+
+;; (set! :irc "irc.snoonet.org"
+;;   `(:tls t
+;;     :nick "v0"
+;;     :port 6697
+;;     :sasl-username ,(+pass-get-user "irc/snoonet.org")
+;;     :sasl-password ,(+pass-get-secret "irc/snoonet.org")
+;;     :channels (:after-auth "#ynought")))
+
+;; (set! :irc "irc.freenode.net"
+;;   `(:tls t
+;;     :nick "aka--"
+;;     :port 6697
+;;     :sasl-username ,(+pass-get-user "irc/aka@freenode.net")
+;;     :sasl-password ,(+pass-get-secret "irc/aka@freenode.net")
+;;     :channels (:after-auth "#javascript" "#emacs")))
+
+;; (set! :irc "irc.mzima.net"
+;;   `(:tls t
+;;     :nick "aka--"
+;;     :port 6697
+;;     :channels ("#php")))
+
+;; ;; make fullscreen on load
+;; (after! evil
+;;   (doom/toggle-fullscreen))
 
