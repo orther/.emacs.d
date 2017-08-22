@@ -20,14 +20,14 @@
   (set! :editorconfig :add '(js2-mode js2-basic-offset js-switch-indent-offset))
 
   ;; ;; Favor local eslint over global, if available
-  ;; (defun +javascript|init-flycheck-elint ()
+  ;; (defun +javascript|init-flycheck-eslint ()
   ;;   (when (derived-mode-p 'js-mode)
   ;;     (when-let ((eslint (expand-file-name "node_modules/eslint/bin/eslint.js"
   ;;                                          (doom-project-root)))
   ;;                (exists-p (file-exists-p eslint))
   ;;                (executable-p (file-executable-p eslint)))
   ;;       (setq-local flycheck-javascript-eslint-executable eslint))))
-  ;; (add-hook 'flycheck-mode-hook #'+javascript|init-flycheck-elint)
+  ;; (add-hook 'flycheck-mode-hook #'+javascript|init-flycheck-eslint)
 
   ;; Favor local eslint_d over eslint, for flycheck AND eslintd-fix
   (defun +javascript|init-flycheck-eslintd ()
