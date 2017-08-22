@@ -138,7 +138,7 @@
    (:desc "workspace" :prefix "TAB"
      :desc "Display tab bar"          :n "TAB" #'+workspace/display
      :desc "New workspace"            :n "n"   #'+workspace/new
-     :desc "Rename workspace"         :n "r"   #'+workspace/rename
+     :desc "Rename workspace"         :n "r"   #'+workspace:rename
      :desc "Load workspace from file" :n "l"   #'+workspace/load
      :desc "Load last session"        :n "L"   (λ! (+workspace/load-session))
      :desc "Save workspace to file"   :n "s"   #'+workspace/save
