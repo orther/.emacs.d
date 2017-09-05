@@ -51,8 +51,8 @@ list, whose car is NAME, and cdr the current version list and latest version
 list of the package."
   (cl-assert (symbolp name) t)
   (doom-initialize-packages)
-  (when-let (pkg (assq name package-alist))
-    (let* ((old-version (package-desc-version (cadr pkg)))
+  (when-let (desc (cadr (assq name package-alist)))
+    (let* ((old-version (package-desc-version desc))
            (new-version
             (pcase (doom-package-backend name)
               ('quelpa
@@ -153,6 +153,7 @@ Used by `doom/packages-update'."
         (debug! "New thread for: %s" part)
         (push (async-start
                `(lambda ()
+                  (setq user-emacs-directory ,user-emacs-directory)
                   (let ((noninteractive t))
                     (load ,(expand-file-name "core.el" doom-core-dir)))
                   (delq nil (mapcar #'doom-package-outdated-p ',part))))
