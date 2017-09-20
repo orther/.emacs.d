@@ -67,8 +67,8 @@
  "M-v"    #'clipboard-yank
  "M-f"    #'swiper
  "C-M-f"  #'doom/toggle-fullscreen
- :m "A-j" #'+hlissner:multi-next-line
- :m "A-k" #'+hlissner:multi-previous-line
+ :m "A-j" #'+orther:multi-next-line
+ :m "A-k" #'+orther:multi-previous-line
 
 
  ;; --- <leader> -------------------------------------
@@ -221,7 +221,7 @@
      :desc "Recent project files"  :n  "R"  #'projectile-recentf
      :desc "Save buffer"           :nv "s"  #'save-buffer
      :desc "Neotree toggle"        :nv "t"  #'neotree-find
-     :desc "Yank filename"         :n  "y"  #'+hlissner/yank-buffer-filename)
+     :desc "Yank filename"         :n  "y"  #'+orther/yank-buffer-filename)
 
    (:desc "git" :prefix "g"
      :desc "Git status"        :n  "s" #'magit-status
@@ -255,8 +255,8 @@
      :desc "From snippet"   :nv "s" #'yas-insert-snippet)
 
    (:desc "notes" :prefix "n"
-     :desc "Find file in notes"    :n "n" #'+hlissner/find-in-notes
-     :desc "Browse notes"          :n "N" #'+hlissner/browse-notes
+     :desc "Find file in notes"    :n "n" #'+orther/find-in-notes
+     :desc "Browse notes"          :n "N" #'+orther/browse-notes
      :desc "Org capture"           :n "x" #'+org/capture
      :desc "Browse mode notes"     :n "m" #'+org/browse-notes-for-major-mode
      :desc "Browse project notes"  :n "p" #'+org/browse-notes-for-project)

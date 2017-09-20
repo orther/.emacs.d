@@ -20,12 +20,13 @@ private/orther/snippets."
   "Define a pair of find-file and browse functions."
   `(progn
      (defun ,(intern (format "+orther/find-in-%s" name)) ()
-       ,(format "Find a file in %s" (abbreviate-file-name (eval dir)))
        (interactive)
-       (let ((default-directory ,dir))
+       (let ((default-directory ,dir)
+             projectile-require-project-root
+             projectile-cached-buffer-file-name
+             projectile-cached-project-root)
          (call-interactively (command-remapping #'projectile-find-file))))
      (defun ,(intern (format "+orther/browse-%s" name)) ()
-       ,(format "Browse files starting from %s" (abbreviate-file-name (eval dir)))
        (interactive)
        (let ((default-directory ,dir))
          (call-interactively (command-remapping #'find-file))))))
