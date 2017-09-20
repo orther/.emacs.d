@@ -1,9 +1,9 @@
-![Release tag](https://img.shields.io/github/tag/hlissner/.emacs.d.svg?label=release&style=flat-square)
-[![Master Build Status](https://img.shields.io/travis/hlissner/.emacs.d/master.svg?label=master&style=flat-square)](https://travis-ci.org/hlissner/.emacs.d)
-[![Develop Build Status](https://img.shields.io/travis/hlissner/.emacs.d/develop.svg?label=develop&style=flat-square)](https://travis-ci.org/hlissner/.emacs.d)
+![Release tag](https://img.shields.io/github/tag/hlissner/doom-emacs.svg?label=release&style=flat-square)
+[![Master Build Status](https://img.shields.io/travis/hlissner/doom-emacs/master.svg?label=master&style=flat-square)](https://travis-ci.org/hlissner/doom-emacs)
+[![Develop Build Status](https://img.shields.io/travis/hlissner/doom-emacs/develop.svg?label=develop&style=flat-square)](https://travis-ci.org/hlissner/doom-emacs)
 [![MIT](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](./LICENSE)
 
-[![Main screenshot](/../screenshots/main.png)](/../screenshots)
+[![Main screenshot](/../screenshots/main.png)](/../../tree/screenshots)
 
 - - -
 
@@ -39,7 +39,7 @@ Rip and tear. Until it compiles.
 ## Quick start
 
 ```bash
-git clone https://github.com/hlissner/.emacs.d ~/.emacs.d
+git clone https://github.com/hlissner/doom-emacs ~/.emacs.d
 cd ~/.emacs.d
 cp init.example.el init.el  # maybe edit init.el
 make install
@@ -98,8 +98,7 @@ a resource for others.
 
 If you'd like to support my efforts, I welcome contributions of any kind:
 
-+ I love pull requests and bug reports (read the [contribution
-  guidelines][wiki-contribute] first though!), and elisp pointers are especially
++ I love pull requests and bug reports, and elisp pointers are especially
   welcome. Seriously, don't hesitate to [tell me my Elisp-fu
   sucks][doom-new-issue]!
 + I'm happy to discuss Emacs workflow, ideas or tooling. If you think I, Doom or
@@ -108,7 +107,6 @@ If you'd like to support my efforts, I welcome contributions of any kind:
 
 
 [wiki]: /../../wiki
-[wiki-contribute]: /../../wiki/Contribute
 [wiki-conventions]: /../../wiki/Conventions
 [wiki-modules]: /../../wiki/Modules
 [wiki-customization]: /../../wiki/Customization
@@ -116,7 +114,7 @@ If you'd like to support my efforts, I welcome contributions of any kind:
 
 [doom-my-bindings]: modules/private/hlissner/+bindings.el
 [doom-my-commands]: modules/private/hlissner/+commands.el
-[doom-new-issue]: https://github.com/hlissner/.emacs.d/issues/new
+[doom-new-issue]: https://github.com/hlissner/doom-emacs/issues/new
 [doom-packages]: core/autoload/packages.el
 [doom-popups]: core/core-popups.el
 [doom-theme]: https://github.com/hlissner/emacs-doom-theme
