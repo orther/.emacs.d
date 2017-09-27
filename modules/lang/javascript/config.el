@@ -19,23 +19,15 @@
   ;; Conform switch-case indentation to editorconfig's config
   (set! :editorconfig :add '(js2-mode js2-basic-offset js-switch-indent-offset))
 
-  ;; ;; Favor local eslint over global, if available
-  ;; (defun +javascript|init-flycheck-eslint ()
-  ;;   (when (derived-mode-p 'js-mode)
-  ;;     (when-let ((eslint (expand-file-name "node_modules/eslint/bin/eslint.js"
-  ;;                                          (doom-project-root)))
-  ;;                (exists-p (file-exists-p eslint))
-  ;;                (executable-p (file-executable-p eslint)))
-  ;;       (setq-local flycheck-javascript-eslint-executable eslint))))
-  ;; (add-hook 'flycheck-mode-hook #'+javascript|init-flycheck-eslint)
-
-  ;; Favor local eslint_d over eslint, for flycheck AND eslintd-fix
-  (defun +javascript|init-flycheck-eslintd ()
-    (interactive)
-    (when-let (eslintd-executable (executable-find "eslint_d"))
-      (setq-local flycheck-javascript-eslint-executable eslintd-executable)
-      (setq-local eslintd-fix-executable eslintd-executable)))
-  (add-hook 'flycheck-mode-hook #'+javascript|init-flycheck-eslintd)
+  ;; Favor local eslint over global, if available
+  (defun +javascript|init-flycheck-eslint ()
+    (when (derived-mode-p 'js-mode)
+      (when-let ((eslint (expand-file-name "node_modules/eslint/bin/eslint.js"
+                                           (doom-project-root)))
+                 (exists-p (file-exists-p eslint))
+                 (executable-p (file-executable-p eslint)))
+        (setq-local flycheck-javascript-eslint-executable eslint))))
+  (add-hook 'flycheck-mode-hook #'+javascript|init-flycheck-eslint)
 
   (sp-with-modes '(js2-mode rjsx-mode)
     (sp-local-pair "/* " " */" :post-handlers '(("| " "SPC"))))
@@ -152,6 +144,19 @@
   (map! :map* (json-mode js2-mode-map) :n "gQ" #'web-beautify-js))
 
 
+(def-package! eslintd-fix
+  :commands
+  (eslintd-fix-mode eslintd-fix)
+  :init
+  (defun +javascript|init-eslintd-fix ()
+    (when (bound-and-true-p +javascript-eslintd-fix-mode)
+      (eslintd-fix-mode)
+      ;; update flycheck to use eslintd for more consistent results
+      (when-let (eslintd-executable (executable-find "eslint_d"))
+        (setq flycheck-javascript-eslint-executable eslintd-executable))))
+  (add-hook! (js2-mode rjsx-mode) #'+javascript|init-eslintd-fix))
+
+
 ;;
 ;; Skewer-mode
 ;;
@@ -199,6 +204,9 @@
   :modes (html-mode css-mode web-mode js2-mode markdown-mode)
   :files "package.json")
 
+(def-project-mode! +javascript-eslintd-fix-mode
+  :modes (+javascript-npm-mode))
+
 (def-project-mode! +javascript-lb6-mode
   :modes (web-mode js2-mode nxml-mode markdown-mode)
   :match "\\.lb\\(action\\|ext\\)/"
@@ -213,7 +221,3 @@
   ;;     (lambda () (f-traverse-upwards (lambda (f) (f-ext? f "lbaction"))))))
   )
 
-(def-package! eslintd-fix
-  :commands eslintd-fix-mode
-  :after eslintd-fix
-  :init (add-hook 'js2-mode-hook #'eslintd-fix-mode t))
