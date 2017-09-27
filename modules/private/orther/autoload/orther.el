@@ -41,7 +41,7 @@ private/orther/snippets."
 
 ;;;###autoload (autoload '+orther/find-in-dotfiles "private/orther/autoload/orther" nil t)
 ;;;###autoload (autoload '+orther/browse-dotfiles "private/orther/autoload/orther" nil t)
-(+orther-def-finder! dotfiles (expand-file-name ".dotfiles" "~"))
+(+orther-def-finder! dotfiles (expand-file-name "dotfiles" "~"))
 
 ;;;###autoload (autoload '+orther/find-in-emacsd "private/orther/autoload/orther" nil t)
 ;;;###autoload (autoload '+orther/browse-emacsd "private/orther/autoload/orther" nil t)

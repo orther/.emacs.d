@@ -14,15 +14,12 @@
 (after! yasnippet
   (setq yas-snippet-dirs (append (list '+orther-snippets-dir)
                                  (delete 'yas-installed-snippets-dir yas-snippet-dirs))))
-
-(load! +eslintd)
 (load! +jest)
 
 ;; projectile ignore directories
 (setq projectile-globally-ignored-directories '("node_modules" ".happypack" "flow-typed"))
 (setq grep-find-ignored-directories '("node_modules" ".happypack"))
 
-;; customize doom neotree
 ;; set indentation
 (setq-default tab-width 2
               tab-width 2
@@ -73,7 +70,7 @@
 
 (add-hook 'magit-diff-visit-file-hook #'close-magit-buffer)
 
-;; ;; ;; brighter minibuffer when active
+;; brighter minibuffer when active
 ;; (add-hook 'minibuffer-setup-hook #'doom-brighten-minibuffer)
 
 (require 'company)
