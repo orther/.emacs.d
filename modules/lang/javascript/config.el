@@ -142,17 +142,6 @@
   :init
   (map! :map* (json-mode js2-mode-map) :n "gQ" #'web-beautify-js))
 
-(def-package! eslintd-fix
-  :commands (eslintd-fix-mode eslintd-fix)
-  :init
-  (defun +javascript|init-eslintd-fix ()
-    (when (bound-and-true-p +javascript-eslintd-fix-mode)
-      (eslintd-fix-mode)
-      ;; update flycheck to use eslintd for more consistent results
-      (when-let (eslintd-executable (executable-find "eslint_d"))
-        (setq flycheck-javascript-eslint-executable eslintd-executable))))
-  (add-hook! (js2-mode rjsx-mode) #'+javascript|init-eslintd-fix))
-
 
 (def-package! eslintd-fix
   :commands
