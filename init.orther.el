@@ -46,6 +46,7 @@
        syntax-checker  ; tasing you for every semicolon you forget
        version-control ; remember, remember that commit in November
        workspaces      ; tab emulation, persistence & separate workspaces
+       search          ; advanced searching functionality (copied from bmacs)
 
        :completion
        company         ; the ultimate code completion backend
