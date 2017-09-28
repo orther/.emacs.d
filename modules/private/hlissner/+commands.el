@@ -7,17 +7,13 @@
 ;;(ex! "g[lobal]"     #'+evil:global)
 
 ;;; Custom commands
-;; Emacs utilities
-(ex! "bc[omp]"      #'+hlissner:byte-compile)
-(ex! "re[load]"     #'doom/reload)
-(ex! "re[load]au"   #'doom/reload-autoloads)
-
 ;; Editing
 (ex! "@"            #'+evil:macro-on-all-lines)   ; TODO Test me
 (ex! "al[ign]"      #'+evil:align)
 (ex! "enhtml"       #'+web:encode-html-entities)
 (ex! "dehtml"       #'+web:decode-html-entities)
 (ex! "mc"           #'+evil:mc)
+(ex! "iedit"        #'evil-multiedit-ex-match)
 (ex! "na[rrow]"     #'+evil:narrow-buffer)
 (ex! "retab"        #'+evil:retab)
 
@@ -32,9 +28,7 @@
 (ex! "sh[ell]"     #'+eshell:run)
 (ex! "t[mux]"      #'+tmux:run)              ; send to tmux
 (ex! "tcd"         #'+tmux:cd-here)          ; cd to default-directory in tmux
-
-(evil-set-command-properties #'doom/scratch-buffer :ex-bang t)
-(ex! "x" #'doom/scratch-buffer)
+(ex! "x"           #'doom/open-project-scratch-buffer)
 
 ;; GIT
 (ex! "gist"        #'+gist:send)  ; send current buffer/region to gist

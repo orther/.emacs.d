@@ -2,7 +2,8 @@
 
 ;; Ensure ELPA org is prioritized above built-in org.
 (when-let (path (locate-library "org" nil doom--package-load-path))
-  (cl-pushnew (file-name-directory path) load-path :test #'equal))
+  (setq load-path (delete path load-path))
+  (push (file-name-directory path) load-path))
 
 ;; Custom variables
 (defvar +org-dir (expand-file-name "~/work/org/")
@@ -143,7 +144,9 @@
   "Sets up org-mode and evil keybindings. Tries to fix the idiosyncrasies
 between the two."
   (map! (:map org-mode-map
-          "RET" #'org-return-indent)
+          "RET" #'org-return-indent
+          [remap evil-next-line]     #'evil-next-visual-line
+          [remap evil-previous-line] #'evil-previous-visual-line)
 
         (:map +org-evil-mode-map
           :n  "RET" #'+org/dwim-at-point

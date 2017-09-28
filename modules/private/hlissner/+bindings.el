@@ -23,14 +23,17 @@
  :nvime "M-x" #'execute-extended-command
  :nvime "A-x" #'execute-extended-command
  ;; Emacs debug utilities
- "M-;"    #'eval-expression
- "A-;"    #'eval-expression
+ "M-;"        #'eval-expression
+ :nvime "M-;" #'eval-expression
+ "M-:"        #'doom/open-scratch-buffer
+ :nvime "M-:" #'doom/open-scratch-buffer
  ;; Text-scaling
  "M-+"    (λ! (text-scale-set 0))
  "M-="    #'text-scale-increase
  "M--"    #'text-scale-decrease
  ;; Simple window navigation/manipulation
  "C-`"    #'doom/popup-toggle
+ "C-~"    #'doom/popup-raise
  "M-t"    #'+workspace/new
  "M-T"    #'+workspace/display
  "M-w"    #'delete-window
@@ -188,6 +191,7 @@
      :desc "Git blame"         :n  "b" #'magit-blame
      :desc "Git time machine"  :n  "t" #'git-timemachine-toggle
      :desc "Git revert hunk"   :n  "r" #'git-gutter:revert-hunk
+     :desc "Git revert buffer" :n  "R" #'vc-revert
      :desc "List gists"        :n  "g" #'+gist:list
      :desc "Next hunk"         :nv "]" #'git-gutter:next-hunk
      :desc "Previous hunk"     :nv "[" #'git-gutter:previous-hunk)
@@ -232,8 +236,8 @@
      :desc "REPL"                :n  "r" #'+eval/repl
                                  :v  "r" #'+eval:repl
      :desc "Neotree"             :n  "n" #'+neotree/toggle
-     :desc "Terminal"            :n  "t" #'+term/popup
-     :desc "Terminal in project" :n  "T" #'+term/popup-in-project
+     :desc "Terminal"            :n  "t" #'+term/open-popup
+     :desc "Terminal in project" :n  "T" #'+term/open-popup-in-project
 
      ;; applications
      :desc "APP: elfeed"  :n "E" #'=rss
@@ -257,7 +261,7 @@
      :desc "Switch project"          :n  "p" #'projectile-switch-project
      :desc "Recent project files"    :n  "r" #'projectile-recentf
      :desc "List project tasks"      :n  "t" #'+ivy/tasks
-     :desc "Pop term in project"     :n  "o" #'+term/popup-in-project
+     :desc "Pop term in project"     :n  "o" #'+term/open-popup-in-project
      :desc "Invalidate cache"        :n  "x" #'projectile-invalidate-cache)
 
    (:desc "quit" :prefix "q"
@@ -381,8 +385,6 @@
 
  ;; counsel
  (:after counsel
-   (:map ivy-mode-map
-     "C-o"      #'ivy-dispatching-done)
    (:map counsel-ag-map
      [backtab]  #'+ivy/wgrep-occur  ; search/replace on results
      "C-SPC"    #'counsel-git-grep-recenter   ; preview
@@ -407,12 +409,14 @@
  (:prefix "gz"
    :nv "m" #'evil-mc-make-all-cursors
    :nv "u" #'evil-mc-undo-all-cursors
-   :nv "z" #'+evil/mc-toggle-cursors
-   :nv "c" #'+evil/mc-make-cursor-here
+   :nv "z" #'+evil/mc-make-cursor-here
+   :nv "t" #'+evil/mc-toggle-cursors
    :nv "n" #'evil-mc-make-and-goto-next-cursor
    :nv "p" #'evil-mc-make-and-goto-prev-cursor
    :nv "N" #'evil-mc-make-and-goto-last-cursor
-   :nv "P" #'evil-mc-make-and-goto-first-cursor)
+   :nv "P" #'evil-mc-make-and-goto-first-cursor
+   :nv "d" #'evil-mc-make-and-goto-next-match
+   :nv "D" #'evil-mc-make-and-goto-prev-match)
  (:after evil-mc
    :map evil-mc-key-map
    :nv "C-n" #'evil-mc-make-and-goto-next-cursor

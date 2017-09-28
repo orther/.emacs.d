@@ -155,7 +155,6 @@ with functions that require it (like modeline segments)."
   (setq recentf-save-file (concat doom-cache-dir "recentf")
         recentf-max-menu-items 0
         recentf-max-saved-items 300
-        recentf-filename-handlers '(abbreviate-file-name)
         recentf-exclude
         (list "^/tmp/" "^/ssh:" "\\.?ido\\.last$" "\\.revive$" "/TAGS$"
               "^/var/folders/.+$"
@@ -268,11 +267,6 @@ with functions that require it (like modeline segments)."
 (def-package! help-fns+ ; Improved help commands
   :commands (describe-buffer describe-command describe-file
              describe-keymap describe-option describe-option-of-type))
-
-(def-package! imenu-anywhere
-  :commands (ido-imenu-anywhere ivy-imenu-anywhere helm-imenu-anywhere))
-
-(def-package! imenu-list :commands imenu-list-minor-mode)
 
 (def-package! pcre2el :commands rxt-quote-pcre)
 
