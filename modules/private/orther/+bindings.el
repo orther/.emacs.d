@@ -412,8 +412,6 @@
 
  ;; counsel
  (:after counsel
-   (:map ivy-mode-map
-     "C-o"      #'ivy-dispatching-done)
    (:map counsel-ag-map
      [backtab]  #'+ivy/wgrep-occur  ; search/replace on results
      "C-SPC"    #'counsel-git-grep-recenter   ; preview
@@ -438,12 +436,14 @@
  (:prefix "gz"
    :nv "m" #'evil-mc-make-all-cursors
    :nv "u" #'evil-mc-undo-all-cursors
-   :nv "z" #'+evil/mc-toggle-cursors
-   :nv "c" #'+evil/mc-make-cursor-here
+   :nv "z" #'+evil/mc-make-cursor-here
+   :nv "t" #'+evil/mc-toggle-cursors
    :nv "n" #'evil-mc-make-and-goto-next-cursor
    :nv "p" #'evil-mc-make-and-goto-prev-cursor
    :nv "N" #'evil-mc-make-and-goto-last-cursor
-   :nv "P" #'evil-mc-make-and-goto-first-cursor)
+   :nv "P" #'evil-mc-make-and-goto-first-cursor
+   :nv "d" #'evil-mc-make-and-goto-next-match
+   :nv "D" #'evil-mc-make-and-goto-prev-match)
  (:after evil-mc
    :map evil-mc-key-map
    :nv "C-n" #'evil-mc-make-and-goto-next-cursor
@@ -483,12 +483,6 @@
  :o  "s"  #'evil-surround-edit
  :o  "S"  #'evil-Surround-edit
 
- ;; jest
- (:prefix "gj"
-   :nv "f" #'mocha-test-file
-   :nv "l" #'mocha-test-at-point
-   :nv "p" #'mocha-test-project)
-
  ;; expand-region
  :v  "v"  #'er/expand-region
  :v  "V"  #'er/contract-region
@@ -508,6 +502,13 @@
  :m  "]S" #'flyspell-correct-word-generic
  :m  "[S" #'flyspell-correct-previous-word-generic
 
+ ;; TODO replace w/ custom map in javascript module
+ ;; ;; jest
+ ;; (:prefix "gj"
+ ;;   :nv "f" #'mocha-test-file
+ ;;   :nv "l" #'mocha-test-at-point
+ ;;   :nv "p" #'mocha-test-project)
+
  ;; git-gutter
  :m  "]d" #'git-gutter:next-hunk
  :m  "[d" #'git-gutter:previous-hunk
@@ -516,8 +517,8 @@
  (:after git-timemachine
    (:map git-timemachine-mode-map
      :nv "p" #'git-timemachine-show-previous-revision
-     :nv "n" #'git-timemachine-show-next-revision
-     :nv "g" #'git-timemachine-show-nth-revision
+     :nv "P" #'git-timemachine-show-next-revision
+     :nv "R" #'git-timemachine-show-nth-revision
      :nv "q" #'git-timemachine-quit
      :nv "w" #'git-timemachine-kill-abbreviated-revision
      :nv "W" #'git-timemachine-kill-revision
@@ -563,6 +564,9 @@
    :n [tab]       #'neotree-quick-look
    :n "RET"       #'neotree-enter
    :n [backspace] #'evil-window-prev
+   :n "c"         #'neotree-create-node
+   :n "r"         #'neotree-rename-node
+   :n "d"         #'neotree-delete-node
    :n "j"         #'neotree-next-line
    :n "k"         #'neotree-previous-line
    :n "n"         #'neotree-next-line
@@ -664,7 +668,7 @@
    :n "SPC" #'vc-annotate-show-log-revision-at-line
    :n "]]"  #'vc-annotate-next-revision
    :n "[["  #'vc-annotate-prev-revision
-   :n [tab] #'vc-annotate-toggle-annotation-visibility
+   :n "TAB" #'vc-annotate-toggle-annotation-visibility
    :n "RET" #'vc-annotate-find-revision-at-line))
 
 

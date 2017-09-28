@@ -27,23 +27,25 @@
 ;;
 ;;; License: MIT
 
+;; Set shell to bash to protect against problems caused by fish shell
+(setq shell-file-name "/bin/bash")
+
 ;; Explicitly use module/private/orther/ (rather than "brandon" on my macbook)
 (setq user-login-name "orther")
 
 (require 'core (concat user-emacs-directory "core/core"))
 
 (doom! :feature
+      ;debugger        ; FIXME stepping through code, to help you add bugs
+       eval            ; run code, run (also, repls)
        evil            ; come to the dark side, we have cookies
+       file-templates  ; auto-snippets for empty files
        jump            ; helping you get around
        snippets        ; my elves. They type so I don't have to
-       file-templates  ; auto-snippets for empty files
-       hydra           ; keybindings that stick around
        spellcheck      ; tasing you for misspelling mispelling
        syntax-checker  ; tasing you for every semicolon you forget
        version-control ; remember, remember that commit in November
        workspaces      ; tab emulation, persistence & separate workspaces
-       eval            ; repls, runners 'n builders; run code, run
-      ;debug           ; FIXME stepping through code, to help you add bugs
 
        :completion
        company         ; the ultimate code completion backend
@@ -61,59 +63,62 @@
        evil-goggles    ; display visual hints when editing in evil
       ;unicode         ; extended unicode support for various languages
       ;tabbar          ; FIXME an (incomplete) tab bar for Emacs
+       vi-tilde-fringe ; fringe tildes to mark beyond EOB
 
        :tools
        dired           ; making dired pretty [functional]
        electric-indent ; smarter, keyword-based electric-indent
        eshell          ; a consistent, cross-platform shell (WIP)
        gist            ; interacting with github gists
+       imenu           ; an imenu sidebar and searchable code index
        impatient-mode  ; show off code over HTTP
-      ;macos           ; MacOS-specific commands
+       macos           ; MacOS-specific commands
+       make            ; run make tasks from Emacs
        neotree         ; a project drawer, like NERDTree for vim
        password-store  ; password manager for nerds
        rotate-text     ; cycle region at point between text candidates
        term            ; terminals in Emacs
-       ;; tmux            ; an API for interacting with tmux
+       ;tmux            ; an API for interacting with tmux
        upload          ; map local to remote projects via ssh/ftp
-       rgb
 
        :lang
-       ;; assembly        ; assembly for fun or debugging
-       ;; cc              ; C/C++/Obj-C madness
-       ;; crystal         ; ruby at the speed of c
-       ;; csharp          ; unity, .NET, and mono shenanigans
+      ;assembly        ; assembly for fun or debugging
+      ;cc              ; C/C++/Obj-C madness
+      ;crystal         ; ruby at the speed of c
+      ;csharp          ; unity, .NET, and mono shenanigans
        data            ; config/data formats
        elixir          ; erlang done right
-       ;; elm             ; care for a cup of TEA?
+      ;elm             ; care for a cup of TEA?
        emacs-lisp      ; drown in parentheses
        go              ; the hipster dialect
-       ;; haskell         ; a language that's lazier than I am
-       ;; hy              ; readability of scheme w/ speed of python
-       ;; java            ; the poster child for carpal tunnel syndrome
+      ;haskell         ; a language that's lazier than I am
+      ;hy              ; readability of scheme w/ speed of python
+      ;java            ; the poster child for carpal tunnel syndrome
        javascript      ; all(hope(abandon(ye(who(enter(here))))))
-       ;; julia           ; a better, faster MATLAB
-       ;; latex           ; writing papers in Emacs has never been so fun
-       ;; lua             ; one-based indices? one-based indices
+      ;julia           ; a better, faster MATLAB
+      ;latex           ; writing papers in Emacs has never been so fun
+      ;ledger          ; an accounting system in Emacs
+      ;lua             ; one-based indices? one-based indices
        markdown        ; writing docs for people to ignore
-       ;; ocaml           ; an objective camel
-       ;; perl            ; write code no one else can comprehend
-       ;; php             ; make php less awful to work with
+      ;ocaml           ; an objective camel
+      ;perl            ; write code no one else can comprehend
+      ;php             ; make php less awful to work with
        plantuml        ; diagrams for confusing people more
-       ;; purescript      ; javascript, but functional
-       ;; python          ; beautiful is better than ugly
+      ;purescript      ; javascript, but functional
+       python          ; beautiful is better than ugly
        rest            ; Emacs as a REST client
-       ;; ruby            ; 1.step do {|i| p "Ruby is #{i.even? ? 'love' : 'life'}"}
-       ;; rust            ; Fe2O3.unwrap().unwrap().unwrap().unwrap()
-       ;; scala           ; java, but good
+      ;ruby            ; 1.step do {|i| p "Ruby is #{i.even? ? 'love' : 'life'}"}
+      ;rust            ; Fe2O3.unwrap().unwrap().unwrap().unwrap()
+      ;scala           ; java, but good
        sh              ; she sells (ba|z)sh shells on the C xor
-       ;; swift           ; who asked for emoji variables?
-       typescript      ; javascript, but better
+      ;swift           ; who asked for emoji variables?
+      ;typescript      ; javascript, but better
        web             ; the tubes
 
        :org
        org             ; organize your plain life in plain text
        org-babel       ; executable code snippets in org-mode
-      ;org-attach      ; FIXME my own, simpler attachment system
+       org-attach      ; a simpler attachment system
        org-capture     ; a better org-capture, in or outside of Emacs
        org-export      ; a custom, centralized export system
        org-notebook    ; org-mode as a notebook
@@ -125,15 +130,13 @@
        ;; toward a specific purpose. They may have additional dependencies and
        ;; should be loaded last.
        :app
-       ;; email           ; emacs as an email client
-       irc             ; how neckbeards socialize
-       ;; rss             ; emacs as an RSS reader
-       twitter         ; twitter client https://twitter.com/vnought
-       ;; write           ; emacs as a word processor (latex + org + markdown)
+      ;email           ; emacs as an email client
+      ;irc             ; how neckbeards socialize
+      ;rss             ; emacs as an RSS reader
+      ;twitter         ; twitter client https://twitter.com/vnought
+      ;write           ; emacs as a word processor (latex + org + markdown)
 
        ;; Private modules named after your username are loaded automatically.
-       ;; Leaving this here is harmless though. Also, they are omitted from
-       ;; source control (except for mine; use it as a reference).
+       ;; Leaving this here is harmless though.
        ;;:private hlissner
        :private orther)
-

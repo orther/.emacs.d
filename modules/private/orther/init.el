@@ -7,11 +7,21 @@
 (setq user-mail-address "brandon@omt.tech"
       user-full-name    "Brandon Orther"
 
-      +doom-modeline-height 25
+      +doom-modeline-height 25)
 
-      +doom-font (font-spec :family "Iosevka" :size 12 :weight 'light)
-      +doom-variable-pitch-font (font-spec :family "Iosevka" :size 11 :weight 'light)
-      +doom-unicode-font (font-spec :family "Iosevka" :size 12 :weight 'light)
-      ;; +doom-font (font-spec :family "SF Mono" :size 12)
-      ;; +doom-variable-pitch-font (font-spec :family "SF Mono" :size 13)
-      )
+;; An extra measure to prevent the flash of unstyled mode-line while Emacs is
+;; booting up (when Doom is byte-compiled).
+(setq-default mode-line-format nil)
+
+;; host-specific settings
+(pcase (system-name)
+  ;; ("triton")
+  ((or "imac" "linux")
+   ;; smaller screen, smaller fonts
+   (set! :font "Fira Mono" :size 10)
+   (set! :variable-font "Fira Sans" :size 10)
+   (set! :unicode-font "DejaVu Sans Mono" :size 10))
+  ;; ("nereid")
+  ;; ("io")
+  ;; ("sao")
+  )

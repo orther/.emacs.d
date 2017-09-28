@@ -4,17 +4,16 @@
   (load! +bindings)  ; my key bindings
   (load! +commands)) ; my custom ex commands
 
-(defvar +orther-dir
-  (file-name-directory load-file-name))
-
-(defvar +orther-snippets-dir
-  (expand-file-name "snippets/" +orther-dir))
+(defvar +orther-dir (file-name-directory load-file-name))
+(defvar +orther-snippets-dir (expand-file-name "snippets/" +orther-dir))
 
 ;; Don't use default snippets, use mine.
 (after! yasnippet
   (setq yas-snippet-dirs (append (list '+orther-snippets-dir)
                                  (delete 'yas-installed-snippets-dir yas-snippet-dirs))))
-(load! +jest)
+
+;; TODO replace w/ real jest package
+;; (load! +jest)
 
 ;; projectile ignore directories
 (setq projectile-globally-ignored-directories '("node_modules" ".happypack" "flow-typed"))
@@ -49,19 +48,19 @@
   '(smerge-refined-removed ((t (:inherit 'smerge-mine))))
   '(smerge-refined-added   ((t (:inherit 'smerge-other)))))
 
-;; Override evil googles colors
-(custom-set-faces
- '(evil-goggles-delete-face ((t (:foreground "#ff6c6b"))))
- '(evil-goggles-paste-face  ((t (:foreground "#98be65"))))
- '(evil-goggles-yank-face   ((t (:foreground "#51afef")))))
+;; ;; Override evil googles colors
+;; (custom-set-faces
+;;  '(evil-goggles-delete-face ((t (:foreground "#ff6c6b"))))
+;;  '(evil-goggles-paste-face  ((t (:foreground "#98be65"))))
+;;  '(evil-goggles-yank-face   ((t (:foreground "#51afef")))))
 
-;; Override org mode colors
-(custom-set-faces
- '(org-level-1              ((t :foreground "#51afef" :inherit nil :height 1.2)))
- '(org-level-2              ((t :foreground "#DCAEEA" :inherit nil :height 1.1)))
- '(org-level-3              ((t :foreground "#a9a1e1" :inherit nil :height 1.1)))
- '(org-level-4              ((t :foreground "#ECBE7B" :inherit nil :height 1.1)))
- '(org-level-5              ((t :foreground "#46D9FF" :inherit nil :height 1.1))))
+;; ;; Override org mode colors
+;; (custom-set-faces
+;;  '(org-level-1              ((t :foreground "#51afef" :inherit nil :height 1.2)))
+;;  '(org-level-2              ((t :foreground "#DCAEEA" :inherit nil :height 1.1)))
+;;  '(org-level-3              ((t :foreground "#a9a1e1" :inherit nil :height 1.1)))
+;;  '(org-level-4              ((t :foreground "#ECBE7B" :inherit nil :height 1.1)))
+;;  '(org-level-5              ((t :foreground "#46D9FF" :inherit nil :height 1.1))))
 
 ;; Close magit buffer after following file
 (defun close-magit-buffer ()
@@ -73,9 +72,9 @@
 ;; brighter minibuffer when active
 ;; (add-hook 'minibuffer-setup-hook #'doom-brighten-minibuffer)
 
-(require 'company)
-(setq company-idle-delay 0.2
-      company-minimum-prefix-length 3)
+;; (require 'company)
+;; (setq company-idle-delay 0.2
+;;       company-minimum-prefix-length 3)
 
 ;; customize doom neotree
 (setq doom-neotree-enable-file-icons t)
@@ -86,16 +85,6 @@
         neo-window-width 35
         neo-hidden-regexp-list (append neo-hidden-regexp-list
                                        '(".happypack" ".vscode" ".log$" ".DS_Store"))))
-
-;; Widen fringes (easier to see git-gutter with twm window border)
-(fringe-mode '(12 . 12))
-
-;; Override vc modified color (gray -> yellow)
-(custom-set-faces
-  '(diff-hl-change ((t (:foreground "#ECBE7B"))))
-  '(git-gutter:modified ((t (:foreground "#ECBE7B"))))
-  '(git-gutter+-modified ((t (:foreground "#ECBE7B"))))
-  '(git-gutter-fr:modified ((t (:foreground "#ECBE7B")))))
 
 ;; (setq user-mail-address "brandon@omt.tech"
 ;;       user-full-name "Brandon Orther"
@@ -198,7 +187,7 @@
 ;;     :port 6697
 ;;     :channels ("#php")))
 
-;; ;; make fullscreen on load
-;; (after! evil
-;;   (doom/toggle-fullscreen))
+;; make fullscreen on load
+(after! evil
+  (doom/toggle-fullscreen))
 

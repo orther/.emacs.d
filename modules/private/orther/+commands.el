@@ -7,17 +7,13 @@
 ;;(ex! "g[lobal]"     #'+evil:global)
 
 ;;; Custom commands
-;; Emacs utilities
-(ex! "bc[omp]"      #'+orther:byte-compile)
-(ex! "re[load]"     #'doom/reload)
-(ex! "re[load]au"   #'doom/reload-autoloads)
-
 ;; Editing
 (ex! "@"            #'+evil:macro-on-all-lines)   ; TODO Test me
 (ex! "al[ign]"      #'+evil:align)
 (ex! "enhtml"       #'+web:encode-html-entities)
 (ex! "dehtml"       #'+web:decode-html-entities)
 (ex! "mc"           #'+evil:mc)
+(ex! "iedit"        #'evil-multiedit-ex-match)
 (ex! "na[rrow]"     #'+evil:narrow-buffer)
 (ex! "retab"        #'+evil:retab)
 
@@ -30,11 +26,9 @@
 (ex! "repl"        #'+eval:repl)             ; invoke or send to repl
 ;; TODO (ex! "rx"          'doom:regex)             ; open re-builder
 (ex! "sh[ell]"     #'+eshell:run)
-;; (ex! "t[mux]"      #'+tmux:run)              ; send to tmux
-;; (ex! "tcd"         #'+tmux:cd-here)          ; cd to default-directory in tmux
-
-(evil-set-command-properties #'doom/scratch-buffer :ex-bang t)
-(ex! "x"           #'doom/scratch-buffer)
+(ex! "t[mux]"      #'+tmux:run)              ; send to tmux
+(ex! "tcd"         #'+tmux:cd-here)          ; cd to default-directory in tmux
+(ex! "x"           #'doom/open-project-scratch-buffer)
 
 ;; GIT
 (ex! "gist"        #'+gist:send)  ; send current buffer/region to gist
@@ -82,9 +76,9 @@
 (ex! "build"       #'+eval/build)
 (ex! "debug"       #'+debug/run)
 (ex! "er[rors]"    #'flycheck-list-errors)
-(ex! "todo"        #'+ivy:todo)
 
 ;; File operations
+(ex! "cp"          #'+evil:copy-this-file)
 (ex! "mv"          #'+evil:move-this-file)
 (ex! "rm"          #'+evil:delete-this-file)
 
