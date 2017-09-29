@@ -4,6 +4,8 @@
   (load! +bindings)  ; my key bindings
   (load! +commands)) ; my custom ex commands
 
+(load! +lispy)
+
 (defvar +orther-dir (file-name-directory load-file-name))
 (defvar +orther-snippets-dir (expand-file-name "snippets/" +orther-dir))
 
