@@ -6,8 +6,7 @@
   :config
   (setq js2-skip-preprocessor-directives t
         js2-highlight-external-variables nil
-        js2-mode-show-parse-errors nil
-        js2-strict-trailing-comma-warning nil)
+        js2-mode-show-parse-errors nil)
 
   (add-hook! 'js2-mode-hook
     #'(flycheck-mode highlight-indentation-mode rainbow-delimiters-mode))
@@ -26,7 +25,9 @@
                                            (doom-project-root)))
                  (exists-p (file-exists-p eslint))
                  (executable-p (file-executable-p eslint)))
-        (setq-local flycheck-javascript-eslint-executable eslint))))
+        (setq-local flycheck-javascript-eslint-executable eslint)
+        (setq-local js2-strict-trailing-comma-warning nil)
+        (setq-local js2-strict-missing-semi-warning nil))))
   (add-hook 'flycheck-mode-hook #'+javascript|init-flycheck-eslint)
 
   (sp-with-modes '(js2-mode rjsx-mode)
