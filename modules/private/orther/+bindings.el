@@ -51,11 +51,11 @@
  "M-8"    (λ! (+workspace/switch-to 7))
  "M-9"    (λ! (+workspace/switch-to 8))
  "M-0"    #'+workspace/switch-to-last
- ;; Basic escape keys for emacs mode
- "C-h"    #'evil-window-left
- "C-j"    #'evil-window-down
- "C-k"    #'evil-window-up
- "C-l"    #'evil-window-right
+ ;; Basic escape keys available everywhere
+ :nvime "C-h" #'evil-window-left
+ :nvime "C-j" #'evil-window-down
+ :nvime "C-k" #'evil-window-up
+ :nvime "C-l" #'evil-window-right
  ;; Other sensible, textmate-esque global bindings
  "M-r"    #'+eval/buffer
  "M-R"    #'+eval/region-and-replace
@@ -760,13 +760,13 @@
       :i "C-b" #'backward-word
       :i "C-f" #'forward-word
 
-      ;; Highjacks space/backspace to:
-      ;;   a) balance spaces inside brackets/parentheses ( | ) -> (|)
-      ;;   b) delete space-indented blocks intelligently
-      ;;   c) do none of this when inside a string
-      :i "SPC"                          #'doom/inflate-space-maybe
-      :i [remap delete-backward-char]   #'doom/deflate-space-maybe
-      :i [remap newline]                #'doom/newline-and-indent
+      ;; ;; Highjacks space/backspace to:
+      ;; ;;   a) balance spaces inside brackets/parentheses ( | ) -> (|)
+      ;; ;;   b) delete space-indented blocks intelligently
+      ;; ;;   c) do none of this when inside a string
+      ;; :i "SPC"                          #'doom/inflate-space-maybe
+      ;; :i [remap delete-backward-char]   #'doom/deflate-space-maybe
+      ;; :i [remap newline]                #'doom/newline-and-indent
 
       (:after org-mode
         (:map org-mode-map

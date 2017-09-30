@@ -44,7 +44,7 @@
        version-control ; remember, remember that commit in November
        workspaces      ; tab emulation, persistence & separate workspaces
        search          ; advanced searching functionality (copied from bmacs)
-
+m
        :completion
        company         ; the ultimate code completion backend
        ivy             ; a search engine for love and life

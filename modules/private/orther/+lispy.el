@@ -5,9 +5,23 @@
 ;;   :init (add-hook! emacs-lisp-mode #'aggressive-indent-mode))
 
 (def-package! lispy
-  :commands (lispy-mode)
-  :init (add-hook! emacs-lisp-mode #'lispy-mode))
+  :commands lispy-mode
+  :init (add-hook! emacs-lisp-mode '(turn-off-smartparens-mode lispy-mode)))
 
-;; (def-package! lispyville
-;;   :commands (lispyville-mode)
-;;   :init (add-hook! lispy-mode #'lispyville-mode))
+(def-package! lispyville
+  :after lispy
+  :commands lispyville-mode
+  :init
+  (add-hook! lispy-mode #'lispyville-mode)
+  :config
+  (lispyville-set-key-theme
+   '(operators
+     c-w
+     s-operators
+     slurp/barf-lispy
+     additional-movement
+     additional
+     escape
+     ;; (escape insert)
+     ;; (additional-movement normal visual motion)
+     )))
