@@ -1,8 +1,8 @@
 ;;; private/orther/+lispy.el -*- lexical-binding: t; -*-
 
-(def-package! aggressive-indent
-  :commands (aggressive-indent-mode)
-  :init (add-hook! emacs-lisp-mode #'aggressive-indent-mode))
+;; (def-package! aggressive-indent
+;;   :commands (aggressive-indent-mode)
+;;   :init (add-hook! emacs-lisp-mode #'aggressive-indent-mode))
 
 (def-package! lispy
   :commands (lispy-mode)
