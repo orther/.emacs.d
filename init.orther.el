@@ -30,9 +30,6 @@
 ;; Set shell to bash to protect against problems caused by fish shell
 (setq shell-file-name "/bin/bash")
 
-;; Explicitly use module/private/orther/ (rather than "brandon" on my macbook)
-(setq user-login-name "orther")
-
 (require 'core (concat user-emacs-directory "core/core"))
 
 (doom! :feature
@@ -139,5 +136,4 @@
 
        ;; Private modules named after your username are loaded automatically.
        ;; Leaving this here is harmless though.
-       ;;:private hlissner
        :private orther)
