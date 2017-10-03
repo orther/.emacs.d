@@ -194,3 +194,8 @@
 (after! evil
   (doom/toggle-fullscreen))
 
+;; setup js flow support
+(def-package! flow-minor-mode
+  :commands (flow-minor-enable-automatically flow-minor-mode)
+  :init
+  (add-hook! (js2-mode rjsx-mode) #'flow-minor-enable-automatically))
