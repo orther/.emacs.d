@@ -74,9 +74,10 @@
 ;; brighter minibuffer when active
 ;; (add-hook 'minibuffer-setup-hook #'doom-brighten-minibuffer)
 
-;; (require 'company)
-;; (setq company-idle-delay 0.2
-;;       company-minimum-prefix-length 3)
+;; TODO see if we can change this to use after!
+(require 'company)
+(setq company-idle-delay 0.2
+      company-minimum-prefix-length 3)
 
 ;; customize doom neotree
 (setq doom-neotree-enable-file-icons t)
