@@ -15,5 +15,5 @@
 ;; ;; requires prettier-js
 ;; (package! prettier-js)
 
-(package! flow-minor-mode)
+;; (package! flow-minor-mode)
 

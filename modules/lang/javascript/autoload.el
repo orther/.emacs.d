@@ -73,3 +73,15 @@ Run this for any buffer you want to skewer."
       (if skewer-css-mode (skewer-css-mode -1))
       (if skewer-html-mode (skewer-html-mode -1)))))
 
+
+;;;###autoload
+(defun +javascript/flow-from-node-modules ()
+  (let* ((root (locate-dominating-file
+                (or (buffer-file-name) default-directory)
+                "node_modules"))
+         (flow (and root
+                    (expand-file-name "node_modules/flow-bin/vendor/flow"
+                                      root))))
+    (when (and flow (file-executable-p flow))
+      (setq-local flycheck-javascript-flow-executable flow)
+      (setq-local company-flow-executable flow))))

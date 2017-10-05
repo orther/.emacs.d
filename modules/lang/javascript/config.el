@@ -30,6 +30,8 @@
         (setq-local js2-strict-missing-semi-warning nil))))
   (add-hook 'flycheck-mode-hook #'+javascript|init-flycheck-eslint)
 
+  (add-hook 'flycheck-mode-hook #'+javascript/flow-from-node-modules)
+
   (sp-with-modes '(js2-mode rjsx-mode)
     (sp-local-pair "/* " " */" :post-handlers '(("| " "SPC"))))
 
@@ -97,13 +99,13 @@
   :when (featurep! :completion company)
   :after tern
   :config
-  (set! :company-backend 'js2-mode '(company-tern)))
+  (set! :company-backend '(js2-mode rjsx-mode) '(company-tern)))
 
 (def-package! company-flow
   :when (featurep! :completion company)
-  :after company
+  :after company-tern
   :config
-  (set! :company-backend 'js2-mode '(company-flow)))
+  (set! :company-backend '(js2-mode rjsx-mode) '(company-tern company-flow)))
 
 (def-package! rjsx-mode
   :commands rjsx-mode
@@ -155,6 +157,23 @@
       (when-let (eslintd-executable (executable-find "eslint_d"))
         (setq flycheck-javascript-eslint-executable eslintd-executable))))
   (add-hook! (js2-mode rjsx-mode) #'+javascript|init-eslintd-fix))
+
+
+(def-package! flycheck-flow
+  ;; :commands (flow-minor-enable-automatically flow-minor-mode)
+  :after flycheck
+  :config
+  (flycheck-add-mode 'javascript-flow 'flow-minor-mode)
+  (flycheck-add-mode 'javascript-eslint 'flow-minor-mode)
+  (flycheck-add-next-checker 'javascript-flow 'javascript-eslint)
+  ;; (flycheck-add-next-checker 'javascript-flow 'javascript-eslint)
+  ;; (add-hook! (js2-mode rjsx-mode) #'flow-minor-enable-automatically)
+  )
+
+(def-package! flow-minor-mode
+  :commands (flow-minor-enable-automatically flow-minor-mode)
+  :init
+  (add-hook! (js2-mode rjsx-mode) #'flow-minor-enable-automatically))
 
 
 ;;
