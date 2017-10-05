@@ -1,8 +1,8 @@
 ;; -*- no-byte-compile: t; -*-
 ;;; private/orther/packages.el
 
-;; disable smartparens for lispy and friends
-(def-package-hook! smartparens :disable)
+;; ;; disable smartparens for lispy and friends
+;; (def-package-hook! smartparens :disable)
 
 ;; editing & auto-formatting
 (package! lispy)
