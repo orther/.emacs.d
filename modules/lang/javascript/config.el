@@ -207,9 +207,6 @@
   :modes (html-mode css-mode web-mode js2-mode markdown-mode)
   :files "package.json")
 
-(def-project-mode! +javascript-eslintd-fix-mode
-  :modes (+javascript-npm-mode))
-
 (def-project-mode! +javascript-lb6-mode
   :modes (web-mode js2-mode nxml-mode markdown-mode)
   :match "\\.lb\\(action\\|ext\\)/"
