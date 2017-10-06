@@ -42,9 +42,7 @@
 (ex! "grevert"     #'git-gutter:revert-hunk)
 
 ;; Dealing with buffers
-(evil-set-command-properties #'+workspace/cleanup :ex-bang t)
-
-(ex! "clean[up]"   #'+workspace/cleanup)
+(ex! "clean[up]"   #'doom/cleanup-buffers)
 (ex! "k[ill]"      #'doom/kill-this-buffer)
 (ex! "k[ill]all"   #'+hlissner:kill-all-buffers)
 (ex! "k[ill]m"     #'+hlissner:kill-matching-buffers)
@@ -97,4 +95,4 @@
 (ex! "tabsave"     #'+workspace:save)
 
 ;; Org-mode
-(ex! "org"         #'+org:capture)
+(ex! "cap"         #'+org-capture/dwim)

@@ -55,6 +55,7 @@
           ("-test\\.el$"                     "__"               emacs-ert-mode)
           ("/.emacs.d/.+\\.el$"              "__doom-module"    emacs-lisp-mode)
           ("/.emacs.d/.+/packages\\.el$"     "__doom-packages"  emacs-lisp-mode)
+          ("/.emacs.d/.+/test\\.el$"         "__doom-test"      emacs-lisp-mode)
           ("/.emacs.d/.+/README\\.org$"      "__doom-readme"    org-mode)
           (snippet-mode "__" snippet-mode)
           ;; Go
@@ -72,8 +73,6 @@
           ("/bower\\.json$"                  "__bower.json"        json-mode)
           ("/gulpfile\\.js$"                 "__gulpfile.js"       js-mode)
           ("/webpack\\.config\\.js$"         "__webpack.config.js" js-mode)
-          ("\\.lbaction/.+/Info.plist$"                       "__Info.plst"  lb6-mode)
-          ("\\.lbaction/.+/\\(default\\|suggestions\\)\\.js$" "__default.js" lb6-mode)
           ;; Lua
           ("/main\\.lua$"                    "__main.lua"       love-mode)
           ("/conf\\.lua$"                    "__conf.lua"       love-mode)
@@ -107,5 +106,6 @@
           ;; Slim
           ("/\\(index\\|main\\)\\.slim$"     "__"               slim-mode)
           ;; Shell scripts
-          ("\\.z?sh$"                        "__"               sh-mode))))
+          ("\\.z?sh$"                        "__"               sh-mode)
+          ("\\.zunit$"                       "__zunit"          sh-mode))))
 

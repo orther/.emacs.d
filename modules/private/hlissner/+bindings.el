@@ -37,7 +37,7 @@
  "M-t"    #'+workspace/new
  "M-T"    #'+workspace/display
  "M-w"    #'delete-window
- "M-W"    #'delete-frame
+ "M-W"    #'+workspace/close-workspace-or-frame
  "M-n"    #'evil-buffer-new
  "M-N"    #'make-frame
  "M-1"    (λ! (+workspace/switch-to 0))
@@ -78,8 +78,8 @@
  (:leader
    :desc "Ex command"  :nv ";"   #'evil-ex
    :desc "M-x"         :nv ":"   #'execute-extended-command
-   :desc "Pop up scratch buffer"   :nv "x"  #'doom/scratch-buffer
-   :desc "Org Capture"             :nv "X"  #'+org/capture
+   :desc "Pop up scratch buffer"   :nv "x"  #'doom/open-scratch-buffer
+   :desc "Org Capture"             :nv "X"  #'+org-capture/open
 
    ;; Most commonly used
    :desc "Find file in project"    :n "SPC" #'projectile-find-file
@@ -154,7 +154,7 @@
      :desc "Kill buffer"             :n "k" #'doom/kill-this-buffer
      :desc "Kill other buffers"      :n "o" #'doom/kill-other-buffers
      :desc "Save buffer"             :n "s" #'save-buffer
-     :desc "Pop scratch buffer"      :n "x" #'doom/scratch-buffer
+     :desc "Pop scratch buffer"      :n "x" #'doom/open-scratch-buffer
      :desc "Bury buffer"             :n "z" #'bury-buffer
      :desc "Next buffer"             :n "]" #'doom/next-buffer
      :desc "Previous buffer"         :n "[" #'doom/previous-buffer
@@ -168,7 +168,7 @@
      :desc "Build tasks"               :nv "b" #'+eval/build
      :desc "Jump to definition"        :n  "d" #'+jump/definition
      :desc "Jump to references"        :n  "D" #'+jump/references
-     :desc "Open REPL"                 :n  "r" #'+eval/repl
+     :desc "Open REPL"                 :n  "r" #'+eval/open-repl
                                        :v  "r" #'+eval:repl)
 
    (:desc "file" :prefix "f"
@@ -226,14 +226,14 @@
    (:desc "notes" :prefix "n"
      :desc "Find file in notes"    :n "n" #'+hlissner/find-in-notes
      :desc "Browse notes"          :n "N" #'+hlissner/browse-notes
-     :desc "Org capture"           :n "x" #'+org/capture
+     :desc "Org capture"           :n "x" #'+org-capture/open
      :desc "Browse mode notes"     :n "m" #'+org/browse-notes-for-major-mode
      :desc "Browse project notes"  :n "p" #'+org/browse-notes-for-project)
 
    (:desc "open" :prefix "o"
      :desc "Default browser"     :n  "b" #'browse-url-of-file
      :desc "Debugger"            :n  "d" #'+debug/open
-     :desc "REPL"                :n  "r" #'+eval/repl
+     :desc "REPL"                :n  "r" #'+eval/open-repl
                                  :v  "r" #'+eval:repl
      :desc "Neotree"             :n  "n" #'+neotree/toggle
      :desc "Terminal"            :n  "t" #'+term/open-popup
@@ -730,7 +730,6 @@
 ;; properly, more like vim, or how I like it.
 
 (map! (:map input-decode-map
-        [?\C-i] [C-i]
         [S-iso-lefttab] [backtab]
         (:unless window-system "TAB" [tab])) ; Fix TAB in terminal
 
@@ -767,14 +766,23 @@
           :i "C-e" #'org-end-of-line
           :i "C-a" #'org-beginning-of-line))
 
-      ;; Make ESC quit all the things
+      ;; Restore common editing keys (and ESC) in minibuffer
       (:map (minibuffer-local-map
              minibuffer-local-ns-map
              minibuffer-local-completion-map
              minibuffer-local-must-match-map
-             minibuffer-local-isearch-map)
+             minibuffer-local-isearch-map
+             evil-ex-completion-map
+             evil-ex-search-keymap
+             read-expression-map)
         [escape] #'abort-recursive-edit
-        "C-r" #'evil-paste-from-register)
+        "C-r" #'evil-paste-from-register
+        "C-a" #'move-beginning-of-line
+        "C-w" #'doom/minibuffer-kill-word
+        "C-u" #'doom/minibuffer-kill-line
+        "C-b" #'backward-word
+        "C-f" #'forward-word
+        "M-z" #'doom/minibuffer-undo)
 
       (:map messages-buffer-mode-map
         "M-;" #'eval-expression
@@ -782,14 +790,6 @@
 
       (:map tabulated-list-mode-map
         [remap evil-record-macro] #'doom/popup-close-maybe)
-
-      (:map (evil-ex-completion-map evil-ex-search-keymap read-expression-map)
-        "C-a" #'move-beginning-of-line
-        "C-w" #'doom/minibuffer-kill-word
-        "C-u" #'doom/minibuffer-kill-line
-        "C-b" #'backward-word
-        "C-f" #'forward-word
-        "M-z" #'doom/minibuffer-undo)
 
       (:after view
         (:map view-mode-map "<escape>" #'View-quit-all)))

@@ -56,6 +56,7 @@
   ;;
   (setq line-spacing 1)
   (visual-line-mode +1)
+  (org-indent-mode +1)
   (doom|disable-line-numbers)
 
   ;; show-paren-mode causes problems for org-indent-mode, so disable it
@@ -98,7 +99,6 @@
    org-agenda-skip-unavailable-files nil
    org-cycle-include-plain-lists t
    org-cycle-separator-lines 1
-   ;; org-ellipsis "  "
    org-entities-user '(("flat"  "\\flat" nil "" "" "266D" "♭") ("sharp" "\\sharp" nil "" "" "266F" "♯"))
    org-ellipsis "  "
    org-fontify-done-headline t
@@ -114,6 +114,10 @@
    org-indent-mode-turns-on-hiding-stars t
    org-pretty-entities nil
    org-pretty-entities-include-sub-superscripts t
+   org-priority-faces
+   `((?a . ,(face-foreground 'error))
+     (?b . ,(face-foreground 'warning))
+     (?c . ,(face-foreground 'success)))
    org-startup-folded t
    org-startup-indented t
    org-startup-with-inline-images nil
@@ -145,8 +149,9 @@
 between the two."
   (map! (:map org-mode-map
           "RET" #'org-return-indent
-          [remap evil-next-line]     #'evil-next-visual-line
-          [remap evil-previous-line] #'evil-previous-visual-line)
+          "C-c C-S-l" #'+org/remove-link
+          :n "j" "gj"
+          :n "k" "gk")
 
         (:map +org-evil-mode-map
           :n  "RET" #'+org/dwim-at-point
@@ -216,9 +221,9 @@ between the two."
 
   (defun +org|remove-occur-highlights ()
     "Remove org occur highlights on ESC in normal mode."
-    (when (derived-mode-p 'org-mode)
-      (org-remove-occur-highlights)
-      t))
+    (when (and (derived-mode-p 'org-mode)
+               org-occur-highlights)
+      (org-remove-occur-highlights)))
   (add-hook '+evil-esc-hook #'+org|remove-occur-highlights)
 
   (after! recentf
