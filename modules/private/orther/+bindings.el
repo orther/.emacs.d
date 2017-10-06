@@ -760,13 +760,13 @@
       :i "C-b" #'backward-word
       :i "C-f" #'forward-word
 
-      ;; ;; Highjacks space/backspace to:
-      ;; ;;   a) balance spaces inside brackets/parentheses ( | ) -> (|)
-      ;; ;;   b) delete space-indented blocks intelligently
-      ;; ;;   c) do none of this when inside a string
-      ;; :i "SPC"                          #'doom/inflate-space-maybe
-      ;; :i [remap delete-backward-char]   #'doom/deflate-space-maybe
-      ;; :i [remap newline]                #'doom/newline-and-indent
+      ;; Highjacks space/backspace to:
+      ;;   a) balance spaces inside brackets/parentheses ( | ) -> (|)
+      ;;   b) delete space-indented blocks intelligently
+      ;;   c) do none of this when inside a string
+      :i "SPC"                          #'doom/inflate-space-maybe
+      :i [remap delete-backward-char]   #'doom/deflate-space-maybe
+      :i [remap newline]                #'doom/newline-and-indent
 
       (:after org-mode
         (:map org-mode-map
