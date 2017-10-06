@@ -119,7 +119,6 @@
        org-attach      ; a simpler attachment system
        org-capture     ; a better org-capture, in or outside of Emacs
        org-export      ; a custom, centralized export system
-       org-notebook    ; org-mode as a notebook
        org-present     ; using org-mode for presentations
       ;org-sync        ; TODO sync with mobile
       ;org-publish     ; TODO org + blogs
@@ -127,7 +126,7 @@
        ;; Applications are complex and opinionated modules that transform Emacs
        ;; toward a specific purpose. They may have additional dependencies and
        ;; should be loaded last.
-       :app
+      ;:app
       ;email           ; emacs as an email client
       ;irc             ; how neckbeards socialize
       ;rss             ; emacs as an RSS reader
