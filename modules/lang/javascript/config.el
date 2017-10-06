@@ -1,5 +1,14 @@
 ;;; lang/javascript/config.el -*- lexical-binding: t; -*-
 
+(setq-default js2-mode-indent-ignore-first-tab t)
+(setq-default js2-show-parse-errors nil)
+(setq-default js2-strict-inconsistent-return-warning nil)
+(setq-default js2-strict-var-hides-function-arg-warning nil)
+(setq-default js2-strict-missing-semi-warning nil)
+(setq-default js2-strict-trailing-comma-warning nil)
+(setq-default js2-strict-cond-assign-warning nil)
+(setq-default js2-strict-var-redeclaration-warning nil)
+
 (def-package! js2-mode
   :mode "\\.js$"
   :interpreter "node"
@@ -23,19 +32,6 @@
 
   ;; If it's available globally, use eslint_d
   (setq flycheck-javascript-eslint-executable (executable-find "eslint_d"))
-
-  (defun +javascript|init-flycheck-eslint ()
-    "Favor local eslint over global installs and configure flycheck for eslint."
-    (when (derived-mode-p 'js-mode)
-      (when-let ((exec-path (list (doom-project-expand "node_modules/.bin")))
-                 (eslint (executable-find "eslint")))
-        (setq-local flycheck-javascript-eslint-executable eslint))
-      (when (flycheck-find-checker-executable 'javascript-eslint)
-        ;; Flycheck has it's own trailing command and semicolon warning that was
-        ;; conflicting with the eslint settings.
-        (setq-local js2-strict-trailing-comma-warning nil)
-        (setq-local js2-strict-missing-semi-warning nil))))
-  (add-hook 'flycheck-mode-hook #'+javascript|init-flycheck-eslint)
 
   (map! :map js2-mode-map
         :localleader
@@ -108,6 +104,8 @@
 (def-package! company-flow
   :when (featurep! :completion company)
   :after company-tern
+  ;; :init
+  ;; flow-from-node-modules
   :config
   (set! :company-backend '(js2-mode rjsx-mode) '(company-tern company-flow)))
 
@@ -150,24 +148,23 @@
 
 
 (def-package! eslintd-fix
-  :commands (eslintd-fix-mode eslintd-fix))
+  :commands (eslintd-fix-mode eslintd-fix)
+  :config
+  (add-hook! (js2-mode rjsx-mode) #'eslintd-fix-mode))
 
+
+(def-package! flow-minor-mode
+  :after flycheck
+  :commands (flow-minor-enable-automatically flow-minor-mode)
+  :config
+  (add-hook! js2-mode #'flow-minor-enable-automatically))
 
 (def-package! flycheck-flow
-  ;; :commands (flow-minor-enable-automatically flow-minor-mode)
-  :after flycheck
+  :after flow-minor-mode
   :config
   (flycheck-add-mode 'javascript-flow 'flow-minor-mode)
   (flycheck-add-mode 'javascript-eslint 'flow-minor-mode)
-  (flycheck-add-next-checker 'javascript-flow 'javascript-eslint)
-  ;; (flycheck-add-next-checker 'javascript-flow 'javascript-eslint)
-  ;; (add-hook! (js2-mode rjsx-mode) #'flow-minor-enable-automatically)
-  )
-
-(def-package! flow-minor-mode
-  :commands (flow-minor-enable-automatically flow-minor-mode)
-  :init
-  (add-hook! (js2-mode rjsx-mode) #'flow-minor-enable-automatically))
+  (flycheck-add-next-checker 'javascript-flow 'javascript-eslint))
 
 
 ;;
