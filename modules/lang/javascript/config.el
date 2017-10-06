@@ -98,16 +98,17 @@
 (def-package! company-tern
   :when (featurep! :completion company)
   :after tern
-  :config
-  (set! :company-backend '(js2-mode rjsx-mode) '(company-tern)))
+  ;; :config
+  ;; (set! :company-backend 'js2-mode '(company-tern))
+  )
+
 
 (def-package! company-flow
   :when (featurep! :completion company)
   :after company-tern
-  ;; :init
-  ;; flow-from-node-modules
   :config
-  (set! :company-backend '(js2-mode rjsx-mode) '(company-tern company-flow)))
+  (set! :company-backend 'js2-mode '(company-tern company-flow)))
+
 
 (def-package! rjsx-mode
   :commands rjsx-mode
@@ -150,7 +151,7 @@
 (def-package! eslintd-fix
   :commands (eslintd-fix-mode eslintd-fix)
   :config
-  (add-hook! (js2-mode rjsx-mode) #'eslintd-fix-mode))
+  (add-hook! js2-mode #'eslintd-fix-mode))
 
 
 (def-package! flow-minor-mode
@@ -159,12 +160,12 @@
   :config
   (add-hook! js2-mode #'flow-minor-enable-automatically))
 
-(def-package! flycheck-flow
-  :after flow-minor-mode
-  :config
-  (flycheck-add-mode 'javascript-flow 'flow-minor-mode)
-  (flycheck-add-mode 'javascript-eslint 'flow-minor-mode)
-  (flycheck-add-next-checker 'javascript-flow 'javascript-eslint))
+;; (def-package! flycheck-flow
+;;   :after flow-minor-mode
+;;   :config
+;;   (flycheck-add-mode 'javascript-flow 'flow-minor-mode)
+;;   (flycheck-add-mode 'javascript-eslint 'flow-minor-mode)
+;;   (flycheck-add-next-checker 'javascript-flow 'javascript-eslint))
 
 
 ;;
