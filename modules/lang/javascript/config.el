@@ -154,11 +154,11 @@
   (add-hook! js2-mode #'eslintd-fix-mode))
 
 
-(def-package! flow-minor-mode
-  :after flycheck
-  :commands (flow-minor-enable-automatically flow-minor-mode)
-  :config
-  (add-hook! js2-mode #'flow-minor-enable-automatically))
+;; (def-package! flow-minor-mode
+;;   :after flycheck
+;;   :commands (flow-minor-enable-automatically flow-minor-mode)
+;;   :config
+;;   (add-hook! js2-mode #'flow-minor-enable-automatically))
 
 ;; (def-package! flycheck-flow
 ;;   :after flow-minor-mode
