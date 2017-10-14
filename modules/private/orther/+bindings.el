@@ -580,7 +580,7 @@
    :n "G"         #'evil-goto-line
    :n "gg"        #'evil-goto-first-line
    :n "v"         #'neotree-enter-vertical-split
-   :n "s"         #'neotree-enter-horizontal-split
+   :n "V"         #'neotree-enter-horizontal-split
    :n "q"         #'neotree-hide
    :n "R"         #'neotree-refresh)
 
