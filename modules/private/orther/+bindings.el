@@ -133,7 +133,8 @@
    (:desc "search" :prefix "s"
      :desc "Swiper"                :nv "/" #'swiper
      :desc "Imenu"                 :nv "i" #'imenu
-     :desc "Imenu across buffers"  :nv "I" #'imenu-anywhere)
+     :desc "Imenu across buffers"  :nv "I" #'imenu-anywhere
+     :desc "Online providers"      :nv "o" #'+jump/online-select)
 
    (:desc "workspace" :prefix "TAB"
      :desc "Display tab bar"          :n "TAB" #'+workspace/display
@@ -224,9 +225,10 @@
      :desc "Yank filename"         :n  "y"  #'+orther/yank-buffer-filename)
 
    (:desc "git" :prefix "g"
-     :desc "Git status"        :n  "s" #'magit-status
+     :desc "Git status"        :n  "S" #'magit-status
      :desc "Git blame"         :n  "b" #'magit-blame
      :desc "Git time machine"  :n  "t" #'git-timemachine-toggle
+     :desc "Git stage hunk"    :n  "s" #'git-gutter:stage-hunk
      :desc "Git revert hunk"   :n  "r" #'git-gutter:revert-hunk
      :desc "List gists"        :n  "g" #'+gist:list
      :desc "Next hunk"         :nv "]" #'git-gutter:next-hunk
