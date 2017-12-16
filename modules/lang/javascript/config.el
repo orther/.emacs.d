@@ -24,14 +24,27 @@
   (set! :electric 'js2-mode :chars '(?\} ?\) ?.))
   (set! :jump 'js2-mode :xref-backend #'xref-js2-xref-backend)
 
-  ;; Conform switch-case indentation to editorconfig's config
-  (set! :editorconfig :add '(js2-mode js2-basic-offset js-switch-indent-offset))
+  ;; Conform switch-case indentation to js2 normal indent
+  (defvaralias 'js-switch-indent-offset 'js2-basic-offset)
 
   (sp-with-modes '(js2-mode rjsx-mode)
     (sp-local-pair "/* " " */" :post-handlers '(("| " "SPC"))))
 
   ;; If it's available globally, use eslint_d
   (setq flycheck-javascript-eslint-executable (executable-find "eslint_d"))
+
+  (defun +javascript|init-flycheck-eslint ()
+    "Favor local eslint over global installs and configure flycheck for eslint."
+    (when (derived-mode-p 'js-mode)
+      (when-let* (((exec-path (list (doom-project-expand "node_modules/.bin")))
+                   (eslint (executable-find "eslint"))))
+        (setq-local flycheck-javascript-eslint-executable eslint))
+      (when (flycheck-find-checker-executable 'javascript-eslint)
+        ;; Flycheck has it's own trailing command and semicolon warning that was
+        ;; conflicting with the eslint settings.
+        (setq-local js2-strict-trailing-comma-warning nil)
+        (setq-local js2-strict-missing-semi-warning nil))))
+  (add-hook 'flycheck-mode-hook #'+javascript|init-flycheck-eslint)
 
   (map! :map js2-mode-map
         :localleader
@@ -89,8 +102,7 @@
 
 
 (def-package! tern
-  :commands tern-mode
-  :init (add-hook 'js2-mode-hook #'tern-mode)
+  :hook (js2-mode . tern-mode)
   :config
   (advice-add #'tern-project-dir :override #'doom-project-root))
 
