@@ -52,18 +52,6 @@ modes are active and the buffer is read-only.")
       ediff-split-window-function #'split-window-horizontally
       ediff-window-setup-function #'ediff-setup-windows-plain)
 
-(defun doom|dont-kill-scratch-buffer ()
-  "Don't kill the scratch buffer."
-  (or (not (string= (buffer-name) "*scratch*"))
-      (ignore (bury-buffer))))
-(add-hook 'kill-buffer-query-functions #'doom|dont-kill-scratch-buffer)
-
-;; temporary windows often have q bound to `quit-window', which only buries the
-;; contained buffer. I rarely don't want that buffer killed, so...
-(defun doom*quit-window (orig-fn &optional kill window)
-  (funcall orig-fn (not kill) window))
-(advice-add #'quit-window :around #'doom*quit-window)
-
 (defun doom|check-large-file ()
   "Check if the buffer's file is large (see `doom-large-file-size'). If so, ask
 for confirmation to open it literally (read-only, disabled undo and in
@@ -125,9 +113,8 @@ fundamental-mode) for performance sake."
 ;; Handles whitespace (tabs/spaces) settings externally. This way projects can
 ;; specify their own formatting rules.
 (def-package! editorconfig
+  :hook (doom-init . editorconfig-mode)
   :config
-  (add-hook 'doom-init-hook #'editorconfig-mode)
-
   ;; editorconfig cannot procure the correct settings for extension-less files.
   ;; Executable scripts with a shebang line, for example. So why not use Emacs'
   ;; major mode to drop editorconfig a hint? This is accomplished by temporarily
@@ -158,8 +145,7 @@ extension, try to guess one."
   ;; editorconfig to ignore indentation. I prefer dynamic indentation support
   ;; built into Emacs.
   (dolist (mode '(emacs-lisp-mode lisp-mode))
-    (setq editorconfig-indentation-alist
-      (assq-delete-all mode editorconfig-indentation-alist)))
+    (map-delete editorconfig-indentation-alist mode))
 
   (defvar whitespace-style)
   (defun doom|editorconfig-whitespace-mode-maybe (&rest _)
@@ -174,8 +160,8 @@ extension, try to guess one."
 
 ;; Auto-close delimiters and blocks as you type
 (def-package! smartparens
-  :hook (doom-init . smartparens-global-mode)
   :config
+  (smartparens-global-mode +1)
   (require 'smartparens-config)
 
   (setq sp-autowrap-region nil ; let evil-surround handle this
@@ -193,8 +179,8 @@ extension, try to guess one."
 
 ;; Branching undo
 (def-package! undo-tree
+  :hook (doom-init . global-undo-tree-mode)
   :config
-  (add-hook 'doom-init-hook #'global-undo-tree-mode)
   ;; persistent undo history is known to cause undo history corruption, which
   ;; can be very destructive! So disable it!
   (setq undo-tree-auto-save-history nil
@@ -218,12 +204,16 @@ extension, try to guess one."
 (def-package! command-log-mode
   :commands (command-log-mode global-command-log-mode)
   :config
-  (set! :popup "*command-log*" :size 40 :align 'right :noselect t)
   (setq command-log-mode-auto-show t
         command-log-mode-open-log-turns-on-mode t))
 
 (def-package! expand-region
-  :commands (er/expand-region er/contract-region er/mark-symbol er/mark-word))
+  :commands (er/expand-region er/contract-region er/mark-symbol er/mark-word)
+  :config
+  (defun doom*quit-expand-region ()
+    (when (memq last-command '(er/expand-region er/contract-region))
+      (er/contract-region 0)))
+  (advice-add #'evil-escape :before #'doom*quit-expand-region))
 
 (def-package! help-fns+ ; Improved help commands
   :commands (describe-buffer describe-command describe-file
@@ -234,10 +224,6 @@ extension, try to guess one."
 
 (def-package! smart-forward
   :commands (smart-up smart-down smart-backward smart-forward))
-
-(def-package! wgrep
-  :commands (wgrep-setup wgrep-change-to-wgrep-mode)
-  :config (setq wgrep-auto-save-buffer t))
 
 (provide 'core-editor)
 ;;; core-editor.el ends here

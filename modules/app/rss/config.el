@@ -21,7 +21,7 @@
   (setq elfeed-search-filter "@2-week-ago "
         elfeed-db-directory (concat doom-local-dir "elfeed/db/")
         elfeed-enclosure-default-dir (concat doom-local-dir "elfeed/enclosures/")
-        elfeed-show-entry-switch #'+rss-popup-pane
+        elfeed-show-entry-switch #'pop-to-buffer
         elfeed-show-entry-delete #'+rss/delete-pane
         shr-max-image-proportion 0.6)
 
@@ -35,7 +35,6 @@
   (add-hook 'elfeed-show-mode-hook #'+rss|elfeed-wrap)
 
   (map! (:map (elfeed-search-mode-map elfeed-show-mode-map)
-          [remap doom/kill-this-buffer] "q"
           [remap kill-this-buffer]      "q"
           [remap kill-buffer]           "q")
 

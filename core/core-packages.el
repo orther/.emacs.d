@@ -92,7 +92,8 @@ base by `doom!' and for calculating how many packages exist.")
       package-enable-at-startup nil
       package-archives
       '(("gnu"   . "https://elpa.gnu.org/packages/")
-        ("melpa" . "https://melpa.org/packages/"))
+        ("melpa" . "https://melpa.org/packages/")
+        ("org"   . "https://orgmode.org/elpa/"))
       ;; I omit Marmalade because its packages are manually submitted rather
       ;; than pulled, so packages are often out of date with upstream.
 
@@ -133,7 +134,7 @@ startup."
   ;; Called early during initialization; only use native (and cl-lib) functions!
   (when (or force-p (not doom-init-p))
     ;; Speed things up with a `load-path' for only the bare essentials
-    (let ((load-path doom--base-load-path))
+    (let ((load-path doom--site-load-path))
       ;; Ensure core folders exist, otherwise we get errors
       (dolist (dir (list doom-local-dir doom-etc-dir doom-cache-dir doom-packages-dir))
         (unless (file-directory-p dir)
@@ -168,7 +169,7 @@ startup."
     ;; Also, in some edge cases involving package initialization during a
     ;; non-interactive session, `package-initialize' fails to fill `load-path'.
     (setq doom--package-load-path (directory-files package-user-dir t "^[^.]" t)
-          load-path (append doom--base-load-path doom--package-load-path))))
+          load-path (append doom--package-load-path doom--base-load-path))))
 
 (defun doom-initialize-autoloads ()
   "Ensures that `doom-autoload-file' exists and is loaded. Otherwise run
@@ -217,10 +218,9 @@ This aggressively reloads core autoload files."
   "Adds MODULES to `doom-modules'. MODULES must be in mplist format.
 
   e.g '(:feature evil :lang emacs-lisp javascript java)"
-  (unless doom-modules
-    (setq doom-modules (make-hash-table :test #'equal
-                                        :size (+ 5 (length modules))
-                                        :rehash-threshold 1.0)))
+  (setq doom-modules (make-hash-table :test #'equal
+                                      :size (+ 5 (length modules))
+                                      :rehash-threshold 1.0))
   (let (mode)
     (dolist (m modules)
       (cond ((keywordp m) (setq mode m))
@@ -259,7 +259,9 @@ added, if the file exists."
 
 (defun doom-module-enabled-p (module submodule)
   "Returns t if MODULE->SUBMODULE is present in `doom-modules'."
-  (and (doom-module-get module submodule) t))
+  (and (hash-table-p doom-modules)
+       (doom-module-get module submodule)
+       t))
 
 (defun doom-module-enable (module submodule &optional flags)
   "Adds MODULE and SUBMODULE to `doom-modules', overwriting it if it exists.
@@ -290,7 +292,7 @@ include all modules, enabled or otherwise."
            ;; error in the plugin count in exchange for faster startup.
            (length doom--package-load-path)
            (hash-table-size doom-modules)
-           (setq doom-init-time (float-time (time-subtract after-init-time before-init-time)))))
+           (setq doom-init-time (float-time (time-subtract (current-time) before-init-time)))))
 
 
 ;;
@@ -317,7 +319,7 @@ MODULES is an malformed plist of modules to load."
          (require 'server)
          (unless (server-running-p)
            (server-start)))
-       (add-hook 'doom-init-hook #'doom-packages--display-benchmark t)
+       (add-hook 'doom-post-init-hook #'doom-packages--display-benchmark)
        (message "Doom modules initialized"))))
 
 (defmacro def-package! (name &rest plist)
@@ -398,9 +400,12 @@ The module is only loaded once. If RELOAD-P is non-nil, load it again."
       (if (not (file-directory-p module-path))
           (lwarn 'doom-modules :warning "Couldn't find module '%s %s'"
                  module submodule)
-        (doom-module-enable module submodule flags)
+        (when (hash-table-p doom-modules)
+          (doom-module-enable module submodule flags))
         `(condition-case-unless-debug ex
-             (load! config ,module-path t)
+             (progn
+               (load! init ,module-path t)
+               (load! config ,module-path t))
            ('error
             (lwarn 'doom-modules :error
                    "%s in '%s %s' -> %s"
@@ -460,12 +465,8 @@ Accepts the following properties:
       (when-let* ((val (plist-get plist prop)))
         (plist-put plist prop (eval val))))
     `(progn
-       (when ,(and pkg-pin t)
-         (cl-pushnew (cons ',name ,pkg-pin) package-pinned-packages
-                     :test #'eq :key #'car))
-       (when ,(and old-plist t)
-         (assq-delete-all ',name doom-packages))
-       (push ',(cons name plist) doom-packages))))
+       ,(if (and pkg-pin t) `(map-put package-pinned-packages ',name ,pkg-pin))
+       (map-put doom-packages ',name ',plist))))
 
 (defmacro depends-on! (module submodule)
   "Declares that this module depends on another.
@@ -539,8 +540,9 @@ This should be run whenever init.el or an autoload file is modified. Running
   (if (not noninteractive)
       ;; This is done in another instance to protect the current session's
       ;; state. `doom-initialize-packages' will have side effects otherwise.
-      (and (doom-packages--async-run 'doom//reload-autoloads)
-           (load doom-autoload-file))
+      (progn
+        (doom-packages--async-run 'doom//reload-autoloads)
+        (load doom-autoload-file))
     (doom-initialize-packages t)
     (let ((targets
            (file-expand-wildcards
@@ -566,7 +568,7 @@ This should be run whenever init.el or an autoload file is modified. Running
                 "✓ Scanned %s"))
          (file-relative-name file doom-emacs-dir)))
       (make-directory (file-name-directory doom-autoload-file) t)
-      (let ((buf (get-file-buffer doom-autoload-file))
+      (let ((buf (find-file-noselect doom-autoload-file t))
             current-sexp)
         (unwind-protect
             (condition-case-unless-debug ex

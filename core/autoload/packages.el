@@ -1,22 +1,22 @@
 ;;; core/autoload/packages.el -*- lexical-binding: t; -*-
 
+(load! cache)
 (require 'use-package)
 (require 'quelpa)
-
-(defvar doom--last-refresh nil)
+(require 'async)
 
 ;;;###autoload
 (defun doom-refresh-packages (&optional force-p)
   "Refresh ELPA packages."
   (when force-p
     (doom-refresh-clear-cache))
-  (unless (or (persistent-soft-fetch 'last-pkg-refresh "emacs")
+  (unless (or (doom-cache-get 'last-pkg-refresh)
               doom--refreshed-p)
     (condition-case-unless-debug ex
         (progn
           (message "Refreshing package archives")
           (package-refresh-contents)
-          (persistent-soft-store 'last-pkg-refresh t "emacs" 900))
+          (doom-cache-set 'last-pkg-refresh t 900))
     ('error
      (doom-refresh-clear-cache)
      (message "Failed to refresh packages: (%s) %s"
@@ -26,7 +26,7 @@
 (defun doom-refresh-clear-cache ()
   "Clear the cache for `doom-refresh-packages'."
   (setq doom--refreshed-p nil)
-  (persistent-soft-store 'last-pkg-refresh nil "emacs"))
+  (doom-cache-set 'last-pkg-refresh nil))
 
 ;;;###autoload
 (defun doom-package-backend (name &optional noerror)
@@ -117,12 +117,16 @@ If INSTALLED-ONLY-P, only return packages that are installed."
 ;;;###autoload
 (defun doom-get-depending-on (name)
   "Return a list of packages that depend on the package named NAME."
+  (when (package-built-in-p name)
+    (error "Can't get the dependency tree for built-in packages"))
   (when-let* ((desc (cadr (assq name package-alist))))
     (mapcar #'package-desc-name (package--used-elsewhere-p desc nil t))))
 
 ;;;###autoload
 (defun doom-get-dependencies-for (name &optional only)
   "Return a list of dependencies for a package."
+  (when (package-built-in-p name)
+    (error "Can't get the dependency tree for built-in packages"))
   (package--get-deps name only))
 
 ;;;###autoload
@@ -133,6 +137,7 @@ containing (PACKAGE-SYMBOL OLD-VERSION-LIST NEW-VERSION-LIST).
 If INCLUDE-FROZEN-P is non-nil, check frozen packages as well.
 
 Used by `doom//packages-update'."
+  (require 'async)
   (let (quelpa-pkgs elpa-pkgs)
     ;; Separate quelpa from elpa packages
     (dolist (pkg (doom-get-packages t))
@@ -204,7 +209,7 @@ Used by `doom//packages-install'."
     (when (and (not (package-installed-p name))
                (quelpa-setup-p)
                (assq name quelpa-cache))
-      (setq quelpa-cache (assq-delete-all name quelpa-cache))
+      (map-delete quelpa-cache name)
       (quelpa-save-cache)
       (let ((path (expand-file-name (symbol-name name) quelpa-build-dir)))
         (when (file-exists-p path)
@@ -235,14 +240,10 @@ Used by `doom//packages-install'."
           (quiet! (doom-refresh-packages t))
           ,@body))
      ('user-error
-      (message! (bold (red "  ERROR: (%s) %s"
-                           (car ex)
-                           (error-message-string ex)))))
+      (message! (bold (red "  ERROR: %s" ex))))
      ('error
       (doom-refresh-clear-cache)
-      (message! (bold (red "  FATAL ERROR: (%s) %s"
-                           (car ex)
-                           (error-message-string ex)))))))
+      (message! (bold (red "  FATAL ERROR: %s" ex))))))
 
 
 ;;
@@ -253,10 +254,11 @@ Used by `doom//packages-install'."
   "Installs package NAME with optional quelpa RECIPE (see `quelpa-recipe' for an
 example; the package name can be omitted)."
   (doom-initialize-packages)
-  (when (package-installed-p name)
-    (when (doom-package-different-backend-p name)
-      (doom-delete-package name t))
-    (user-error "%s is already installed" name))
+  (when (and (package-installed-p name)
+             (not (package-built-in-p name)))
+    (if (doom-package-different-backend-p name)
+        (doom-delete-package name t)
+      (user-error "%s is already installed" name)))
   (let* ((inhibit-message (not doom-debug-mode))
          (plist (or plist (cdr (assq name doom-packages))))
          (recipe (plist-get plist :recipe))
@@ -306,7 +308,7 @@ package.el as appropriate."
     (unless (quelpa-setup-p)
       (error "Could not initialize QUELPA"))
     (when (assq name quelpa-cache)
-      (setq quelpa-cache (assq-delete-all name quelpa-cache))
+      (map-delete quelpa-cache name)
       (quelpa-save-cache)
       (setq quelpa-p t))
     (package-delete (cadr (assq name package-alist)) force-p)
@@ -326,7 +328,7 @@ package.el as appropriate."
   "Interactive command for installing missing packages."
   (interactive)
   (message! "Looking for packages to install...")
-  (let ((packages (doom-get-missing-packages)))
+  (let ((packages (reverse (doom-get-missing-packages))))
     (cond ((not packages)
            (message! (green "No packages to install!")))
 

@@ -32,61 +32,19 @@
   (should (equal (doom-enlist 'a) '(a)))
   (should (equal (doom-enlist '(a)) '(a))))
 
-;; `doom-resolve-vim-path'
-(def-test! resolve-vim-path
-  (cl-flet ((do-it #'doom-resolve-vim-path))
-    ;; file modifiers
-    (let ((buffer-file-name  "~/.emacs.d/test/modules/feature/test-evil.el")
-          (default-directory "~/.emacs.d/test/modules/"))
-      (should (equal (do-it "%")   "feature/test-evil.el"))
-      (should (equal (do-it "%:r") "feature/test-evil"))
-      (should (equal (do-it "%:r.elc") "feature/test-evil.elc"))
-      (should (equal (do-it "%:e") "el"))
-      (should (equal (do-it "%:p") (expand-file-name buffer-file-name)))
-      (should (equal (do-it "%:h") "feature"))
-      (should (equal (do-it "%:t") "test-evil.el"))
-      (should (equal (do-it "%:.") "feature/test-evil.el"))
-      (should (equal (do-it "%:~") "~/.emacs.d/test/modules/feature/test-evil.el"))
-      (should (equal (file-truename (do-it "%:p"))
-                     (file-truename buffer-file-name))))
-    ;; nested file modifiers
-    (let ((buffer-file-name  "~/vim/src/version.c")
-          (default-directory "~/vim/"))
-      (should (equal (do-it "%:p")     (expand-file-name "~/vim/src/version.c")))
-      (should (equal (do-it "%:p:.")   "src/version.c"))
-      (should (equal (do-it "%:p:~")   "~/vim/src/version.c"))
-      (should (equal (do-it "%:h")     "src"))
-      (should (equal (do-it "%:p:h")   (expand-file-name "~/vim/src")))
-      (should (equal (do-it "%:p:h:h") (expand-file-name "~/vim")))
-      (should (equal (do-it "%:t")     "version.c"))
-      (should (equal (do-it "%:p:t")   "version.c"))
-      (should (equal (do-it "%:r")     "src/version"))
-      (should (equal (do-it "%:p:r")   (expand-file-name "~/vim/src/version")))
-      (should (equal (do-it "%:t:r")   "version")))
-    ;; empty file modifiers
-    (let (buffer-file-name default-directory)
-      (should (equal (do-it "%")   ""))
-      (should (equal (do-it "%:r") ""))
-      (should (equal (do-it "%:e") ""))
-      (should (equal (do-it "%:h") ""))
-      (should (equal (do-it "%:t") ""))
-      (should (equal (do-it "%:.") ""))
-      (should (equal (do-it "%:~") ""))
-      (should (equal (do-it "%:P") "")))))
-
 
 ;; --- Macros -----------------------------
 
 ;; `add-hook!'
 (def-test! add-one-to-one-hook
-  (let (hooks)
+  (let ((hooks '(old-hook)))
     (add-hook! 'hooks 'a-hook)
-    (should (equal hooks '(a-hook)))))
+    (should (equal hooks '(a-hook old-hook)))))
 
 (def-test! add-many-to-one-hook
-  (let (hooks)
+  (let ((hooks '(hook-x)))
     (add-hook! 'hooks '(hook-a hook-b hook-c))
-    (should (equal hooks '(hook-c hook-b hook-a)))))
+    (should (equal hooks '(hook-a hook-b hook-c hook-x)))))
 
 (def-test! add-one-to-many-hooks
   (let (hooks-a hooks-b hooks-c)
@@ -98,9 +56,9 @@
 (def-test! add-many-to-many-hooks
   (let (hooks-a hooks-b hooks-c)
     (add-hook! '(hooks-a hooks-b hooks-c) '(hook-a hook-b hook-c))
-    (should (equal hooks-a '(hook-c hook-b hook-a)))
-    (should (equal hooks-b '(hook-c hook-b hook-a)))
-    (should (equal hooks-c '(hook-c hook-b hook-a)))))
+    (should (equal hooks-a '(hook-a hook-b hook-c)))
+    (should (equal hooks-b '(hook-a hook-b hook-c)))
+    (should (equal hooks-c '(hook-a hook-b hook-c)))))
 
 (def-test! add-non-literal-hooks
   (let (some-mode-hook)

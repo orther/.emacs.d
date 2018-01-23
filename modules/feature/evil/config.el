@@ -21,7 +21,7 @@
 (autoload 'goto-last-change-reverse "goto-chg")
 
 (def-package! evil
-  :init
+  :config
   (setq evil-want-C-u-scroll t
         evil-want-visual-char-semi-exclusive t
         evil-want-Y-yank-to-eol t
@@ -33,21 +33,17 @@
         evil-ex-visual-char-range t  ; column range for ex commands
         evil-insert-skip-empty-lines t
         evil-mode-line-format 'nil
+        evil-respect-visual-line-mode t
         ;; more vim-like behavior
         evil-symbol-word-search t
         ;; don't activate mark on shift-click
         shift-select-mode nil)
 
-  :config
   (add-hook 'doom-init-hook #'evil-mode)
   (evil-select-search-module 'evil-search-module 'evil-search)
 
-  (set! :popup
-    '("*evil-registers*" :size 0.3)
-    '("*Command Line*" :size 8))
-
-  ;; Don't interfere with localleader key
-  (define-key evil-motion-state-map "\\" nil)
+  (set! :popup "^\\*evil-registers" '((size . 0.3)))
+  (set! :popup "^\\*Command Line" '((size . 8)))
 
   ;; Set cursor colors later, once theme is loaded
   (defun +evil*init-cursors (&rest _)
@@ -64,19 +60,11 @@
   (dolist (mode '(help-mode debugger-mode))
     (evil-set-initial-state mode 'normal))
 
-  ;; make `try-expand-dabbrev' from `hippie-expand' work in minibuffer
-  ;; @see `he-dabbrev-beg', so we need re-define syntax for '/'
-  (defun minibuffer-inactive-mode-hook-setup ()
-    (set-syntax-table (let* ((table (make-syntax-table)))
-                        (modify-syntax-entry ?/ "." table)
-                        table)))
-  (add-hook 'minibuffer-inactive-mode-hook #'minibuffer-inactive-mode-hook-setup)
-
 
   ;; --- keybind fixes ----------------------
   (map! (:after wgrep
-          ;; a wrapper that invokes `wgrep-mark-deletion' across lines
-          ;; you use `evil-delete' on.
+          ;; A wrapper that invokes `wgrep-mark-deletion' across lines you use
+          ;; `evil-delete' in wgrep buffers.
           :map wgrep-mode-map [remap evil-delete] #'+evil-delete)
 
         ;; replace native folding commands
@@ -87,48 +75,55 @@
         [remap evil-close-folds]   #'+evil:fold-close-all
         [remap evil-open-folds]    #'+evil:fold-open-all)
 
+  (defun +evil|disable-highlights ()
+    "Disable ex search buffer highlights."
+    (when (evil-ex-hl-active-p 'evil-ex-search)
+      (evil-ex-nohighlight)
+      t))
+  (add-hook 'doom-escape-hook #'+evil|disable-highlights)
+
 
   ;; --- evil hacks -------------------------
-  (defvar +evil-esc-hook '(t)
-    "A hook run after ESC is pressed in normal mode (invoked by
-`evil-force-normal-state'). If any hook returns non-nil, all hooks after it are
-ignored.")
-
-  (defun +evil*attach-escape-hook ()
-    "Run the `+evil-esc-hook'."
-    (cond ((minibuffer-window-active-p (minibuffer-window))
-           ;; quit the minibuffer if open.
-           (abort-recursive-edit))
-          ((evil-ex-hl-active-p 'evil-ex-search)
-           ;; disable ex search buffer highlights.
-           (evil-ex-nohighlight))
-          (t
-           ;; Run all escape hooks. If any returns non-nil, then stop there.
-           (run-hook-with-args-until-success '+evil-esc-hook))))
-  (advice-add #'evil-force-normal-state :after #'+evil*attach-escape-hook)
-
-  (defun +evil*restore-normal-state-on-windmove (orig-fn &rest args)
-    "If in anything but normal or motion mode when moving to another window,
-restore normal mode. This prevents insert state from bleeding into other modes
-across windows."
-    (unless (memq evil-state '(normal motion emacs))
-      (evil-normal-state +1))
-    (apply orig-fn args))
+  (defun +evil|save-buffer ()
+    "Shorter, vim-esque save messages."
+    (message "\"%s\" %dL, %dC written"
+             (file-relative-name buffer-file-truename (doom-project-root))
+             (count-lines (point-min) (point-max))
+             (buffer-size)))
+  (setq save-silently t)
+  (add-hook 'after-save-hook #'+evil|save-buffer)
+  ;; Make ESC (from normal mode) the universal escaper. See `doom-escape-hook'.
+  (advice-add #'evil-force-normal-state :after #'doom/escape)
+  ;; Ensure buffer is in normal mode when we leave it and return to it.
   (advice-add #'windmove-do-window-select :around #'+evil*restore-normal-state-on-windmove)
-
-  (defun +evil*static-reindent (orig-fn &rest args)
-    "Don't move cursor on indent."
-    (save-excursion (apply orig-fn args)))
+  ;; Don't move cursor when indenting
   (advice-add #'evil-indent :around #'+evil*static-reindent)
-
   ;; monkey patch `evil-ex-replace-special-filenames' to add more ex
   ;; substitution flags to evil-mode
-  (advice-add #'evil-ex-replace-special-filenames :override #'doom-resolve-vim-path)
+  (advice-add #'evil-ex-replace-special-filenames :override #'+evil*resolve-vim-path)
+
+  ;; make `try-expand-dabbrev' from `hippie-expand' work in minibuffer
+  ;; @see `he-dabbrev-beg', so we need re-define syntax for '/'
+  (defun +evil*fix-dabbrev-in-minibuffer ()
+    (set-syntax-table (let* ((table (make-syntax-table)))
+                        (modify-syntax-entry ?/ "." table)
+                        table)))
+  (add-hook 'minibuffer-inactive-mode-hook #'+evil*fix-dabbrev-in-minibuffer)
+
+  ;; Move to new split -- setting `evil-split-window-below' &
+  ;; `evil-vsplit-window-right' to non-nil mimics this, but that doesn't update
+  ;; window history. That means when you delete a new split, Emacs leaves you on
+  ;; the 2nd to last window on the history stack, which is jarring.
+  ;;
+  ;; Also recenters window on cursor in new split
+  (defun +evil*window-follow (&rest _)  (evil-window-down 1) (recenter))
+  (advice-add #'evil-window-split  :after #'+evil*window-follow)
+  (defun +evil*window-vfollow (&rest _) (evil-window-right 1) (recenter))
+  (advice-add #'evil-window-vsplit :after #'+evil*window-vfollow)
 
   ;; These arg types will highlight matches in the current buffer
   (evil-ex-define-argument-type buffer-match :runner +evil-ex-buffer-match)
   (evil-ex-define-argument-type global-match :runner +evil-ex-global-match)
-
   ;; By default :g[lobal] doesn't highlight matches in the current buffer. I've
   ;; got to write my own argument type and interactive code to get it to do so.
   (evil-ex-define-argument-type global-delim-match :runner +evil-ex-global-delim-match)
@@ -147,16 +142,7 @@ across windows."
   (evil-set-command-properties
    '+evil:align :move-point t :ex-arg 'buffer-match :ex-bang t :evil-mc t :keep-visual t :suppress-operator t)
   (evil-set-command-properties
-   '+evil:mc :move-point nil :ex-arg 'global-match :ex-bang t :evil-mc t)
-
-  ;; Move to new split -- setting `evil-split-window-below' &
-  ;; `evil-vsplit-window-right' to non-nil mimics this, but that doesn't update
-  ;; window history. That means when you delete a new split, Emacs leaves you on
-  ;; the 2nd to last window on the history stack, which is jarring.
-  (defun +evil*window-follow (&rest _)  (evil-window-down 1))
-  (defun +evil*window-vfollow (&rest _) (evil-window-right 1))
-  (advice-add #'evil-window-split  :after #'+evil*window-follow)
-  (advice-add #'evil-window-vsplit :after #'+evil*window-vfollow))
+   '+evil:mc :move-point nil :ex-arg 'global-match :ex-bang t :evil-mc t))
 
 
 ;;
@@ -169,12 +155,22 @@ across windows."
 
 
 (def-package! evil-easymotion
-  :after evil-snipe
-  :commands evilem-create)
+  :commands (evilem-create evilem-default-keybindings))
 
 
 (def-package! evil-embrace
   :after evil-surround
+  :commands (embrace-add-pair embrace-add-pair-regexp)
+  :hook (LaTeX-mode . embrace-LaTeX-mode-hook)
+  :hook (org-mode . embrace-org-mode-hook)
+  :init
+  ;; Add extra pairs
+  (add-hook! emacs-lisp-mode
+    (embrace-add-pair ?\` "`" "'"))
+  (add-hook! (emacs-lisp-mode lisp-mode)
+    (embrace-add-pair-regexp ?f "([^ ]+ " ")" #'+evil--embrace-elisp-fn))
+  (add-hook! (org-mode LaTeX-mode)
+    (embrace-add-pair-regexp ?l "\\[a-z]+{" "}" #'+evil--embrace-latex))
   :config
   (setq evil-embrace-show-help-p nil)
   (evil-embrace-enable-evil-surround-integration)
@@ -213,17 +209,7 @@ across windows."
                    :read-function #'+evil--embrace-escaped
                    :left-regexp "\\[[{(]"
                    :right-regexp "\\[]})]"))
-        (default-value 'embrace--pairs-list))
-
-  ;; Add extra pairs
-  (add-hook 'LaTeX-mode-hook #'embrace-LaTeX-mode-hook)
-  (add-hook 'org-mode-hook   #'embrace-org-mode-hook)
-  (add-hook! emacs-lisp-mode
-    (embrace-add-pair ?\` "`" "'"))
-  (add-hook! (emacs-lisp-mode lisp-mode)
-    (embrace-add-pair-regexp ?f "([^ ]+ " ")" #'+evil--embrace-elisp-fn))
-  (add-hook! (org-mode LaTeX-mode)
-    (embrace-add-pair-regexp ?l "\\[a-z]+{" "}" #'+evil--embrace-latex)))
+        (default-value 'embrace--pairs-list)))
 
 
 (def-package! evil-escape
@@ -247,7 +233,11 @@ across windows."
     (when evil-exchange--overlays
       (evil-exchange-cancel)
       t))
-  (add-hook '+evil-esc-hook #'+evil|escape-exchange))
+  (add-hook 'doom-escape-hook #'+evil|escape-exchange))
+
+
+(def-package! evil-numbers
+  :commands (evil-numbers/inc-at-pt evil-numbers/dec-at-pt))
 
 
 (def-package! evil-matchit
@@ -310,12 +300,13 @@ the new algorithm is confusing, like in python or ruby."
       (evil-mc-undo-all-cursors)
       (evil-mc-resume-cursors)
       t))
-  (add-hook '+evil-esc-hook #'+evil|escape-multiple-cursors))
+  (add-hook 'doom-escape-hook #'+evil|escape-multiple-cursors))
 
 
 (def-package! evil-snipe
   :commands (evil-snipe-mode evil-snipe-override-mode
              evil-snipe-local-mode evil-snipe-override-local-mode)
+  :hook (doom-post-init . evil-snipe-mode)
   :init
   (setq evil-snipe-smart-case t
         evil-snipe-scope 'line
@@ -325,8 +316,8 @@ the new algorithm is confusing, like in python or ruby."
         evil-snipe-aliases '((?\[ "[[{(]")
                              (?\] "[]})]")
                              (?\; "[;:]")))
-  (add-hook 'doom-post-init-hook #'evil-snipe-mode)
-  (add-hook 'doom-post-init-hook #'evil-snipe-override-mode))
+  :config
+  (evil-snipe-override-mode +1))
 
 
 (def-package! evil-surround

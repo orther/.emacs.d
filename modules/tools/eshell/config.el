@@ -5,7 +5,8 @@
 ;; see:
 ;;   + `+eshell/open': open in current buffer
 ;;   + `+eshell/open-popup': open in a popup
-;;   + `+eshell/open-workspace': open in separate tab (requires :feature workspaces)
+;;   + `+eshell/open-workspace': open in separate tab (requires :feature
+;;     workspaces)
 
 (def-package! eshell ; built-in
   :commands eshell-mode
@@ -60,11 +61,8 @@ redefines its keys every time `eshell-mode' is enabled."
           :i "C-n"      #'eshell-next-input
           :i "<down>"   #'eshell-next-input
           :m "<return>" #'+eshell/evil-append
-          :n [remap evil-window-split]     #'+eshell/split
-          :n [remap evil-window-vsplit]    #'+eshell/vsplit
           :n [remap evil-record-macro]     #'eshell-life-is-too-much
-          [remap kill-this-buffer] #'eshell-life-is-too-much
-          [remap +workspace/close-window-or-workspace] #'eshell-life-is-too-much))
+          [remap kill-this-buffer] #'eshell-life-is-too-much))
   (add-hook 'eshell-mode-hook #'+eshell|init-keymap)
 
   ;; Aliases

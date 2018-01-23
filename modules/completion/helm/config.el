@@ -42,7 +42,6 @@
   (after! helm-mode
     (add-to-list 'helm-completing-read-handlers-alist '(find-file-at-point . nil)))
 
-  (set! :popup "\\` ?\\*[hH]elm.*?\\*\\'" :size 14 :regexp t)
   (setq projectile-completion-system 'helm)
 
   ;;; Helm hacks
@@ -97,9 +96,7 @@
 (def-package! helm-ag
   :defer t
   :config
-  (map! :map helm-ag-edit-map
-        [remap doom/kill-this-buffer] #'helm-ag--edit-abort
-        [remap quit-window]           #'helm-ag--edit-abort))
+  (map! :map helm-ag-edit-map [remap quit-window] #'helm-ag--edit-abort))
 
 
 (def-package! helm-css-scss ; https://github.com/ShingoFukuyama/helm-css-scss
@@ -122,3 +119,7 @@
 
 (def-package! helm-describe-modes :commands helm-describe-modes)
 
+
+(def-package! wgrep
+  :commands (wgrep-setup wgrep-change-to-wgrep-mode)
+  :config (setq wgrep-auto-save-buffer t))

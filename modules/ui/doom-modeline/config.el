@@ -42,7 +42,7 @@
           anzu--last-isearch-string anzu--overflow-p))
   ;; Ensure anzu state is cleared when searches & iedit are done
   (add-hook 'isearch-mode-end-hook #'anzu--reset-status t)
-  (add-hook '+evil-esc-hook #'anzu--reset-status t)
+  (add-hook 'doom-escape-hook #'anzu--reset-status t)
   (add-hook 'iedit-mode-end-hook #'anzu--reset-status))
 
 
@@ -604,10 +604,11 @@ Returns \"\" to not break --no-window-system."
   "Set the default modeline."
   (doom-set-modeline 'main t)
 
-  ;; This scratch buffer is already created and doesn't get a modeline. For the
-  ;; love of Emacs, someone give the man a modeline!
-  (with-current-buffer "*scratch*"
-    (doom-set-modeline 'main)))
+  ;; These buffers are already created and don't get modelines. For the love of
+  ;; Emacs, someone give the man a modeline!
+  (dolist (bname '("*scratch*" "*Messages*"))
+    (with-current-buffer bname
+      (doom-set-modeline 'main))))
 
 (defun +doom-modeline|set-special-modeline ()
   (doom-set-modeline 'special))
@@ -623,10 +624,9 @@ Returns \"\" to not break --no-window-system."
 ;; Bootstrap
 ;;
 
-(add-hook 'doom-init-ui-hook #'+doom-modeline|init)
+(add-hook 'doom-init-theme-hook #'+doom-modeline|init)
 (add-hook 'doom-scratch-buffer-hook #'+doom-modeline|set-special-modeline)
 (add-hook '+doom-dashboard-mode-hook #'+doom-modeline|set-project-modeline)
 
 (add-hook 'image-mode-hook   #'+doom-modeline|set-media-modeline)
-(add-hook 'org-src-mode-hook #'+doom-modeline|set-special-modeline)
 (add-hook 'circe-mode-hook   #'+doom-modeline|set-special-modeline)

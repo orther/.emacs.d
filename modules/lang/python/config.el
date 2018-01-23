@@ -78,7 +78,7 @@ environment variables."
         anaconda-mode-eldoc-as-single-line t)
   :config
   (add-hook 'anaconda-mode-hook #'anaconda-eldoc-mode)
-  (set! :popup "*anaconda-mode*" :size 10 :noselect t :autoclose t :autokill t)
+  (set! :popup "^\\*anaconda-mode" nil '((select)))
   (map! :map anaconda-mode-map :m "gd" #'anaconda-mode-find-definitions)
   (advice-add #'anaconda-mode-doc-buffer :after #'doom*anaconda-mode-doc-buffer))
 
@@ -88,9 +88,9 @@ environment variables."
   :after anaconda-mode
   :config
   (set! :company-backend 'python-mode '(company-anaconda))
-  (set! :jump 'python-mode
+  (set! :lookup 'python-mode
     :definition #'anaconda-mode-find-definitions
-    :references #'anaconda-mode-find-referenences
+    :references #'anaconda-mode-find-references
     :documentation #'anaconda-mode-show-doc)
   (map! :map python-mode-map
         :localleader
@@ -113,7 +113,7 @@ environment variables."
   :init
   (associate! nose-mode :match "/test_.+\\.py$" :modes (python-mode))
   :config
-  (set! :popup "*nosetests*" :size 0.4 :noselect t)
+  (set! :popup "^\\*nosetests" '((size . 0.4)) '((select)))
   (set! :yas-minor-mode 'nose-mode)
   (map! :map nose-mode-map
         :localleader

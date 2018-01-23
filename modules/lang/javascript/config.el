@@ -22,7 +22,7 @@
 
   (set! :repl 'js2-mode #'+javascript/repl)
   (set! :electric 'js2-mode :chars '(?\} ?\) ?.))
-  (set! :jump 'js2-mode :xref-backend #'xref-js2-xref-backend)
+  (set! :lookup 'js2-mode :xref-backend #'xref-js2-xref-backend)
 
   ;; Conform switch-case indentation to js2 normal indent
   (defvaralias 'js-switch-indent-offset 'js2-basic-offset)
@@ -54,7 +54,9 @@
 
 ;; A find-{definition,references} backend for js2-mode. NOTE The xref API is
 ;; unstable and may break with an Emacs update.
-(def-package! xref-js2 :commands xref-js2-xref-backend)
+(def-package! xref-js2
+  :when (featurep! :feature lookup)
+  :commands xref-js2-xref-backend)
 
 
 (def-package! nodejs-repl :commands nodejs-repl)

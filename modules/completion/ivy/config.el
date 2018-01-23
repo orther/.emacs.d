@@ -25,7 +25,7 @@ immediately runs it on the current candidate (ending the ivy session)."
 
 (def-package! ivy
   :init
-  (add-hook 'doom-post-init-hook #'ivy-mode)
+  (add-hook 'doom-init-hook #'ivy-mode)
   :config
   (setq ivy-height 12
         ivy-do-completion-in-region nil
@@ -38,7 +38,11 @@ immediately runs it on the current candidate (ending the ivy session)."
         ;; highlight til EOL
         ivy-format-function #'ivy-format-function-line
         ;; disable magic slash on non-match
-        ivy-magic-slash-non-match-action nil)
+        ivy-magic-slash-non-match-action nil
+        ;; don't show recent files in switch-buffer
+        ivy-use-virtual-buffers nil
+        ;; ...but if that ever changes, show their full path
+        ivy-virtual-abbreviate 'full)
 
   (after! magit     (setq magit-completing-read-function #'ivy-completing-read))
   (after! yasnippet (push #'+ivy-yas-prompt yas-prompt-functions))
@@ -54,13 +58,8 @@ immediately runs it on the current candidate (ending the ivy session)."
         [remap projectile-find-file]      #'counsel-projectile-find-file
         [remap imenu-anywhere]            #'ivy-imenu-anywhere
         [remap execute-extended-command]  #'counsel-M-x
-        [remap describe-face]             #'counsel-describe-face)
-
-  ;; Show more buffer information in switch-buffer commands
-  (ivy-set-display-transformer #'ivy-switch-buffer #'+ivy-buffer-transformer)
-  (ivy-set-display-transformer #'ivy-switch-buffer-other-window #'+ivy-buffer-transformer)
-  (ivy-set-display-transformer #'+ivy/switch-workspace-buffer #'+ivy-buffer-transformer)
-  (ivy-set-display-transformer #'counsel-recentf #'abbreviate-file-name)
+        [remap describe-function]         #'counsel-describe-function
+        [remap describe-variable]         #'counsel-describe-variable)
 
   (nconc ivy-sort-functions-alist
          '((persp-kill-buffer   . nil)
@@ -73,25 +72,39 @@ immediately runs it on the current candidate (ending the ivy session)."
            (+workspace/delete . nil))))
 
 
+;; Show more buffer information in switch-buffer commands
+(def-package! ivy-rich
+  :after ivy
+  :config
+  (dolist (cmd '(ivy-switch-buffer +ivy/switch-workspace-buffer
+                 counsel-projectile-switch-to-buffer))
+    (ivy-set-display-transformer cmd '+ivy-buffer-transformer)))
+
+
 (def-package! swiper :commands (swiper swiper-all))
 
 
 (def-package! counsel
   :requires ivy
   :config
+  ;; Dim recentf entries that are not in the current project.
+  (ivy-set-display-transformer 'counsel-recentf '+ivy-recentf-transformer)
+  ;; Highlight entries that have been visited
+  (ivy-set-display-transformer 'counsel-projectile-find-file '+ivy-projectile-find-file-transformer)
+
   (require 'counsel-projectile)
   (setq counsel-find-file-ignore-regexp "\\(?:^[#.]\\)\\|\\(?:[#~]$\\)\\|\\(?:^Icon?\\)")
 
   ;; Configure `counsel-rg', `counsel-ag' & `counsel-pt'
-  (set! :popup 'ivy-occur-grep-mode :size (+ 2 ivy-height) :regexp t :autokill t)
   (dolist (cmd '(counsel-ag counsel-rg counsel-pt))
     (ivy-add-actions
      cmd
      '(("O" +ivy-git-grep-other-window-action "open in other window"))))
 
-  ;; 1. Remove character limit from `counsel-ag-function'
-  ;; 2. This may need to be updated frequently, to meet changes upstream
-  ;; 3. counsel-ag, counsel-rg and counsel-pt all use this function
+  ;; Removes character limit from `counsel-ag-function'
+  ;;
+  ;; This may need to be updated frequently, to meet changes upstream
+  ;; counsel-ag, counsel-rg and counsel-pt all use this function
   (advice-add #'counsel-ag-function :override #'+ivy*counsel-ag-function))
 
 
@@ -150,3 +163,8 @@ immediately runs it on the current candidate (ending the ivy session)."
     ("t" (setq truncate-lines (not truncate-lines)))
     ("C" ivy-toggle-case-fold)
     ("o" ivy-occur :exit t)))
+
+
+(def-package! wgrep
+  :commands (wgrep-setup wgrep-change-to-wgrep-mode)
+  :config (setq wgrep-auto-save-buffer t))

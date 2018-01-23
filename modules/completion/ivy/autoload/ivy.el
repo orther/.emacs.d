@@ -1,36 +1,61 @@
 ;;; completion/ivy/autoload/ivy.el -*- lexical-binding: t; -*-
 
-(defsubst +ivy--icon-for-mode (mode)
-  "Apply `all-the-icons-for-mode' on MODE but either return an icon or nil."
-  (let ((icon (all-the-icons-icon-for-mode mode)))
-    (unless (symbolp icon) icon)))
+(defvar doom--project-root nil)
+
+(defun +ivy--is-workspace-or-other-buffer-p (buffer)
+  (let ((buffer (car buffer)))
+    (when (stringp buffer)
+      (setq buffer (get-buffer buffer)))
+    (and (not (eq buffer (current-buffer)))
+         (+workspace-contains-buffer-p buffer))))
+
+(defun +ivy*rich-switch-buffer-buffer-name (str)
+  (propertize
+   (ivy-rich-switch-buffer-pad str ivy-rich-switch-buffer-name-max-length)
+   'face (cond ((string-match-p "^ *\\*" str)
+                'font-lock-comment-face)
+               ((and buffer-file-truename
+                     (not (file-in-directory-p buffer-file-truename doom--project-root)))
+                'font-lock-doc-face)
+               (t nil))))
+(advice-add 'ivy-rich-switch-buffer-buffer-name :override #'+ivy*rich-switch-buffer-buffer-name)
+
+
+;;
+;; Library
+;;
+
+;;;###autoload
+(defun +ivy-projectile-find-file-transformer (str)
+  "Highlight entries that have been visited. This is the opposite of
+`counsel-projectile-find-file'."
+  (cond ((get-file-buffer (projectile-expand-root str))
+         (propertize str 'face '(:weight ultra-bold :slant italic)))
+        (t str)))
+
+;;;###autoload
+(defun +ivy-recentf-transformer (str)
+  "Dim recentf entries that are not in the current project of the buffer you
+started `counsel-recentf' from. Also uses `abbreviate-file-name'."
+  (let ((str (abbreviate-file-name str)))
+    (if (file-in-directory-p str (doom-project-root))
+        str
+      (propertize str 'face 'ivy-virtual))))
 
 ;;;###autoload
 (defun +ivy-buffer-transformer (str)
-  (let* ((buf (get-buffer str))
-         (path (buffer-file-name buf))
-         (mode (buffer-local-value 'major-mode buf))
-         (faces
-          (with-current-buffer buf
-            (cond ((string-match-p "^ ?\\*" (buffer-name buf))
-                   'font-lock-comment-face)
-                  ((buffer-modified-p buf)
-                   'doom-modeline-buffer-modified)
-                  (buffer-read-only
-                   'error)))))
-    (propertize
-     (format "%-40s %s%-20s %s"
-             str
-             (if +ivy-buffer-icons
-                 (concat (propertize " " 'display
-                                     (or (+ivy--icon-for-mode mode)
-                                         (+ivy--icon-for-mode (get mode 'derived-mode-parent))))
-                         "\t")
-               "")
-             mode
-             (or (and path (abbreviate-file-name (file-name-directory (file-truename path))))
-                 ""))
-     'face faces)))
+  "Dim special buffers, buffers whose file aren't in the current buffer, and
+virtual buffers. Uses `ivy-rich' under the hood."
+  (let ((buf (get-buffer str))
+        (doom--project-root (doom-project-root)))
+    (require 'ivy-rich)
+    (cond (buf (ivy-rich-switch-buffer-transformer str))
+          ((and (eq ivy-virtual-abbreviate 'full)
+                ivy-rich-switch-buffer-align-virtual-buffer)
+           (ivy-rich-switch-buffer-virtual-buffer str))
+          ((eq ivy-virtual-abbreviate 'full)
+           (propertize (abbreviate-file-name str) 'str 'ivy-virtual))
+          (t (propertize str 'face 'ivy-virtual)))))
 
 ;;;###autoload
 (defun +ivy/switch-workspace-buffer (&optional arg)
@@ -39,7 +64,8 @@
 If ARG (universal argument), open selection in other-window."
   (interactive "P")
   (ivy-read "Switch to workspace buffer: "
-            (mapcar #'buffer-name (delq (current-buffer) (doom-buffer-list)))
+            'internal-complete-buffer
+            :predicate #'+ivy--is-workspace-or-other-buffer-p
             :action (if arg
                         #'ivy--switch-buffer-other-window-action
                       #'ivy--switch-buffer-action)
@@ -139,9 +165,9 @@ NOTE This may need to be updated frequently, to meet changes upstream (in
 counsel-rg)."
   (when (null extra-ag-args)
     (setq extra-ag-args ""))
-  (if (< (length string) 1)  ;; #1
-      (counsel-more-chars 1)
-    (let ((default-directory counsel--git-dir)
+  (if (< (length string) 1)  ; <-- modified the character limit
+      (counsel-more-chars 1) ; <--
+    (let ((default-directory (ivy-state-directory ivy-last))
           (regex (counsel-unquote-regex-parens
                   (setq ivy--old-re
                         (ivy--regex string)))))
@@ -157,10 +183,8 @@ counsel-rg)."
                                      " -- "
                                      (shell-quote-argument regex)
                                      file))))
-        (if (file-remote-p default-directory)
-            (split-string (shell-command-to-string ag-cmd) "\n" t)
-          (counsel--async-command ag-cmd)
-          nil)))))
+        (counsel--async-command ag-cmd)
+        nil))))
 
 ;;;###autoload
 (defun +ivy/wgrep-occur ()
@@ -200,18 +224,9 @@ counsel-rg)."
      (with-ivy-window
        (let ((file-name   (match-string-no-properties 1 x))
              (line-number (match-string-no-properties 2 x)))
-         (find-file-other-window (expand-file-name file-name counsel--git-dir))
+         (find-file-other-window (expand-file-name file-name (ivy-state-directory ivy-last)))
          (goto-char (point-min))
          (forward-line (1- (string-to-number line-number)))
          (re-search-forward (ivy--regex ivy-text t) (line-end-position) t)
          (run-hooks 'counsel-grep-post-action-hook)
          (selected-window))))))
-
-;;;###autoload
-(defun +ivy-quit-and-resume ()
-  "Close the current popup window and resume ivy."
-  (interactive)
-  (when (doom-popup-p)
-    (doom/popup-close))
-  (ivy-resume))
-

@@ -24,7 +24,7 @@
       (git-gutter-mode +1)))
   (add-hook! (text-mode prog-mode conf-mode) #'+version-control|git-gutter-maybe)
   :config
-  (set! :popup "^\\*git-gutter.+\\*$" :regexp t :size 15 :noselect t)
+  (set! :popup "^\\*git-gutter" nil '((select)))
 
   ;; Update git-gutter on focus (in case I was using git externally)
   (add-hook 'focus-in-hook #'git-gutter:update-all-windows)
@@ -32,10 +32,10 @@
   (after! evil
     (defun +version-control|update-git-gutter ()
       "Refresh git-gutter on ESC. Return nil to prevent shadowing other
-`+evil-esc-hook' hooks."
+`doom-escape-hook' hooks."
       (when git-gutter-mode
         (ignore (git-gutter))))
-    (add-hook '+evil-esc-hook #'+version-control|update-git-gutter t))
+    (add-hook 'doom-escape-hook #'+version-control|update-git-gutter t))
 
   (def-hydra! +version-control@git-gutter
     (:body-pre (git-gutter-mode 1) :hint nil)
@@ -79,7 +79,15 @@
 
 
 (def-package! magit
-  :commands (magit-status magit-blame magit-log-buffer-file))
+  :commands (magit-status magit-blame)
+  :config
+  (set! :popup "^\\*magit" :ignore)
+  (set! :evil-state 'magit-status-mode 'emacs)
+  (after! evil
+    ;; Switch to emacs state only while in `magit-blame-mode', then back when
+    ;; its done (since it's a minor-mode).
+    (add-hook! 'magit-blame-mode-hook
+      (evil-local-mode (if magit-blame-mode -1 +1)))))
 
 ;; BMACS - keep evil-magit
 (def-package! evil-magit

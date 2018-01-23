@@ -3,4 +3,4 @@
 
 (package! flycheck)
 (package! flycheck-pos-tip)
-
+(package! flycheck-popup-tip)

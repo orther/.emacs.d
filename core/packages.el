@@ -2,8 +2,6 @@
 ;;; core/packages.el
 
 ;; core-os.el
-;; In case this config is shared across multiple computers (like mine is), let's
-;; protect these from autoremoval.
 (package! exec-path-from-shell :ignore (not IS-MAC))
 (package! osx-clipboard        :ignore (not IS-MAC))
 
@@ -34,7 +32,6 @@
 (package! smart-forward)
 (package! smartparens)
 (package! undo-tree)
-(package! wgrep)
 
 ;; core-projects.el
 (package! projectile)

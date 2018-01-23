@@ -21,6 +21,26 @@
     (?g . global))
   "A list of cons cells that map a letter to a evil state symbol.")
 
+;;
+(defvar doom-escape-hook nil
+  "A hook run after C-g is pressed (or ESC in normal mode, for evil users). Both
+trigger `doom/escape'.
+
+If any hook returns non-nil, all hooks after it are ignored.")
+
+(defun doom/escape ()
+  "Run the `doom-escape-hook'."
+  (interactive)
+  (cond ((minibuffer-window-active-p (minibuffer-window))
+         ;; quit the minibuffer if open.
+         (abort-recursive-edit))
+        ;; Run all escape hooks. If any returns non-nil, then stop there.
+        ((run-hook-with-args-until-success 'doom-escape-hook))
+        ;; Back to the default
+        (t (keyboard-quit))))
+
+(global-set-key [remap keyboard-quit] #'doom/escape)
+
 
 ;;
 (def-package! which-key
@@ -29,7 +49,8 @@
         which-key-sort-uppercase-first nil
         which-key-add-column-padding 1
         which-key-max-display-columns nil
-        which-key-min-display-lines 5)
+        which-key-min-display-lines 5
+        which-key-side-window-slot -10)
   ;; embolden local bindings
   (set-face-attribute 'which-key-local-map-description-face nil :weight 'bold)
   (which-key-setup-side-window-bottom)

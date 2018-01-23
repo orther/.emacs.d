@@ -5,7 +5,10 @@
   :config
   (set! :repl 'emacs-lisp-mode #'+emacs-lisp/repl)
   (set! :eval 'emacs-lisp-mode #'+emacs-lisp-eval)
-  (set! :jump 'emacs-lisp-mode :documentation #'describe-symbol)
+
+  ;; An xref backend is set up automatically for emacs-lisp-mode
+  (set! :lookup 'emacs-lisp-mode :documentation #'describe-symbol)
+
   (set! :rotate 'emacs-lisp-mode
     :symbols '(("t" "nil")
                ("let" "let*")
@@ -36,6 +39,7 @@
     "Improve imenu support with better expression regexps and Doom-specific forms."
     (setq imenu-generic-expression
           '(("Evil Commands" "^\\s-*(evil-define-\\(?:command\\|operator\\|motion\\) +\\(\\_<[^ ()\n]+\\_>\\)" 1)
+            ("Unit tests" "^\\s-*(\\(?:ert-deftest\\|def-test!\\) +\\(\\_<[^ ()\n]+\\_>\\)" 1)
             ("Package" "^\\s-*(\\(?:def-\\)?package! +\\(\\_<[^ ()\n]+\\_>\\)" 1)
             ("Settings" "^\\s-*(def-setting! +\\([^ ()\n]+\\)" 1)
             ("Modelines" "^\\s-*(def-modeline! +\\([^ ()\n]+\\)" 1)
@@ -111,8 +115,7 @@
 
 
 (def-package! overseer
-  :commands overseer-test
-  :init (set! :popup "*overseer*" :size 12))
+  :commands overseer-test)
 
 
 ;;

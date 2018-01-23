@@ -1,15 +1,14 @@
 ;;; core-lib.el -*- lexical-binding: t; -*-
 
-(require 'subr-x)
-(load "async-autoloads" nil t)
-(load "persistent-soft-autoloads" nil t)
-(dolist (sym '(json-read json-read-file json-read-from-string json-encode))
-  (autoload sym "json"))
-(eval-and-compile
-  (when (version< emacs-version "26")
-    (with-no-warnings
-      (defalias 'if-let* #'if-let)
-      (defalias 'when-let* #'when-let))))
+(let ((load-path doom--site-load-path))
+  (require 'subr-x)
+  (require 'cl-lib)
+  (require 'map))
+
+(when (version< emacs-version "26")
+  (with-no-warnings
+    (defalias 'if-let* #'if-let)
+    (defalias 'when-let* #'when-let)))
 
 
 ;;
@@ -47,81 +46,6 @@
 (defun doom-enlist (exp)
   "Return EXP wrapped in a list, or as-is if already a list."
   (if (listp exp) exp (list exp)))
-
-(defun doom-resolve-vim-path (file-name)
-  "Take a path and resolve any vim-like filename modifiers in it. On top of the
-classical vim modifiers, this adds support for:
-
-  %:P   Resolves to `doom-project-root'.
-
-See http://vimdoc.sourceforge.net/htmldoc/cmdline.html#filename-modifiers."
-  (let* (case-fold-search
-         (regexp (concat "\\(?:^\\|[^\\\\]\\)"
-                         "\\([#%]\\)"
-                         "\\(\\(?::\\(?:[PphtreS~.]\\|g?s[^:\t\n ]+\\)\\)*\\)"))
-         (matches
-          (cl-loop with i = 0
-                   while (and (< i (length file-name))
-                              (string-match regexp file-name i))
-                   do (setq i (1+ (match-beginning 0)))
-                   and collect
-                   (cl-loop for j to (/ (length (match-data)) 2)
-                            collect (match-string j file-name)))))
-    (dolist (match matches)
-      (let ((flags (split-string (car (cdr (cdr match))) ":" t))
-            (path (and buffer-file-name
-                       (pcase (car (cdr match))
-                         ("%" (file-relative-name buffer-file-name))
-                         ("#" (save-excursion (other-window 1) (file-relative-name buffer-file-name))))))
-            flag global)
-        (if (not path)
-            (setq path "")
-          (while flags
-            (setq flag (pop flags))
-            (when (string-suffix-p "\\" flag)
-              (setq flag (concat flag (pop flags))))
-            (when (string-prefix-p "gs" flag)
-              (setq global t
-                    flag (substring flag 1)))
-            (setq path
-                  (or (pcase (substring flag 0 1)
-                        ("p" (expand-file-name path))
-                        ("~" (concat "~/" (file-relative-name path "~")))
-                        ("." (file-relative-name path default-directory))
-                        ("t" (file-name-nondirectory (directory-file-name path)))
-                        ("r" (file-name-sans-extension path))
-                        ("e" (file-name-extension path))
-                        ("S" (shell-quote-argument path))
-                        ("h"
-                         (let ((parent (file-name-directory (expand-file-name path))))
-                           (unless (equal (file-truename path)
-                                          (file-truename parent))
-                             (if (file-name-absolute-p path)
-                                 (directory-file-name parent)
-                               (file-relative-name parent)))))
-                        ("s"
-                         (if (featurep 'evil)
-                             (when-let* ((args (evil-delimited-arguments (substring flag 1) 2)))
-                               (let ((pattern (evil-transform-vim-style-regexp (car args)))
-                                     (replace (cadr args)))
-                                 (replace-regexp-in-string
-                                  (if global pattern (concat "\\(" pattern "\\).*\\'"))
-                                  (evil-transform-vim-style-regexp replace) path t t
-                                  (unless global 1))))
-                           path))
-                        ("P"
-                         (let ((default-directory (file-name-directory (expand-file-name path))))
-                           (abbreviate-file-name (doom-project-root))))
-                        (_ path))
-                      "")))
-          ;; strip trailing slash, if applicable
-          (when (and (not (string= path "")) (equal (substring path -1) "/"))
-            (setq path (substring path 0 -1))))
-        (setq file-name
-              (replace-regexp-in-string (format "\\(?:^\\|[^\\\\]\\)\\(%s\\)"
-                                                (regexp-quote (string-trim-left (car match))))
-                                        path file-name t t 1))))
-    (replace-regexp-in-string regexp "\\1" file-name t)))
 
 
 ;;
@@ -232,7 +156,7 @@ Body forms can access the hook's arguments through the let-bound variable
                     `(remove-hook ',hook ,fn ,local-p)
                   `(add-hook ',hook ,fn ,append-p ,local-p))
                 forms)))
-      `(progn ,@(nreverse forms)))))
+      `(progn ,@forms))))
 
 (defmacro remove-hook! (&rest args)
   "Convenience macro for `remove-hook'. Takes the same arguments as
@@ -301,12 +225,11 @@ Do not use this for configuring Doom core."
   (declare (indent defun))
   (unless values
     (error "Empty set! for %s" keyword))
-  (let ((fn (cdr (assq keyword doom-settings))))
-    (if fn
-        (apply fn values)
-      (when doom-debug-mode
-        (message "No setting found for %s" keyword)
-        nil))))
+  (if-let* ((fn (cdr (assq keyword doom-settings))))
+      (apply fn values)
+    (when doom-debug-mode
+      (message "No setting found for %s" keyword)
+      nil)))
 
 (provide 'core-lib)
 ;;; core-lib.el ends here

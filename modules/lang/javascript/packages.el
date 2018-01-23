@@ -19,5 +19,5 @@
   (package! company-flow)
   (package! company-tern))
 
-(when (featurep! :feature jump)
+(when (featurep! :feature lookup)
   (package! xref-js2))

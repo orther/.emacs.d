@@ -122,11 +122,12 @@ melodramatic ex-vimmer disappointed with the text-editor status quo."
 ;; Custom init hooks; clearer than `after-init-hook', `emacs-startup-hook', and
 ;; `window-setup-hook'.
 (defvar doom-init-hook nil
-  "A list of hooks run when DOOM is initialized, before `doom-post-init-hook'.")
+  "A list of hooks run when DOOM is initialized, before `doom-post-init-hook'.
+Use this for essential functionality.")
 
 (defvar doom-post-init-hook nil
   "A list of hooks run after DOOM initialization is complete, and after
-`doom-init-hook'.")
+`doom-init-hook'. Use this for extra, non-essential functionality.")
 
 (defun doom-try-run-hook (fn hook)
   "Runs a hook wrapped in a `condition-case-unless-debug' block; its objective
@@ -155,7 +156,6 @@ ability to invoke the debugger in debug mode."
           gc-cons-percentage 0.6
           file-name-handler-alist nil))
 
-  (require 'cl-lib)
   (load (concat doom-core-dir "core-packages") nil t)
   (setq load-path (eval-when-compile (doom-initialize t)
                                      (doom-initialize-load-path t))
@@ -166,13 +166,12 @@ ability to invoke the debugger in debug mode."
   (condition-case-unless-debug ex
       (require 'autoloads doom-autoload-file t)
     ('error
+     (delete-file doom-autoload-file)
      (lwarn 'doom-autoloads :warning
-            "%s in autoloads.el -> %s"
-            (car ex) (error-message-string ex))))
+            "Error in autoloads.el -> %s" ex)))
 
   (unless noninteractive
     (load! core-ui)         ; draw me like one of your French editors
-    (load! core-popups)     ; taming sudden yet inevitable windows
     (load! core-editor)     ; baseline configuration for text editing
     (load! core-projects)   ; making Emacs project-aware
     (load! core-keybinds))  ; centralized keybind system + which-key

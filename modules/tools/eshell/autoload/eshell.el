@@ -3,7 +3,7 @@
 (defvar +eshell-buffers ()
   "List of open eshell buffers.")
 
-(defvar +eshell-buffer-name "*doom:eshell*"
+(defvar +eshell-buffer-name "*doom eshell*"
   "The name to use for custom eshell buffers. This only affects `+eshell/open',
 `+eshell/open-popup' and `+eshell/open-workspace'.")
 
@@ -28,7 +28,7 @@
   (let ((buf (get-buffer-create +eshell-buffer-name)))
     (with-current-buffer buf
       (unless (eq major-mode 'eshell-mode) (eshell-mode)))
-    (doom-popup-buffer buf '(:autokill t) t)
+    (pop-to-buffer buf)
     (when command
       (+eshell-run-command command))))
 

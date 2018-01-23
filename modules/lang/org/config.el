@@ -3,11 +3,6 @@
 (defvar +org-dir (expand-file-name "~/work/org/")
   "The directory where org files are kept.")
 
-;; Ensure ELPA org is prioritized above built-in org.
-(when-let* ((path (locate-library "org" nil doom--package-load-path)))
-  (setq load-path (delete path load-path))
-  (push (file-name-directory path) load-path))
-
 ;; Sub-modules
 (if (featurep! +attach)  (load! +attach))
 (if (featurep! +babel)   (load! +babel))
@@ -38,21 +33,15 @@
 ;; Bootstrap
 ;;
 
-(after! org
-  ;; Occasionally, Emacs encounters an error loading the built-in org, aborting
-  ;; the load. This results in a broken, partially loaded state. This require
-  ;; tries to set it straight.
-  (require 'org)
+(add-hook! 'org-load-hook
+  #'(org-crypt-use-before-save-magic
+     +org|setup-ui
+     +org|setup-agenda
+     +org|setup-keybinds
+     +org|setup-hacks))
 
-  (defvaralias 'org-directory '+org-dir)
-
-  (org-crypt-use-before-save-magic)
-  (+org-init-ui)
-  (+org-init-keybinds)
-  (+org-hacks))
-
-(add-hook! org-mode
-  #'(doom|disable-line-numbers  ; no line numbers
+(add-hook! 'org-mode-hook
+  #'(doom|disable-line-numbers  ; org doesn't really need em
      org-bullets-mode           ; "prettier" bullets
      org-indent-mode            ; margin-based indentation
      toc-org-enable             ; auto-table of contents
@@ -65,9 +54,15 @@
      +org|show-paren-mode-compatibility
      ))
 
+(after! org
+  (defvaralias 'org-directory '+org-dir))
+
+(when (featurep 'org)
+  (run-hooks 'org-load-hook))
+
 
 ;;
-;; Config hooks
+;; `org-mode' hooks
 ;;
 
 (defun +org|unfold-to-2nd-level-or-point ()
@@ -116,18 +111,23 @@ unfold to point on startup."
 
 
 ;;
-(defun +org-init-ui ()
+;; `org-load' hooks
+;;
+
+(defun +org|setup-agenda ()
+  (setq-default
+   org-agenda-dim-blocked-tasks nil
+   org-agenda-files (ignore-errors (directory-files +org-dir t "\\.org$" t))
+   org-agenda-inhibit-startup t
+   org-agenda-skip-unavailable-files t))
+
+(defun +org|setup-ui ()
   "Configures the UI for `org-mode'."
   (setq-default
    org-adapt-indentation nil
-   org-agenda-dim-blocked-tasks nil
-   org-agenda-files (directory-files +org-dir t "\\.org$" t)
-   org-agenda-inhibit-startup t
-   org-agenda-skip-unavailable-files nil
    org-cycle-include-plain-lists t
    org-cycle-separator-lines 1
    org-entities-user '(("flat"  "\\flat" nil "" "" "266D" "♭") ("sharp" "\\sharp" nil "" "" "266F" "♯"))
-   ;; org-ellipsis " ... "
    org-fontify-done-headline t
    org-fontify-quote-and-verse-blocks t
    org-fontify-whole-heading-line t
@@ -157,8 +157,8 @@ unfold to point on startup."
    outline-blank-line t
 
    ;; LaTeX previews are too small and usually render to light backgrounds, so
-   ;; this enlargens them and ensures their background (and foreground) match the
-   ;; current theme.
+   ;; this enlargens them and ensures their background (and foreground) match
+   ;; the current theme.
    org-preview-latex-image-directory (concat doom-cache-dir "org-latex/")
    org-format-latex-options (plist-put org-format-latex-options :scale 1.5)
    org-format-latex-options
@@ -177,7 +177,7 @@ unfold to point on startup."
                    'org-link
                  'error))))
 
-(defun +org-init-keybinds ()
+(defun +org|setup-keybinds ()
   "Sets up org-mode and evil keybindings. Tries to fix the idiosyncrasies
 between the two."
   (map! :map org-mode-map
@@ -205,6 +205,7 @@ between the two."
         :ni [M-return]   (λ! (+org/insert-item 'below))
         :ni [S-M-return] (λ! (+org/insert-item 'above))
 
+        ;; Fix vim motion keys
         :m  "]]"  (λ! (org-forward-heading-same-level nil) (org-beginning-of-line))
         :m  "[["  (λ! (org-backward-heading-same-level nil) (org-beginning-of-line))
         :m  "]l"  #'org-next-link
@@ -216,7 +217,6 @@ between the two."
         :n  ">"   #'org-metaright
         :v  "<"   (λ! (org-metaleft)  (evil-visual-restore))
         :v  ">"   (λ! (org-metaright) (evil-visual-restore))
-
         ;; Fix code-folding keybindings
         :n  "za"  #'+org/toggle-fold
         :n  "zA"  #'org-shifttab
@@ -230,18 +230,24 @@ between the two."
 
         (:after org-agenda
           (:map org-agenda-mode-map
-            :e "<escape>" #'org-agenda-Quit
             :e "m"   #'org-agenda-month-view
             :e "C-j" #'org-agenda-next-item
             :e "C-k" #'org-agenda-previous-item
             :e "C-n" #'org-agenda-next-item
             :e "C-p" #'org-agenda-previous-item))))
 
-;;
-(defun +org-hacks ()
+(defun +org|setup-hacks ()
   "Getting org to behave."
   ;; Don't open separate windows
-  (push '(file . find-file) org-link-frame-setup)
+  (map-put org-link-frame-setup 'file 'find-file)
+
+  (defun +org|cleanup-agenda-files ()
+    "Close leftover agenda buffers after they've been indexed by org-agenda."
+    (cl-loop for file in org-agenda-files
+             for buf = (get-file-buffer file)
+             if (and file (not (get-buffer-window buf)))
+             do (kill-buffer buf)))
+  (add-hook 'org-agenda-finalize-hook #'+org|cleanup-agenda-files)
 
   ;; Let OS decide what to do with files when opened
   (setq org-file-apps
@@ -254,7 +260,7 @@ between the two."
     (when (and (derived-mode-p 'org-mode)
                org-occur-highlights)
       (org-remove-occur-highlights)))
-  (add-hook '+evil-esc-hook #'+org|remove-occur-highlights)
+  (add-hook 'doom-escape-hook #'+org|remove-occur-highlights)
 
   (after! recentf
     ;; Don't clobber recentf with agenda files
@@ -262,4 +268,4 @@ between the two."
       (cl-find (file-truename filename) org-agenda-files
                :key #'file-truename
                :test #'equal))
-    (add-to-list 'recentf-exclude #'+org-is-agenda-file)))
+    (push #'+org-is-agenda-file recentf-exclude)))
