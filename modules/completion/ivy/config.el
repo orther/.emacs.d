@@ -43,8 +43,7 @@ immediately runs it on the current candidate (ending the ivy session)."
   (after! magit     (setq magit-completing-read-function #'ivy-completing-read))
   (after! yasnippet (push #'+ivy-yas-prompt yas-prompt-functions))
 
-  (map! :map ivy-mode-map
-        [remap apropos]                   #'counsel-apropos
+  (map! [remap apropos]                   #'counsel-apropos
         [remap describe-face]             #'counsel-describe-face
         [remap find-file]                 #'counsel-find-file
         [remap switch-to-buffer]          #'ivy-switch-buffer
@@ -52,7 +51,6 @@ immediately runs it on the current candidate (ending the ivy session)."
         [remap recentf-open-files]        #'counsel-recentf
         [remap imenu]                     #'counsel-imenu
         [remap bookmark-jump]             #'counsel-bookmark
-        [remap projectile-switch-project] #'counsel-projectile-switch-project
         [remap projectile-find-file]      #'counsel-projectile-find-file
         [remap imenu-anywhere]            #'ivy-imenu-anywhere
         [remap execute-extended-command]  #'counsel-M-x
@@ -62,7 +60,17 @@ immediately runs it on the current candidate (ending the ivy session)."
   (ivy-set-display-transformer #'ivy-switch-buffer #'+ivy-buffer-transformer)
   (ivy-set-display-transformer #'ivy-switch-buffer-other-window #'+ivy-buffer-transformer)
   (ivy-set-display-transformer #'+ivy/switch-workspace-buffer #'+ivy-buffer-transformer)
-  (ivy-set-display-transformer #'counsel-recentf #'abbreviate-file-name))
+  (ivy-set-display-transformer #'counsel-recentf #'abbreviate-file-name)
+
+  (nconc ivy-sort-functions-alist
+         '((persp-kill-buffer   . nil)
+           (persp-remove-buffer . nil)
+           (persp-add-buffer    . nil)
+           (persp-switch        . nil)
+           (persp-window-switch . nil)
+           (persp-frame-switch  . nil)
+           (+workspace/switch-to . nil)
+           (+workspace/delete . nil))))
 
 
 (def-package! swiper :commands (swiper swiper-all))

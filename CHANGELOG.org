@@ -1,6 +1,8 @@
 #+TITLE: Changelog
 
 - [[#unreleased-develop][Unreleased (develop)]]
+- [[#208-dec-09-2017][2.0.8 (Dec 09, 2017)]]
+- [[#207-nov-08-2017][2.0.7 (Nov 08, 2017)]]
 - [[#206-oct-05-2017][2.0.6 (Oct 05, 2017)]]
 - [[#205-sep-03-2017][2.0.5 (Sep 03, 2017)]]
 - [[#204-jul-14-2017][2.0.4 (Jul 14, 2017)]]
@@ -11,12 +13,93 @@
 
 * Unreleased (develop)
 + *Module changes:*
-  + *BREAKING* Split =lang/java= into two submodules: one for eclim, and another for
-    meghanada. You will need to update your =init.el= to enable one.
-    submodule is experimental, since I have few opportunities to test it.
-  + *BREAKING* Ace-window is no longer part of Doom core. It has been moved to
-    =ui/window-select=, which offers two submodules for interactive window
-    selection/moving: ace-window and switch-window.
+  + Add =private/default= to replace =private/hlissner=, which is a more generic
+    "starter" module for new users. My private module is now at
+    [[https://github.com/hlissner/doom-emacs-private][hlissner/doom-emacs-private]].
++ =general=
+  + Fix "peculiar error" messages when running =bin/doom-doctor=, caused by
+    poorly thought out error handling (see [[https://github.com/hlissner/doom-emacs/issues/175][#175]]).
+  + Fix ~doom/am-i-secure~ command.
+  + Add unicode symbols to package management commands. Looks a little nicer <3.
+  + Transform =recentf= entries into their absolute paths with symlinks resolved
+    (using ~file-truename~).
+  + Local data and cache files are no longer host-namespaced. Originally, this
+    was meant to facilitate using the same config files (symlinked) across
+    different computers (e.g. via dropbox). Byte-compiled packages on one
+    computer would cause errors on another, so I abandoned this practice, making
+    ~doom-host-dir~ unnecessary.
+  + Fix an issue during live byte-compilation (with auto-compile-on-save-mode)
+    where ~gc-cons-threshold~ would get set to 304mb in the user's active
+    session, causing freezes and stuttering.
+  + Improve error handling when byte compiling Doom. It now cleans up after
+    itself if something goes wrong, with improved error handling overall.
+  + Fix =stringp= error thrown by ~doom-fetch~ in noninteractive sessions.
+  + =core= Improve GPG integration by setting ~epa-file-encrypt-to~ to
+    ~user-mail-address~, and ~epa-pinentry-mode~ to ~'loopback~ (so that Emacs
+    will prompt you for the passphrase in the minibuffer).
+  + =core-packages= Fix ~doom-module-pairs~ returning pairs in arbitrary order,
+    causing load order errors. This is because the ~hash-table-values~ function
+    in Emacs 25 and under uses ~maphash~, which reverses the hash-table, while
+    newer versions use ~cl-loop~, which doesn't.
+  + =core-packages= Fix ~doom//*~ not running from the correct
+    default-directory, causing errors.
+  + =core-ui= Fix cryptic missing-font errors (also, they are warnings now).
+  + =core-ui= Account for Emacs 26 line numbers when calculating
+    ~visual-fill-column-width~.
+  + =core-editor= the =KILL= argument for ~quit-window &optional KILL WINDOW~
+    has been flipped and now kills the window's buffer by default.
+  + =core-projects= Add ~doom-project-find-file~ and ~doom-project-browse~ for
+    interactively fuzzy-finding and opening files in a directory/project.
+  + Add ~doom/info~ command for collecting information about your system and
+    session and puts it in the clipboard. This is to make it easier for those
+    reporting bugs to easily include it.
+  + Fix ibuffer windows not being handed off to popup system (see [[https://github.com/hlissner/doom-emacs/issues/309][#309]]).
++ =feature=
+  + =file-templates=
+    + Add a file template for fish shell scripts (thanks to [[https://github.com/amosbird][amosbird]]).
+    + Fix some file templates not being inserted, like module README.org files.
+  + =version-control= When evil-mode is available, start git commit message
+    buffers in insert mode (see [[https://github.com/hlissner/doom-emacs/issues/300][#300]]).
+  + =jump= Always prompt for provider when no major-mode specific online jumper
+    is defined (for ~+jump/online~ and ~+jump/documentation~).
++ =ui=
+  + =doom-dashboard=
+    + Fix ~whitespace-mode~ and ~show-trailing-whitespace~ turning the dashboard
+      into a Christmas tree.
+    + Add the ~+doom-dashboard-pwd-policy~ option, giving you control over how
+      ~default-directory~ is set in the dashboard. By default this is set to
+      ~'last-project~, meaning the dashboard's cwd will match the project of the
+      last buffer you killed.
++ =completion=
+  + =ivy= Fix TAB only half-triggering auto-completion (see [[https://github.com/hlissner/doom-emacs/issues/303][#303]]).
++ =lang=
+  + =cc=
+    + Add =rtags= support for better code navigation. This replaces gxtag and
+      etag support. Also includes automatic management of the rdm daemon.
+    + Improved support for JSON compilation databases. Irony-mode (and by
+      extension its flycheck and company plugins will now pick them up with more
+      consistency). This ensures all these tools run with the same compile
+      options as your project.
+    + New ~+cc/reload-compile-db~ commands forcibly refreshes the compilation db
+      of your current project, updating irony and running rtags daemon, if any.
+    + The ~+cc-include-paths~ and ~+cc-compiler-options~ options have been
+      renamed to ~+cc-default-include-paths~ and ~+cc-default-compiler-options~
+      for clarity.
+    + Fix irony-mode complaining when it is enabled in non-C major-modes.
+  + =org=
+    + Change repo source for org-plus-contrib to emacsmirror.
+    + Fix ~+org-dir~ being resolved too soon, robbing the user of the
+      opportunity to change it in their private module.
+    + Fix ~invalid file location~ error when capturing to a TODO template.
+    + Prevent =org-plus-contrib= from being installed on Emacs 26+, as 9.1.4 is
+      included with it.
+    + Fix invalid function errors when drag'n'dropping files into org buffers
+      (see [[https://github.com/hlissner/doom-emacs/issues/307][#307]]).
+  + =java= Fix Doom install meghanada server while byte compiling your Emacs
+    configuration.
+
+* 2.0.8 (Dec 09, 2017)
++ *Module changes:*
   + New module: =lang/nix=, adds support for editing nix configuration files.
     Contributed by [[https://github.com/ocharles][ocharles]].
   + The =org/*= modules have been moved to =lang/org= and sub-modules therein.
@@ -24,6 +107,77 @@
     org-mode had its own category.
   + Any module can now have an =init.el=, which will be loaded before any other
     modules are loaded.
++ =general=
+  + Removed all core def-setting! definitions, because ~set!~ was intended for
+    cross-module configuration, where modules may or may not be enabled. This
+    consideration is unnecessary for Doom core configuration. The following
+    settings have been removed: ~:editorconfig~, ~:theme~, ~:font~,
+    ~:variable-font~, ~:unicode-font~, ~:big-font~.
+  + Address various byte-compiler warnings that crop up in Emacs 26+, including
+    obsolete (if|when)-let macro warnings.
+  + Fix byte-compiler complaining that packages couldn't be found when that
+    package is unwanted (e.g. conditionally installed or disabled packages).
+  + =private/{user-login-name}= is no longer a "magic" module that is
+    automatically loaded.
+  + =core-packages= *BREAKING* Packages are no longer deferred by default. i.e.
+    ~use-package-always-defer~ is now nil, as per the default.
+  + =core-popup= Fix window-live-p error when using ~doom/other-popup~ (or its
+    alias, ~other-popup~).
+  + =core-ui= Fix hl-line highlighting the rest of the window past end-of-file
+    in Emacs 26+. This is caused by a strange dynamic between hl-line and the
+    new line numbers feature.
++ =feature=
+  + =version-control= Fix an issue with shackle not managing magit's popups
+    properly. This could cause the pointer to end up in the wrong places (e.g.
+    when you try to commit; the commit message and diff buffers pop up and the
+    pointer gets stuck in the diff window) (see [[https://github.com/hlissner/doom-emacs/issues/282][#282]]).
++ =completion=
+  + =helm= Implement ~:agcwd~, ~:rg~, and ~:rgcwd~ commands for searching with
+    helm.
+  + =ivy=
+    + Add C-SPC binding for "previewing" the selected candidate. Useful for
+      previewing files in ~counsel-find-file~ or ~counsel-projectile-find-file~.
+      This keybinding is defined in =private/hlissner/+bindings.el=.
+    + Disable "very magic" regular expressions in ivy. Specifically, parentheses
+      are now literal, and must be escaped to make them special. This is
+      consistent with evil-search regex.
+    + Fix a bug where ~:rgcwd~ wasn't showing any results, due to an incorrect
+      option argument in the ripgrep command string.
++ =ui=
+  + =doom-modeline= Remove the let-binds for ~all-the-icons-scale-factor~, so
+    that users can customize it themselves (see [[https://github.com/hlissner/doom-emacs/issues/278][#278]]).
++ =tools=
+  + =password-store= Fix compatibility with Emacs 26.
++ =lang=
+  + =clojure=
+    + This module has been rewritten with improved Cider and clojurescript
+      support, as well as new refactoring commands. Thanks to [[https://github.com/teesloane][teesloane]]!
+  + =crystal=
+    + Add flycheck integration for the Crystal language, powered by
+      ~flycheck-crystal~.
+    + Use the ELPA source for ~crystal-mode~. The former QUELPA source
+      (dotmilk's fork) is no longer maintained.
+  + =org=
+    + Fix scenario where built-in (and incorrect) version of org-mode (8.x) was loaded
+      instead of 9.0+.
+    + This module is incredibly opinionated. More opinionated than I'd like, but
+      org-mode is an ongoing effort. To address this, =lang/org= has been
+      reorganized. Variables are now set with ~defvar~ instead of ~setq~, which
+      makes them more accessible for configuring from private modules.
+    + Use the ELPA source for ~ob-rust~. The former QUELPA source (zweifisch's
+      fork) is no longer maintained.
+    + Fix an over-aggressive smartparens config for org-mode that would cause
+      certain markers and delimiters (like spaces or square brackets) being
+      repeated in places you didn't want them to be, like inside a checkbox.
+
+* 2.0.7 (Nov 08, 2017)
++ *Module changes:*
+  + *BREAKING* Split =lang/java= into two submodules: one for eclim, and another for
+    meghanada. You will need to update your =init.el= to enable one.
+    submodule is experimental, since I have few opportunities to test it.
+  + *BREAKING* Ace-window is no longer part of Doom core. It has been moved to
+    =ui/window-select=, which offers two submodules for interactive window
+    selection/moving: ace-window and switch-window.
 + =general=
   + New command naming convention: ~doom//...~ -- denotes that this an
     interactive command meant for:
@@ -35,8 +189,6 @@
   + Autoload files can now specify a predicate cookie to tell the
     compiler/autoload reader whether or not to ignore that file. They look like
     ~;;;###if (featurep! :feature evil)~.
-  + =private/{user-login-name}= is no longer a "magic" module that is
-    automatically loaded.
   + =core-keybinds= Add :g flag to ~map!~ for defining global keybinds along
     with vim keybinds, so you don't have to repeat yourself, just for a global
     binding.
@@ -45,41 +197,15 @@
     (e.g. ELPA), and whose ~package!~ definition was later changed so that it
     should be handled by another (e.g. QUELPA). This would cause "FAILED" error
     messages while trying to install or update these packages (see [[https://github.com/hlissner/doom-emacs/issues/222][#222]]).
-  + =core-packages= *BREAKING* Packages are no longer deferred by default. i.e.
-    ~use-package-always-defer~ is now nil, as per the default.
-  + =core-popup= Fix window-live-p error when using ~doom/other-popup~ (or its
-    alias, ~other-popup~).
-  + Removed all core def-setting! definitions, because ~set!~ was intended for
-    cross-module configuration, where modules may or may not be enabled. This
-    consideration is unnecessary for Doom core configuration. The following
-    settings have been removed: ~:editorconfig~, ~:theme~, ~:font~,
-    ~:variable-font~, ~:unicode-font~, ~:big-font~.
 + =feature=
   + =file-templates= Disable file templates for .dir-locals.el files.
   + =jump= New command ~+jump/online-select~, which is like ~+jump/online~, but
     will always prompt for which provider to use.
-  + =version-control= Possibly fix an issue with magit placing the pointer in
-    the wrong places when multiple magit popups appear (e.g. when you try to
-    commit, and the commit message and diff buffers pop up, the pointer can get
-    stuck in the diff window) (see [[https://github.com/hlissner/doom-emacs/issues/282][#282]]).
-+ =completion=
-  + =helm= Implement ~:agcwd~, ~:rg~, and ~:rgcwd~ commands for searching with
-    helm.
-  + =ivy= C-SPC is now the default keybinding for "previewing" the selected
-    candidate. This keybinding is defined in =private/hlissner/+bindings.el=.
 + =ui=
   + =doom= This module no longer sets a default font. This is left to the user
     to set in their own private module. Use ~(set! :font "Font Name" :size N)~
     to do so.
 + =lang=
-  + =clojure=
-    + This module has been rewritten with improved Cider and clojurescript
-      support, as well as new refactoring commands. Thanks to [[https://github.com/teesloane][teesloane]]!
-  + =crystal=
-    + Add flycheck integration for the Crystal language, powered by
-      ~flycheck-crystal~.
-    + Use the ELPA source for ~crystal-mode~. The former QUELPA soruce
-      (dotmilk's fork) is no longer maintained.
   + =sh=
     + Improve how variables and subshells in double-quoted strings are
       fontified.

@@ -122,15 +122,18 @@
 
        ;; Applications are complex and opinionated modules that transform Emacs
        ;; toward a specific purpose. They may have additional dependencies and
-       ;; should be loaded last.
+       ;; should be loaded late.
        :app
-       email             ; emacs as an email client
-       irc               ; how neckbeards socialize
-       rss               ; emacs as an RSS reader
-       twitter           ; twitter client https://twitter.com/vnought
-       write             ; emacs as a word processor (latex + org + markdown)
+      ;email             ; emacs as an email client
+      ;irc               ; how neckbeards socialize
+      ;rss               ; emacs as an RSS reader
+      ;twitter           ; twitter client https://twitter.com/vnought
+      ;write             ; emacs as a word processor (latex + org + markdown)
 
-       ;; Private modules named after your username are loaded automatically.
-       ;; Leaving this here is harmless though.
-       :private hlissner)
+       ;; Private modules are where you place your personal configuration files.
+       ;; By default, they are not tracked. There is one module included here,
+       ;; the defaults module. It contains a Spacemacs-inspired keybinding
+       ;; scheme and additional ex commands for evil-mode. Use it as a reference
+       ;; for your own.
+       :private default)
 

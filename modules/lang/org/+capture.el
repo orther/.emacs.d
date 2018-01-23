@@ -10,20 +10,25 @@
 ;;    anywhere I can call org-capture (whether or not Emacs is open/running),
 ;;    like, say, from qutebrowser, vimperator, dmenu or a global keybinding.
 
+(defvar +org-default-todo-file "todo.org"
+  "TODO")
+
 (defvar +org-default-notes-file "notes.org"
   "TODO")
 
-(setq org-capture-templates
-      '(("t" "Todo" entry
-         (file+headline (expand-file-name "todo.org" +org-dir) "Inbox")
-         "* [ ] %?\n%i" :prepend t :kill-buffer t)
+(defvar org-capture-templates
+  '(("t" "Todo" entry
+     (file+headline +org-default-todo-file "Inbox")
+     "* [ ] %?\n%i" :prepend t :kill-buffer t)
 
-        ("n" "Notes" entry
-         (file+headline org-default-notes-file "Inbox")
-         "* %u %?\n%i" :prepend t :kill-buffer t)))
+    ("n" "Notes" entry
+     (file+headline +org-default-notes-file "Inbox")
+     "* %u %?\n%i" :prepend t :kill-buffer t)))
+
 
 (after! org
   (defvaralias 'org-default-notes-file '+org-default-notes-file)
+
   (setq org-default-notes-file (expand-file-name +org-default-notes-file +org-dir))
 
   (add-hook 'org-capture-after-finalize-hook #'+org-capture|cleanup-frame)
