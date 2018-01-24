@@ -9,19 +9,23 @@
 
       +doom-modeline-height 25)
 
-;; An extra measure to prevent the flash of unstyled mode-line while Emacs is
-;; booting up (when Doom is byte-compiled).
-(setq-default mode-line-format nil)
+(setq doom-font (font-spec :family "Fira Mono" :size 10)
+      doom-variable-pitch-font (font-spec :family "Fira Sans" :size 10)
+      doom-unicode-font (font-spec :family "DejaVu Sans Mono" :size 10)
+      doom-big-font (font-spec :family "Fira Mono" :size 19))
 
-;; host-specific settings
-(pcase (system-name)
-  ;; ("triton")
-  ((or "imac" "linux")
-   ;; smaller screen, smaller fonts
-   (set! :font "Fira Mono" :size 10)
-   (set! :variable-font "Fira Sans" :size 10)
-   (set! :unicode-font "DejaVu Sans Mono" :size 10))
-  ;; ("nereid")
-  ;; ("io")
-  ;; ("sao")
-  )
+;; ;; An extra measure to prevent the flash of unstyled mode-line while Emacs is
+;; ;; booting up (when Doom is byte-compiled).
+;; (setq-default mode-line-format nil)
+
+;; ;; host-specific settings
+;; (pcase (system-name)
+;;   ((or "imac" "linux")
+;;    ;; smaller screen, smaller fonts
+;;    (set! :font "Fira Mono" :size 10)
+;;    (set! :variable-font "Fira Sans" :size 10)
+;;    (set! :unicode-font "DejaVu Sans Mono" :size 10))
+;;   ;; ("nereid")
+;;   ;; ("io")
+;;   ;; ("sao")
+;;   )

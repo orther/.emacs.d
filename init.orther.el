@@ -33,11 +33,15 @@
 (require 'core (concat user-emacs-directory "core/core"))
 
 (doom! :feature
+       popup             ; tame sudden yet inevitable temporary windows
       ;debugger        ; FIXME stepping through code, to help you add bugs
        eval            ; run code, run (also, repls)
        evil            ; come to the dark side, we have cookies
        file-templates  ; auto-snippets for empty files
-       jump            ; helping you get around
+       (lookup           ; helps you navigate your code and documentation
+        +devdocs         ; ...on devdocs.io online
+        +docsets)        ; ...or in Dash docsets locally
+       services          ; TODO managing external services & code builders
        snippets        ; my elves. They type so I don't have to
        spellcheck      ; tasing you for misspelling mispelling
        syntax-checker  ; tasing you for every semicolon you forget
@@ -62,6 +66,7 @@
       ;unicode         ; extended unicode support for various languages
       ;tabbar          ; FIXME an (incomplete) tab bar for Emacs
        vi-tilde-fringe ; fringe tildes to mark beyond EOB
+       window-select     ; visually switch windows
 
        :tools
        dired           ; making dired pretty [functional]
@@ -99,6 +104,14 @@
       ;lua             ; one-based indices? one-based indices
        markdown        ; writing docs for people to ignore
       ;ocaml           ; an objective camel
+       (org              ; organize your plain life in plain text
+        +attach          ; custom attachment system
+        +babel           ; running code in org
+        +capture         ; org-capture in and outside of Emacs
+        +export          ; centralized export system + more backends
+        +present         ; Emacs for presentations
+        ;; TODO +publish
+        )
       ;perl            ; write code no one else can comprehend
       ;php             ; make php less awful to work with
        plantuml        ; diagrams for confusing people more
@@ -113,20 +126,20 @@
       ;typescript      ; javascript, but better
        web             ; the tubes
 
-       :org
-       org             ; organize your plain life in plain text
-       org-babel       ; executable code snippets in org-mode
-       org-attach      ; a simpler attachment system
-       org-capture     ; a better org-capture, in or outside of Emacs
-       org-export      ; a custom, centralized export system
-       org-present     ; using org-mode for presentations
-      ;org-sync        ; TODO sync with mobile
-      ;org-publish     ; TODO org + blogs
+      ;;  :org
+      ;;  org             ; organize your plain life in plain text
+      ;;  org-babel       ; executable code snippets in org-mode
+      ;;  org-attach      ; a simpler attachment system
+      ;;  org-capture     ; a better org-capture, in or outside of Emacs
+      ;;  org-export      ; a custom, centralized export system
+      ;;  org-present     ; using org-mode for presentations
+      ;; ;org-sync        ; TODO sync with mobile
+      ;; ;org-publish     ; TODO org + blogs
 
        ;; Applications are complex and opinionated modules that transform Emacs
        ;; toward a specific purpose. They may have additional dependencies and
        ;; should be loaded last.
-      ;:app
+      :app
       ;email           ; emacs as an email client
       ;irc             ; how neckbeards socialize
       ;rss             ; emacs as an RSS reader

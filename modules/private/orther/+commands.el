@@ -2,6 +2,15 @@
 
 (defalias 'ex! 'evil-ex-define-cmd)
 
+(evil-define-command doom:cleanup-session (&optional bang)
+  (interactive "<!>")
+  (doom/cleanup-session bang))
+
+
+;;
+;; Commands
+;;
+
 ;;; Commands defined elsewhere
 ;;(ex! "al[ign]"      #'+evil:align)
 ;;(ex! "g[lobal]"     #'+evil:global)
@@ -21,7 +30,9 @@
 ;; TODO (ex! "db"          #'doom:db)
 ;; TODO (ex! "dbu[se]"     #'doom:db-select)
 ;; TODO (ex! "go[ogle]"    #'doom:google-search)
-(ex! "lo[okup]"    #'+jump:online)
+(ex! "lo[okup]"    #'+lookup:online)
+(ex! "dash"        #'+lookup:dash)
+(ex! "dd"          #'+lookup:devdocs)
 (ex! "http"        #'httpd-start)            ; start http server
 (ex! "repl"        #'+eval:repl)             ; invoke or send to repl
 ;; TODO (ex! "rx"          'doom:regex)             ; open re-builder
@@ -43,15 +54,14 @@
 
 ;; Dealing with buffers
 (evil-set-command-properties #'+workspace/cleanup :ex-bang t)
-
-(ex! "clean[up]"   #'+workspace/cleanup)
+(ex! "clean[up]"   #'doom:cleanup-session)
 (ex! "k[ill]"      #'doom/kill-this-buffer)
 (ex! "k[ill]all"   #'+orther:kill-all-buffers)
 (ex! "k[ill]m"     #'+orther:kill-matching-buffers)
 (ex! "k[ill]o"     #'doom/kill-other-buffers)
 (ex! "l[ast]"      #'doom/popup-restore)
 (ex! "m[sg]"       #'view-echo-area-messages)
-(ex! "pop[up]"     #'doom/popup) ; open current buffer in popup
+(ex! "pop[up]"     #'doom/popup-this-buffer)
 
 ;; Project navigation
 (ex! "a"           #'projectile-find-other-file)
@@ -70,7 +80,6 @@
        (ex! "rgc[wd]"  #'+helm:rg-cwd)
        (ex! "sw[oop]"  #'+helm:swoop)
        (ex! "todo"     #'+helm:todo)))
-
 
 ;; Project tools
 (ex! "build"       #'+eval/build)
@@ -98,4 +107,4 @@
 (ex! "tabsave"     #'+workspace:save)
 
 ;; Org-mode
-(ex! "org"         #'+org:capture)
+(ex! "cap"         #'+org-capture/dwim)

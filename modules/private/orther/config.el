@@ -1,7 +1,8 @@
 ;;; private/orther/config.el -*- lexical-binding: t; -*-
 
+(load! +bindings)  ; my key bindings
+
 (when (featurep 'evil)
-  (load! +bindings)  ; my key bindings
   (load! +commands)) ; my custom ex commands
 
 (load! +lispy)
@@ -88,6 +89,11 @@
         neo-window-width 35
         neo-hidden-regexp-list (append neo-hidden-regexp-list
                                        '(".happypack" ".vscode" ".log$" ".DS_Store"))))
+;; setup fonts
+(setq doom-font (font-spec :family "Fira Mono" :size 12)
+      doom-variable-pitch-font (font-spec :family "Fira Sans" :size 12)
+      doom-unicode-font (font-spec :family "DejaVu Sans Mono" :size 12)
+      doom-big-font (font-spec :family "Fira Mono" :size 20))
 
 ;; (setq user-mail-address "brandon@omt.tech"
 ;;       user-full-name "Brandon Orther"
@@ -191,5 +197,6 @@
 ;;     :channels ("#php")))
 
 ;; make fullscreen on load
+
 (after! evil
   (doom/toggle-fullscreen))
