@@ -1,13 +1,16 @@
 ;;; core/autoload/buffers.el -*- lexical-binding: t; -*-
 
 ;;;###autoload
-(defvar doom-real-buffer-functions '()
+(defvar doom-real-buffer-functions
+  '(doom-dired-buffer-p)
   "A list of predicate functions run to determine if a buffer is real, unlike
 `doom-unreal-buffer-functions'. They are passed one argument: the buffer to be
 tested.
 
 Should any of its function returns non-nil, the rest of the functions are
-ignored and the buffer is considered real.")
+ignored and the buffer is considered real.
+
+See `doom-real-buffer-p' for more information.")
 
 ;;;###autoload
 (defvar doom-unreal-buffer-functions
@@ -17,14 +20,17 @@ unlike `doom-real-buffer-functions'. They are passed one argument: the buffer to
 be tested.
 
 Should any of these functions return non-nil, the rest of the functions are
-ignored and the buffer is considered unreal.")
+ignored and the buffer is considered unreal.
+
+See `doom-real-buffer-p' for more information.")
 
 ;;;###autoload
 (defvar-local doom-real-buffer-p nil
-  "If non-nil, this buffer should be considered real no matter what.")
+  "If non-nil, this buffer should be considered real no matter what. See
+`doom-real-buffer-p' for more information.")
 
 ;;;###autoload
-(defvar doom-fallback-buffer "*scratch*"
+(defvar doom-fallback-buffer-name "*scratch*"
   "The name of the buffer to fall back to if no other buffers exist (will create
 it if it doesn't exist).")
 
@@ -34,10 +40,17 @@ it if it doesn't exist).")
 ;;
 
 ;;;###autoload
+(defun doom-buffer-frame-predicate (buf)
+  "To be used as the default frame buffer-predicate parameter. Returns nil if
+BUF should be skipped over by functions like `next-buffer' and `other-buffer'."
+  (or (doom-real-buffer-p buf)
+      (eq buf (doom-fallback-buffer))))
+
+;;;###autoload
 (defun doom-fallback-buffer ()
   "Returns the fallback buffer, creating it if necessary. By default this is the
-scratch buffer."
-  (get-buffer-create doom-fallback-buffer))
+scratch buffer. See `doom-fallback-buffer-name' to change this."
+  (get-buffer-create doom-fallback-buffer-name))
 
 ;;;###autoload
 (defalias 'doom-buffer-list #'buffer-list)
@@ -53,6 +66,11 @@ If no project is active, return all buffers."
                  if (projectile-project-buffer-p buf project-root)
                  collect buf)
       buffers)))
+
+;;;###autoload
+(defun doom-dired-buffer-p (buf)
+  "Returns non-nil if BUF is a dired buffer."
+  (with-current-buffer buf (derived-mode-p 'dired-mode)))
 
 ;;;###autoload
 (defun doom-special-buffer-p (buf)
@@ -71,8 +89,14 @@ If no project is active, return all buffers."
 
 ;;;###autoload
 (defun doom-real-buffer-p (&optional buffer-or-name)
-  "Returns t if BUFFER-OR-NAME is a 'real' buffer. The criteria for a real
-buffer is:
+  "Returns t if BUFFER-OR-NAME is a 'real' buffer.
+
+A real buffer is a useful buffer; a first class citizen in Doom. Real ones
+should get special treatment, because we will be spending most of our time in
+them. Unreal ones should be low-profile and easy to cast aside, so we can focus
+on real ones.
+
+The exact criteria for a real buffer is:
 
   1. A non-nil value for the buffer-local value of the `doom-real-buffer-p'
      variable OR
@@ -126,32 +150,6 @@ If DERIVED-P, test with `derived-mode-p', otherwise use `eq'."
            when (string-match-p pattern (buffer-name buf))
            collect buf))
 
-(defun doom--cycle-real-buffers (n)
-  "Switch to the next buffer N times (previous, if N < 0), skipping over unreal
-buffers. If there's nothing left, switch to `doom-fallback-buffer'. See
-`doom-real-buffer-p' for what 'real' means."
-  (if (null n)
-      (switch-to-buffer (doom-fallback-buffer) nil t)
-    (let ((buffers (delq (current-buffer) (doom-real-buffer-list))))
-      (cond ((or (not buffers)
-                 (zerop (% n (1+ (length buffers)))))
-             (switch-to-buffer (doom-fallback-buffer) nil t))
-            ((= (length buffers) 1)
-             (switch-to-buffer (car buffers) nil t))
-            (t
-             ;; Why this instead of switching straight to the Nth buffer in
-             ;; BUFFERS? Because `switch-to-next-buffer' and
-             ;; `switch-to-prev-buffer' properly update buffer list order.
-             (cl-loop with move-func =
-                      (if (> n 0) #'switch-to-next-buffer #'switch-to-prev-buffer)
-                      for i to 20
-                      while (not (memq (current-buffer) buffers))
-                      do
-                      (dotimes (_i (abs n))
-                        (funcall move-func)))))))
-  (force-mode-line-update)
-  (current-buffer))
-
 ;;;###autoload
 (defun doom-set-buffer-real (buffer flag)
   "Forcibly mark BUFFER as FLAG (non-nil = real)."
@@ -195,7 +193,7 @@ If DONT-SAVE, don't prompt to save modified buffers (discarding their changes)."
     (kill-buffer buffer)
     (cl-loop for win in windows
              if (doom-real-buffer-p (window-buffer win))
-             do (with-selected-window win (doom/previous-buffer)))))
+             do (with-selected-window win (previous-buffer)))))
 
 ;;;###autoload
 (defun doom/kill-all-buffers (&optional project-p)
@@ -273,17 +271,3 @@ processes killed."
           (delete-process p)
           (cl-incf n))))
     n))
-
-;;;###autoload
-(defun doom/next-buffer ()
-  "Switch to the next real buffer, skipping non-real buffers. See
-`doom-real-buffer-p' for what 'real' means."
-  (interactive)
-  (doom--cycle-real-buffers +1))
-
-;;;###autoload
-(defun doom/previous-buffer ()
-  "Switch to the previous real buffer, skipping non-real buffers. See
-`doom-real-buffer-p' for what 'real' means."
-  (interactive)
-  (doom--cycle-real-buffers -1))

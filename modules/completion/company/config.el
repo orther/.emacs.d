@@ -27,7 +27,7 @@ MODES should be one major-mode symbol or a list of them."
              company-complete-common company-manual-begin company-grab-line)
   :config
   (setq company-idle-delay nil
-        company-tooltip-limit 10
+        company-tooltip-limit 14
         company-dabbrev-downcase nil
         company-dabbrev-ignore-case nil
         company-dabbrev-code-other-buffers t
@@ -37,8 +37,11 @@ MODES should be one major-mode symbol or a list of them."
         company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend)
         company-backends '(company-capf company-dabbrev company-ispell company-yasnippet)
         company-transformers '(company-sort-by-occurrence))
-
   (global-company-mode +1))
+
+(when (featurep! +auto)
+  (require 'company)
+  (setq company-idle-delay 0.2))
 
 
 (def-package! company-statistics

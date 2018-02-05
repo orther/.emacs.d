@@ -90,6 +90,10 @@ fundamental-mode) for performance sake."
       savehist-additional-variables '(kill-ring search-ring regexp-search-ring)
       save-place-file (concat doom-cache-dir "saveplace"))
 (add-hook! 'doom-init-hook #'(savehist-mode save-place-mode))
+(defun doom*recenter-on-load-saveplace (&rest _)
+  "Recenter on cursor when loading a saved place."
+  (if buffer-file-name (ignore-errors (recenter))))
+(advice-add #'save-place-find-file-hook :after-while #'doom*recenter-on-load-saveplace)
 
 ;; Keep track of recently opened files
 (def-package! recentf
@@ -213,11 +217,20 @@ extension, try to guess one."
   (defun doom*quit-expand-region ()
     (when (memq last-command '(er/expand-region er/contract-region))
       (er/contract-region 0)))
-  (advice-add #'evil-escape :before #'doom*quit-expand-region))
+  (advice-add #'evil-escape :before #'doom*quit-expand-region)
+  (advice-add #'doom/escape :before #'doom*quit-expand-region))
 
-(def-package! help-fns+ ; Improved help commands
-  :commands (describe-buffer describe-command describe-file
-             describe-keymap describe-option describe-option-of-type))
+(def-package! helpful
+  :commands (helpful-callable helpful-function helpful-macro helpful-command
+             helpful-key helpful-variable helpful-at-point)
+  :init
+  (setq counsel-describe-function-function #'helpful-callable
+        counsel-describe-variable-function #'helpful-variable)
+
+  (global-set-key [remap describe-function] #'helpful-callable)
+  (global-set-key [remap describe-command]  #'helpful-command)
+  (global-set-key [remap describe-variable] #'helpful-variable)
+  (global-set-key [remap describe-key]      #'helpful-key))
 
 (def-package! pcre2el
   :commands rxt-quote-pcre)

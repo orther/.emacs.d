@@ -36,7 +36,6 @@ shorter major mode name in the mode-line. See `doom|set-mode-name'.")
   "List of hooks to run when the theme (and font) is initialized (or reloaded
 with `doom//reload-theme').")
 
-
 (setq-default
  bidi-display-reordering nil ; disable bidirectional text for tiny performance boost
  blink-matching-paren nil    ; don't blink--too distracting
@@ -306,9 +305,14 @@ DEFAULT is non-nil, set the default mode-line for all buffers."
 ;; The native border "consumes" a pixel of the fringe on righter-most splits,
 ;; `window-divider' does not. Available since Emacs 25.1.
 (setq-default window-divider-default-places t
-              window-divider-default-bottom-width 0
+              window-divider-default-bottom-width 1
               window-divider-default-right-width 1)
 (add-hook 'doom-init-ui-hook #'window-divider-mode)
+
+;; remove prompt if the file is opened in other clients
+(defun server-remove-kill-buffer-hook ()
+  (remove-hook 'kill-buffer-query-functions 'server-kill-buffer-query-function))
+(add-hook 'server-visit-hook 'server-remove-kill-buffer-hook)
 
 
 ;;
@@ -316,13 +320,22 @@ DEFAULT is non-nil, set the default mode-line for all buffers."
 ;;
 
 (defvar doom-line-numbers-style t
-  "The style to use for the line number display.
+  "The default styles to use for the line number display. Accepts one of the
+following:
 
-Accepts the same arguments as `display-line-numbers', which are:
+  nil         No line numbers
+  t           Ordinary line numbers
+  'relative   Relative line numbers
 
-nil         No line numbers
-t           Ordinary line numbers
-'relative   Relative line numbers")
+Use `doom/toggle-line-numbers' to cycle between these line number styles.")
+
+(when (boundp 'display-line-numbers)
+  (defvar doom-line-numbers-visual-style nil
+    "If non-nil, relative line numbers will be countered by screen line, rather
+than buffer line. Setting this to non-nil is the equivalent of using 'visual in
+`display-line-numbers'.
+
+It has no effect on nlinum."))
 
 (defun doom|enable-line-numbers (&optional arg)
   "Enables the display of line numbers, using `display-line-numbers' (in Emacs
@@ -330,13 +343,9 @@ t           Ordinary line numbers
 
 See `doom-line-numbers-style' to control the style of line numbers to display."
   (cond ((boundp 'display-line-numbers)
-         (setq display-line-numbers
-               (pcase arg
-                 (+1 doom-line-numbers-style)
-                 (-1 nil)
-                 (_ doom-line-numbers-style))))
+         (setq display-line-numbers (unless (eq arg -1) doom-line-numbers-style)))
         ((eq doom-line-numbers-style 'relative)
-         (if (= arg -1)
+         (if (eq arg -1)
              (nlinum-relative-off)
            (nlinum-relative-on)))
         ((not (null doom-line-numbers-style))
@@ -414,8 +423,9 @@ character that looks like a space that `whitespace-mode' won't affect.")
 
 (def-package! nlinum-relative
   :unless (boundp 'display-line-numbers)
-  :commands nlinum-relative-mode
+  :commands (nlinum-relative-mode nlinum-relative-on nlinum-relative-off)
   :config
+  (setq nlinum-format " %d ")
   (after! evil (nlinum-relative-setup-evil)))
 
 
@@ -423,47 +433,53 @@ character that looks like a space that `whitespace-mode' won't affect.")
 ;; Theme & font
 ;;
 
-(defun doom|init-theme (&optional frame)
+(defun doom|init-theme ()
   "Set the theme and load the font, in that order."
   (when doom-theme
     (load-theme doom-theme t))
-  (condition-case-unless-debug ex
-      (when (display-graphic-p)
-        (when (fontp doom-font)
-          (set-frame-font doom-font nil (if frame (list frame) t))
-          (set-face-attribute 'fixed-pitch frame :font doom-font))
-        ;; Fallback to `doom-unicode-font' for Unicode characters
-        (when (fontp doom-unicode-font)
-          (set-fontset-font t 'unicode doom-unicode-font frame))
-        ;; ...and for variable-pitch-mode:
-        (when (fontp doom-variable-pitch-font)
-          (set-face-attribute 'variable-pitch frame :font doom-variable-pitch-font)))
-    ('error
-     (if (string-prefix-p "Font not available: " (error-message-string ex))
-         (lwarn 'doom-ui :warning
-                "Could not find the '%s' font on your system, falling back to system font"
-                (font-get (caddr ex) :family))
-       (lwarn 'doom-ui :error
-              "Unexpected error while initializing fonts: %s"
-              (error-message-string ex)))))
-
+  (add-hook 'after-make-frame-functions #'doom|init-theme-in-frame)
   (run-hooks 'doom-init-theme-hook))
 
-;; Getting themes to remain consistent across GUI Emacs, terminal Emacs and
-;; daemon Emacs is hairy.
-;;
-;; + Running `doom|init-theme' directly sorts out the initial GUI frame.
-;; + Attaching it to `after-make-frame-functions' sorts out daemon Emacs.
-;; + Waiting for 0.1s in `doom|reload-ui-in-daemon' fixes daemon Emacs started
-;;   with `server-start' in an interactive session of Emacs AND in tty Emacs.
-(add-hook 'doom-init-ui-hook #'doom|init-theme)
+(defun doom|init-fonts (&optional frame)
+  "Initialize fonts."
+  (add-hook 'after-make-frame-functions #'doom|init-fonts)
+  (when (fontp doom-font)
+    (map-put default-frame-alist 'font (font-xlfd-name doom-font)))
+  (when (display-graphic-p)
+    (or frame (setq frame (selected-frame)))
+    (condition-case-unless-debug ex
+        (progn
+          (when (fontp doom-font)
+            (set-face-attribute 'fixed-pitch frame :font doom-font))
+          ;; Fallback to `doom-unicode-font' for Unicode characters
+          (when (fontp doom-unicode-font)
+            (set-fontset-font t 'unicode doom-unicode-font frame))
+          ;; ...and for variable-pitch-mode:
+          (when (fontp doom-variable-pitch-font)
+            (set-face-attribute 'variable-pitch frame :font doom-variable-pitch-font)))
+      ('error
+       (if (string-prefix-p "Font not available: " (error-message-string ex))
+           (lwarn 'doom-ui :warning
+                  "Could not find the '%s' font on your system, falling back to system font"
+                  (font-get (caddr ex) :family))
+         (lwarn 'doom-ui :error
+                "Unexpected error while initializing fonts: %s"
+                (error-message-string ex)))))))
 
-(defun doom|reload-ui-in-daemon (frame)
-  "Reload the theme (and font) in an daemon frame."
+;; Getting themes to remain consistent across GUI Emacs, terminal Emacs and
+;; daemon Emacs is hairy. `doom|init-theme' sorts out the initial GUI frame.
+;; Attaching `doom|init-theme-in-frame' to `after-make-frame-functions' sorts
+;; out daemon and emacsclient frames.
+;;
+;; There will still be issues with simultaneous gui and terminal (emacsclient)
+;; frames, however. There's always `doom//reload-theme' if you need it!
+(defun doom|init-theme-in-frame (frame)
+  "Reloads the theme in new daemon or tty frames."
   (when (or (daemonp) (not (display-graphic-p)))
     (with-selected-frame frame
-      (run-with-timer 0.1 nil #'doom|init-ui))))
-(add-hook! 'after-make-frame-functions #'(doom|init-theme doom|reload-ui-in-daemon))
+      (doom|init-theme))))
+
+(add-hook! 'doom-init-ui-hook #'(doom|init-theme doom|init-fonts))
 
 
 ;;
@@ -473,7 +489,9 @@ character that looks like a space that `whitespace-mode' won't affect.")
 ;; auto-enabled in Emacs 25+; I'll do it myself
 (global-eldoc-mode -1)
 ;; simple name in frame title
-(setq-default frame-title-format '("DOOM Emacs"))
+(setq frame-title-format '("%b – Doom Emacs"))
+;; make `next-buffer', `other-buffer', etc. ignore unreal buffers
+(map-put default-frame-alist 'buffer-predicate #'doom-buffer-frame-predicate)
 ;; draw me like one of your French editors
 (tooltip-mode -1) ; relegate tooltips to echo area only
 (menu-bar-mode -1)
@@ -526,16 +544,24 @@ instead)."
   (not (eq (current-buffer) (doom-fallback-buffer))))
 
 (defun doom*switch-to-fallback-buffer-maybe (orig-fn)
-  "Advice for `kill-this-buffer'. If there are no real buffers left, switch to
-`doom-fallback-buffer'."
+  "Advice for `kill-this-buffer'. If in a dedicated window, delete it. If there
+are no real buffers left OR if all remaining buffers are visible in other
+windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
+`kill-this-buffer'."
   (let ((buf (current-buffer)))
     (cond ((window-dedicated-p)
            (delete-window))
           ((eq buf (doom-fallback-buffer))
-           (doom--cycle-real-buffers -1))
+           (message "Can't kill the fallback buffer."))
           ((doom-real-buffer-p buf)
-           (doom--cycle-real-buffers
-            (if (delq buf (doom-real-buffer-list)) -1))
+           (when (or ;; if there aren't more real buffers than visible buffers,
+                     ;; then there are no real, non-visible buffers left.
+                     (not (cl-set-difference (doom-real-buffer-list)
+                                             (doom-visible-buffers)))
+                     ;; if we end up back where we start (or previous-buffer
+                     ;; returns nil), we have nowhere left to go
+                     (memq (previous-buffer) (list buf 'nil)))
+             (switch-to-buffer (doom-fallback-buffer)))
            (kill-buffer buf))
           (t
            (funcall orig-fn)))))
@@ -547,7 +573,7 @@ instead)."
   (advice-add #'kill-this-buffer :around #'doom*switch-to-fallback-buffer-maybe)
   ;; Don't kill the fallback buffer
   (add-hook 'kill-buffer-query-functions #'doom|protect-fallback-buffer)
-  ;; Don't kill buffers that are visible else, only bury them
+  ;; Don't kill buffers that are visible in another window, only bury them
   (add-hook 'kill-buffer-query-functions #'doom|protect-visible-buffers)
   ;; Renames major-modes [pedantry intensifies]
   (add-hook 'after-change-major-mode-hook #'doom|set-mode-name)

@@ -1,5 +1,10 @@
 ;;; private/default/+bindings.el -*- lexical-binding: t; -*-
 
+;; expand-region's prompt can't tell what key contract-region is bound to, so we
+;; tell it explicitly.
+(setq expand-region-contract-fast-key "V")
+
+
 ;; This files defines a Spacemacs-esque keybinding scheme
 
 (map! [remap evil-jump-to-tag] #'projectile-find-tag
@@ -23,13 +28,14 @@
       "M-="       #'text-scale-increase
       "M--"       #'text-scale-decrease
 
-      ;; Simple window navigation/manipulation
+      ;; Simple window/frame navigation/manipulation
       "C-`"       #'+popup/toggle
       "C-~"       #'+popup/raise
       "M-t"       #'+workspace/new
       "M-T"       #'+workspace/display
       "M-w"       #'delete-window
       "M-W"       #'delete-frame
+      "C-M-f"     #'toggle-frame-fullscreen
       "M-n"       #'evil-buffer-new
       "M-N"       #'make-frame
       "M-1"       (λ! (+workspace/switch-to 0))
@@ -51,7 +57,6 @@
       :ne "M-c"   #'evil-yank
       :ne "M-q"   (if (daemonp) #'delete-frame #'save-buffers-kill-emacs)
       :ne "M-f"   #'swiper
-      :ne "C-M-f" #'doom/toggle-fullscreen
       :n  "M-s"   #'save-buffer
       :m  "A-j"   #'+default:multi-next-line
       :m  "A-k"   #'+default:multi-previous-line
@@ -89,7 +94,7 @@
 
         (:desc "previous..." :prefix "["
           :desc "Text size"             :nv "[" #'text-scale-decrease
-          :desc "Buffer"                :nv "b" #'doom/previous-buffer
+          :desc "Buffer"                :nv "b" #'previous-buffer
           :desc "Diff Hunk"             :nv "d" #'git-gutter:previous-hunk
           :desc "Todo"                  :nv "t" #'hl-todo-previous
           :desc "Error"                 :nv "e" #'previous-error
@@ -100,7 +105,7 @@
 
         (:desc "next..." :prefix "]"
           :desc "Text size"             :nv "]" #'text-scale-increase
-          :desc "Buffer"                :nv "b" #'doom/next-buffer
+          :desc "Buffer"                :nv "b" #'next-buffer
           :desc "Diff Hunk"             :nv "d" #'git-gutter:next-hunk
           :desc "Todo"                  :nv "t" #'hl-todo-next
           :desc "Error"                 :nv "e" #'next-error
@@ -149,8 +154,8 @@
           :desc "Save buffer"             :n "s" #'save-buffer
           :desc "Pop scratch buffer"      :n "x" #'doom/open-scratch-buffer
           :desc "Bury buffer"             :n "z" #'bury-buffer
-          :desc "Next buffer"             :n "]" #'doom/next-buffer
-          :desc "Previous buffer"         :n "[" #'doom/previous-buffer
+          :desc "Next buffer"             :n "]" #'next-buffer
+          :desc "Previous buffer"         :n "[" #'previous-buffer
           :desc "Sudo edit this file"     :n "S" #'doom/sudo-this-file)
 
         (:desc "code" :prefix "c"
@@ -171,8 +176,6 @@
           :desc "Find file from here"       :n "?" #'counsel-file-jump
           :desc "Find other file"           :n "a" #'projectile-find-other-file
           :desc "Open project editorconfig" :n "c" #'editorconfig-find-current-editorconfig
-          :desc "Find file in dotfiles"     :n "d" #'+default/find-in-dotfiles
-          :desc "Browse dotfiles"           :n "D" #'+default/browse-dotfiles
           :desc "Find file in emacs.d"      :n "e" #'+default/find-in-emacsd
           :desc "Browse emacs.d"            :n "E" #'+default/browse-emacsd
           :desc "Recent files"              :n "r" #'recentf-open-files
@@ -208,13 +211,14 @@
           :desc "Find definition"       :n  "." #'+lookup/definition
           :desc "Find references"       :n  "/" #'+lookup/references
           :desc "Find documentation"    :n  "h" #'+lookup/documentation
+          :desc "Describe at point"     :n  "." #'helpful-at-point
           :desc "What face"             :n  "'" #'doom/what-face
           :desc "What minor modes"      :n  ";" #'doom/what-minor-mode
           :desc "Info"                  :n  "i" #'info
           :desc "Toggle profiler"       :n  "p" #'doom/toggle-profiler)
 
         (:desc "insert" :prefix "i"
-          :desc "From kill-ring"        :nv "y" #'counsel-yank-pop
+          :desc "From kill-ring"        :nv "y" #'yank-pop
           :desc "From snippet"          :nv "s" #'yas-insert-snippet)
 
         (:desc "notes" :prefix "n"
@@ -230,6 +234,7 @@
           :desc "REPL"                  :n  "r" #'+eval/open-repl
                                         :v  "r" #'+eval:repl
           :desc "Neotree"               :n  "n" #'+neotree/toggle
+          :desc "Imenu sidebar"         :nv "i" #'imenu-list-minor-mode
           :desc "Terminal"              :n  "t" #'+term/open-popup
           :desc "Terminal in project"   :n  "T" #'+term/open-popup-in-project
 
@@ -280,7 +285,7 @@
           :desc "Flyspell"               :n "s" #'flyspell-mode
           :desc "Flycheck"               :n "f" #'flycheck-mode
           :desc "Line numbers"           :n "l" #'doom/toggle-line-numbers
-          :desc "Fullscreen"             :n "f" #'doom/toggle-fullscreen
+          :desc "Frame fullscreen"       :n "f" #'toggle-frame-fullscreen
           :desc "Indent guides"          :n "i" #'highlight-indentation-mode
           :desc "Indent guides (column)" :n "I" #'highlight-indentation-current-column-mode
           :desc "Impatient mode"         :n "h" #'+impatient-mode/toggle
@@ -291,8 +296,8 @@
       ;; --- Personal vim-esque bindings ------------------
       :n  "zx" #'kill-this-buffer
       :n  "ZX" #'bury-buffer
-      :n  "]b" #'doom/next-buffer
-      :n  "[b" #'doom/previous-buffer
+      :n  "]b" #'next-buffer
+      :n  "[b" #'previous-buffer
       :n  "]w" #'+workspace/switch-right
       :n  "[w" #'+workspace/switch-left
       :m  "gt" #'+workspace/switch-right
@@ -317,12 +322,14 @@
       :nv "C-a" #'evil-numbers/inc-at-pt
       :nv "C-x" #'evil-numbers/dec-at-pt
 
+
       ;; --- Plugin bindings ------------------------------
       ;; auto-yasnippet
       :i  [C-tab] #'aya-expand
       :nv [C-tab] #'aya-create
 
       ;; company-mode (vim-like omnicompletion)
+      :i "C-@"    #'+company/complete
       :i "C-SPC"  #'+company/complete
       (:prefix "C-x"
         :i "C-l"   #'+company/whole-lines
@@ -605,6 +612,11 @@
       :m  "g]" #'smart-forward
       :m  "g[" #'smart-backward
 
+      ;; swiper
+      (:after swiper
+        (:map swiper-map
+          [backtab]  #'+ivy/wgrep-occur))
+
       ;; undo-tree -- undo/redo for visual regions
       :v "C-u" #'undo-tree-undo
       :v "C-r" #'undo-tree-redo
@@ -705,9 +717,7 @@
 
       (:after org
         (:map org-mode-map
-          :i [remap doom/inflate-space-maybe] #'org-self-insert-command
-          :i "C-e" #'org-end-of-line
-          :i "C-a" #'org-beginning-of-line))
+          :i [remap doom/inflate-space-maybe] #'org-self-insert-command))
 
       ;; Restore common editing keys (and ESC) in minibuffer
       (:map (minibuffer-local-map
@@ -724,6 +734,10 @@
         "C-b" #'backward-word
         "C-f" #'forward-word
         "M-z" #'doom/minibuffer-undo)
+
+      (:after evil
+        (:map evil-ex-completion-map
+          "C-a" #'move-beginning-of-line))
 
       (:map messages-buffer-mode-map
         "M-;" #'eval-expression

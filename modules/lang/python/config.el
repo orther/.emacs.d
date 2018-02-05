@@ -24,8 +24,9 @@ is loaded.")
   :config
   (add-hook! 'python-mode-hook #'(flycheck-mode highlight-numbers-mode))
 
-  (set! :repl 'python-mode #'+python/repl)
+  (set! :company-backend 'python-mode '(company-anaconda))
   (set! :electric 'python-mode :chars '(?:))
+  (set! :repl 'python-mode #'+python/repl)
 
   (when (executable-find "ipython")
     (setq python-shell-interpreter "ipython"
@@ -79,19 +80,26 @@ environment variables."
   :config
   (add-hook 'anaconda-mode-hook #'anaconda-eldoc-mode)
   (set! :popup "^\\*anaconda-mode" nil '((select)))
-  (map! :map anaconda-mode-map :m "gd" #'anaconda-mode-find-definitions)
-  (advice-add #'anaconda-mode-doc-buffer :after #'doom*anaconda-mode-doc-buffer))
+  (set! :lookup 'python-mode
+    :definition #'anaconda-mode-find-definitions
+    :references #'anaconda-mode-find-references
+    :documentation #'anaconda-mode-show-doc)
+  (advice-add #'anaconda-mode-doc-buffer :after #'doom*anaconda-mode-doc-buffer)
+
+  (defun +python|auto-kill-anaconda-processes ()
+    "Kill anaconda processes if this buffer is the last python buffer."
+    (when (and (eq major-mode 'python-mode)
+               (not (delq (current-buffer)
+                          (doom-buffers-in-mode 'python-mode (buffer-list)))))
+      (anaconda-mode-stop)))
+  (add-hook! 'python-mode-hook
+    (add-hook 'kill-buffer-hook #'+python|auto-kill-anaconda-processes nil t)))
 
 
 (def-package! company-anaconda
   :when (featurep! :completion company)
   :after anaconda-mode
   :config
-  (set! :company-backend 'python-mode '(company-anaconda))
-  (set! :lookup 'python-mode
-    :definition #'anaconda-mode-find-definitions
-    :references #'anaconda-mode-find-references
-    :documentation #'anaconda-mode-show-doc)
   (map! :map python-mode-map
         :localleader
         :prefix "f"

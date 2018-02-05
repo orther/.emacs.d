@@ -1,7 +1,8 @@
 ;;; core-os.el -*- lexical-binding: t; -*-
 
-(defconst IS-MAC   (eq system-type 'darwin))
-(defconst IS-LINUX (eq system-type 'gnu/linux))
+(defconst IS-MAC     (eq system-type 'darwin))
+(defconst IS-LINUX   (eq system-type 'gnu/linux))
+(defconst IS-WINDOWS (memq system-type '(cygwin windows-nt ms-dos)))
 
 ;; clipboard
 (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING)
@@ -49,8 +50,11 @@
                 (osx-clipboard-mode +1)))))
 
       (IS-LINUX
-       ;; native tooltips are ugly!
-       (setq x-gtk-use-system-tooltips nil)
+       (setq x-gtk-use-system-tooltips nil    ; native tooltips are ugly!
+             x-underline-at-descent-line t))  ; draw underline lower
+
+      (IS-WINDOWS
+       (setq w32-get-true-file-attributes nil) ; fix file io slowdowns
        ))
 
 (provide 'core-os)

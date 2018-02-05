@@ -1,8 +1,5 @@
 ;;; feature/workspaces/autoload/workspaces.el -*- lexical-binding: t; -*-
 
-(defvar +workspace-data-file "_workspaces"
-  "The file basename in which to store single workspace perspectives.")
-
 (defvar +workspace--last nil)
 (defvar +workspace--index 0)
 
@@ -45,7 +42,7 @@
 
 ;;;###autoload
 (defun +workspace-contains-buffer-p (buffer &optional workspace)
-  "Return non-nil if buffer is in workspace (defaults to current workspace)."
+  "Return non-nil if BUFFER is in WORKSPACE (defaults to current workspace)."
   (persp-contain-buffer-p buffer (or workspace (+workspace-current)) nil))
 
 
@@ -111,7 +108,7 @@ Returns t if successful, nil otherwise."
   (when (+workspace-exists-p name)
     (error "A workspace named '%s' already exists." name))
   (persp-load-from-file-by-names
-   (expand-file-name +workspace-data-file persp-save-dir)
+   (expand-file-name +workspaces-data-file persp-save-dir)
    *persp-hash* (list name))
   (+workspace-exists-p name))
 
@@ -131,7 +128,7 @@ perspective hash table.
 Returns t on success, nil otherwise."
   (unless (+workspace-exists-p name)
     (error "'%s' is an invalid workspace" name))
-  (let ((fname (expand-file-name +workspace-data-file persp-save-dir)))
+  (let ((fname (expand-file-name +workspaces-data-file persp-save-dir)))
     (persp-save-to-file-by-names fname *persp-hash* (list name))
     (and (member name (persp-list-persp-names-in-file fname))
          t)))
@@ -268,6 +265,8 @@ workspace to delete."
                  (if (+workspace-exists-p +workspace--last)
                      +workspace--last
                    (car (+workspace-list-names))))
+                (unless (doom-buffer-frame-predicate (current-buffer))
+                  (switch-to-buffer (doom-fallback-buffer)))
                 (format "Deleted '%s' workspace" name))
                ((= workspaces 1)
                 (format "Can't delete the last workspace!"))
@@ -437,7 +436,8 @@ the next."
 (defun +workspace/display ()
   "Display a list of workspaces (like tabs) in the echo area."
   (interactive)
-  (message "%s" (+workspace--tabline)))
+  (let (message-log-max)
+    (minibuffer-message "%s" (+workspace--tabline))))
 
 
 ;;
@@ -445,11 +445,13 @@ the next."
 ;;
 
 ;;;###autoload
-(defun +workspaces|delete-associated-workspace (frame)
+(defun +workspaces|delete-associated-workspace (&optional frame)
   "Delete workspace associated with current frame.
 A workspace gets associated with a frame when a new frame is interactively
 created."
   (when persp-mode
+    (unless frame
+      (setq frame (selected-frame)))
     (let ((frame-persp (frame-parameter frame 'workspace)))
       (when (string= frame-persp (+workspace-current-name))
         (+workspace/delete frame-persp)))))
@@ -468,9 +470,15 @@ created."
   "Create a blank, new perspective and associate it with FRAME."
   (when persp-mode
     (with-selected-frame frame
-      (+workspace/new)
-      (set-frame-parameter frame 'workspace (+workspace-current-name))
-      (+workspace/display))))
+      (if (not (persp-frame-list-without-daemon))
+          (+workspace-switch +workspaces-main t)
+        (+workspace-switch (format "#%s" (+workspace--generate-id)) t)
+        (unless (doom-real-buffer-p)
+          (switch-to-buffer (doom-fallback-buffer)))
+        (set-frame-parameter frame 'workspace (+workspace-current-name))
+        ;; ensure every buffer has a buffer-predicate
+        (persp-set-frame-buffer-predicate frame))
+      (run-at-time 0.1 nil #'+workspace/display))))
 
 (defvar +workspaces--project-dir nil)
 ;;;###autoload
@@ -480,20 +488,38 @@ created."
   (setq +workspaces--project-dir default-directory))
 
 ;;;###autoload
+(defun +workspaces|switch-counsel-project-action (project)
+  "A `counsel-projectile-switch-project-action' that creates a dedicated
+workspace for a new project, before prompting to open a file."
+  (when persp-mode
+    (let ((+workspaces--project-dir project)
+          (inhibit-message t))
+      (+workspaces|switch-to-project))))
+
+;;;###autoload
 (defun +workspaces|switch-to-project ()
-  "Creates a workspace dedicated to a new project. Should be hooked to
-`projectile-after-switch-project-hook'."
+  "Creates a workspace dedicated to a new project. If one already exists, switch
+to it. Should be hooked to `projectile-after-switch-project-hook'."
   (when (and persp-mode +workspaces--project-dir)
     (unwind-protect
-        (let* ((persp
-                (let ((default-directory +workspaces--project-dir))
-                  (+workspace-new (projectile-project-name))))
-               (new-name (persp-name persp)))
-          (+workspace-switch new-name)
-          (switch-to-buffer (doom-fallback-buffer))
-          (+workspace-message
-           (format "Switched to '%s' in new workspace" new-name)
-           'success))
+        (let (persp-p)
+          (let* ((persp
+                  (let* ((default-directory +workspaces--project-dir)
+                         projectile-project-name
+                         projectile-require-project-root
+                         projectile-cached-buffer-file-name
+                         projectile-cached-project-root
+                         (project-name (projectile-project-name)))
+                    (or (setq persp-p (+workspace-get project-name t))
+                        (+workspace-new project-name))))
+                 (new-name (persp-name persp)))
+            (+workspace-switch new-name)
+            (unless persp-p
+              (switch-to-buffer (doom-fallback-buffer)))
+            (doom-project-find-file +workspaces--project-dir)
+            (+workspace-message
+             (format "Switched to '%s' in new workspace" new-name)
+             'success)))
       (setq +workspaces--project-dir nil))))
 
 

@@ -17,9 +17,6 @@ while they run.")
   "A list of functions which take no arguments. If any of them return non-nil,
 dashboard reloading is inhibited.")
 
-(defvar +doom-dashboard-initial-pwd doom-emacs-dir
-  "The initial `default-directory' for the dashboard at startup.")
-
 (defvar +doom-dashboard-pwd-policy 'last-project
   "The policy to use when setting the `default-directory' in the dashboard.
 
@@ -33,7 +30,6 @@ Possible values:
   nil            `default-directory' will never change")
 
 ;;
-(defvar +doom-dashboard--first t)
 (defvar +doom-dashboard--last-cwd nil)
 (defvar +doom-dashboard--width 80)
 (defvar +doom-dashboard--height 0)
@@ -48,7 +44,7 @@ Possible values:
 ;; Bootstrap
 ;;
 
-(setq doom-fallback-buffer +doom-dashboard-name
+(setq doom-fallback-buffer-name +doom-dashboard-name
       initial-buffer-choice #'+doom-dashboard-initial-buffer)
 
 (add-hook 'window-setup-hook #'+doom-dashboard|init)
@@ -62,8 +58,6 @@ Possible values:
   (format "DOOM v%s" doom-version)
   "Major mode for the DOOM dashboard buffer."
   (read-only-mode +1)
-  (when (featurep 'evil)
-    (evil-emacs-state))
   (setq truncate-lines t)
   (setq-local whitespace-style nil)
   (setq-local show-trailing-whitespace nil)
@@ -76,6 +70,11 @@ Possible values:
       "p" #'+doom-dashboard/previous-button
       "N" #'+doom-dashboard/last-button
       "P" #'+doom-dashboard/first-button
+      [remap evil-insert]  #'ignore
+      [remap evil-replace] #'ignore
+      [remap evil-change]  #'ignore
+      [remap evil-visual-char]  #'ignore
+      [remap evil-visual-line]  #'ignore
       (:when (featurep! :feature evil)
         :em "j" #'+doom-dashboard/next-button
         :em "k" #'+doom-dashboard/previous-button
@@ -98,8 +97,7 @@ Possible values:
   (add-hook 'persp-created-functions #'+doom-dashboard|record-project)
   (add-hook 'persp-activated-functions #'+doom-dashboard|detect-project)
   (add-hook 'persp-before-switch-functions #'+doom-dashboard|record-project)
-  (+doom-dashboard-reload t)
-  (+doom-dashboard|resize))
+  (+doom-dashboard-reload t))
 
 (defun +doom-dashboard|reload-on-kill ()
   "A `kill-buffer-query-functions' hook. If this isn't a dashboard buffer, move
@@ -166,14 +164,14 @@ project (which may be different across perspective)."
 (defun +doom-dashboard-update-pwd (&optional pwd)
   "Update `default-directory' in the Doom dashboard buffer. What it is set to is
 controlled by `+doom-dashboard-pwd-policy'."
-  (with-current-buffer (doom-fallback-buffer)
-    (if pwd
-        (setq-local default-directory pwd)
-      (let ((new-pwd (+doom-dashboard--get-pwd)))
-        (when (and new-pwd (file-directory-p new-pwd))
-          (unless (string-suffix-p "/" new-pwd)
-            (setq new-pwd (concat new-pwd "/")))
-          (setq-local default-directory new-pwd))))))
+  (if pwd
+      (with-current-buffer (doom-fallback-buffer)
+        (setq-local default-directory pwd))
+    (let ((new-pwd (+doom-dashboard--get-pwd)))
+      (when (and new-pwd (file-directory-p new-pwd))
+        (unless (string-suffix-p "/" new-pwd)
+          (setq new-pwd (concat new-pwd "/")))
+        (+doom-dashboard-update-pwd new-pwd)))))
 
 (defun +doom-dashboard-reload (&optional force)
   "Update the DOOM scratch buffer (or create it, if it doesn't exist)."
@@ -208,10 +206,7 @@ controlled by `+doom-dashboard-pwd-policy'."
 (defun +doom-dashboard--get-pwd ()
   (let ((lastcwd +doom-dashboard--last-cwd)
         (policy +doom-dashboard-pwd-policy))
-    (cond (+doom-dashboard--first
-           (setq +doom-dashboard--first nil)
-           +doom-dashboard-initial-pwd)
-          ((null policy)
+    (cond ((null policy)
            default-directory)
           ((stringp policy)
            (expand-file-name policy lastcwd))
@@ -309,4 +304,4 @@ controlled by `+doom-dashboard-pwd-policy'."
              (call-interactively (or (command-remapping #'bookmark-jump)
                                      #'bookmark-jump)))
             ("Edit emacs.d" "tools"
-             (find-file (expand-file-name "init.el" doom-emacs-dir)))))))
+             (doom-project-find-file doom-emacs-dir))))))

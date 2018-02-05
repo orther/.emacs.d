@@ -2,9 +2,20 @@
 
 (defalias 'ex! 'evil-ex-define-cmd)
 
-(evil-define-command doom:cleanup-session (&optional bang)
+(evil-define-command doom:cleanup-session (bang)
   (interactive "<!>")
   (doom/cleanup-session bang))
+
+(evil-define-operator doom:open-scratch-buffer (bang)
+  (interactive "<!>")
+  (doom/open-scratch-buffer bang))
+
+(evil-define-command doom:pwd (bang)
+  (interactive "<!>")
+  (if (not bang)
+      (pwd)
+    (kill-new default-directory)
+    (message "Copied to clipboard")))
 
 
 ;;
@@ -38,7 +49,7 @@
 (ex! "sh[ell]"     #'+eshell:run)
 (ex! "t[mux]"      #'+tmux:run)              ; send to tmux
 (ex! "tcd"         #'+tmux:cd-here)          ; cd to default-directory in tmux
-(ex! "x"           #'doom/open-project-scratch-buffer)
+(ex! "x"           #'doom:open-scratch-buffer)
 ;; GIT
 (ex! "gist"        #'+gist:send)  ; send current buffer/region to gist
 (ex! "gistl"       #'+gist:list)  ; list gists by user
@@ -61,6 +72,7 @@
 ;; Project navigation
 (ex! "a"           #'projectile-find-other-file)
 (ex! "cd"          #'+default:cd)
+(ex! "pwd"         #'doom:pwd)
 (cond ((featurep! :completion ivy)
        (ex! "ag"       #'+ivy:ag)
        (ex! "agc[wd]"  #'+ivy:ag-cwd)
