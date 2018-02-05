@@ -199,4 +199,4 @@
 ;; make fullscreen on load
 
 (after! evil
-  (doom/toggle-fullscreen))
+  (toggle-frame-fullscreen))

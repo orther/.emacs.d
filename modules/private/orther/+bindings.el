@@ -67,7 +67,7 @@
  "M-s"    #'save-buffer
  "M-v"    #'clipboard-yank
  "M-f"    #'swiper
- "C-M-f"  #'doom/toggle-fullscreen
+ "C-M-f"  #'toggle-frame-fullscreen
  :m "A-j" #'+orther:multi-next-line
  :m "A-k" #'+orther:multi-previous-line
 
