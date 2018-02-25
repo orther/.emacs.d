@@ -196,7 +196,6 @@
 ;;     :port 6697
 ;;     :channels ("#php")))
 
-;; make fullscreen on load
-
-(after! evil
-  (toggle-frame-fullscreen))
+;; ;; make fullscreen on load
+;; (after! evil
+;;   (toggle-frame-fullscreen))
