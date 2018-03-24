@@ -15,10 +15,12 @@
   :config
   (setq js2-skip-preprocessor-directives t
         js2-highlight-external-variables nil
-        js2-mode-show-parse-errors nil)
+        js-chain-indent t
+        ;; let flycheck handle this
+        js2-mode-show-parse-errors nil
+        js2-mode-show-strict-warnings nil)
 
-  (add-hook! 'js2-mode-hook
-    #'(flycheck-mode highlight-indentation-mode rainbow-delimiters-mode))
+  (add-hook! 'js2-mode-hook #'(flycheck-mode rainbow-delimiters-mode))
 
   (set! :repl 'js2-mode #'+javascript/repl)
   (set! :electric 'js2-mode :chars '(?\} ?\) ?.))
@@ -28,7 +30,7 @@
   (defvaralias 'js-switch-indent-offset 'js2-basic-offset)
 
   (sp-with-modes '(js2-mode rjsx-mode)
-    (sp-local-pair "/* " " */" :post-handlers '(("| " "SPC"))))
+    (sp-local-pair "/*" "*/" :post-handlers '(("| " "SPC"))))
 
   ;; If it's available globally, use eslint_d
   (setq flycheck-javascript-eslint-executable (executable-find "eslint_d"))
@@ -48,8 +50,8 @@
 
   (map! :map js2-mode-map
         :localleader
-        "r" #'+javascript/refactor-menu
-        "S" #'+javascript/skewer-this-buffer))
+        :nr "r" #'+javascript/refactor-menu
+        :n  "S" #'+javascript/skewer-this-buffer))
 
 
 ;; A find-{definition,references} backend for js2-mode. NOTE The xref API is

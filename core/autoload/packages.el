@@ -3,13 +3,54 @@
 (load! cache)
 (require 'use-package)
 (require 'quelpa)
+(require 'package)
 (require 'async)
 
+;;; Private functions
+(defsubst doom--sort-alpha (it other)
+  (string-lessp (symbol-name (car it))
+                (symbol-name (car other))))
+
+(defun doom--packages-choose (prompt)
+  (let ((table (cl-loop for pkg in package-alist
+                        unless (package-built-in-p (cdr pkg))
+                        collect (cons (package-desc-full-name (cdr pkg))
+                                      (cdr pkg)))))
+    (cdr (assoc (completing-read prompt
+                                 (mapcar #'car table)
+                                 nil t)
+                table))))
+
+(defmacro doom--condition-case! (&rest body)
+  `(condition-case-unless-debug ex
+       (condition-case ex2
+           (progn ,@body)
+         ('file-error
+          (message! (bold (red "  FILE ERROR: %s" (error-message-string ex2))))
+          (message! "  Trying again...")
+          (quiet! (doom-refresh-packages-maybe t))
+          ,@body))
+     ('user-error
+      (message! (bold (red "  ERROR: %s" ex))))
+     ('error
+      (doom--refresh-pkg-cache)
+      (message! (bold (red "  FATAL ERROR: %s" ex))))))
+
+(defun doom--refresh-pkg-cache ()
+  "Clear the cache for `doom-refresh-packages-maybe'."
+  (setq doom--refreshed-p nil)
+  (doom-cache-set 'last-pkg-refresh nil))
+
+
+;;
+;; Library
+;;
+
 ;;;###autoload
-(defun doom-refresh-packages (&optional force-p)
-  "Refresh ELPA packages."
+(defun doom-refresh-packages-maybe (&optional force-p)
+  "Refresh ELPA packages, if it hasn't been refreshed recently."
   (when force-p
-    (doom-refresh-clear-cache))
+    (doom--refresh-pkg-cache))
   (unless (or (doom-cache-get 'last-pkg-refresh)
               doom--refreshed-p)
     (condition-case-unless-debug ex
@@ -18,24 +59,16 @@
           (package-refresh-contents)
           (doom-cache-set 'last-pkg-refresh t 900))
     ('error
-     (doom-refresh-clear-cache)
+     (doom--refresh-pkg-cache)
      (message "Failed to refresh packages: (%s) %s"
               (car ex) (error-message-string ex))))))
-
-;;;###autoload
-(defun doom-refresh-clear-cache ()
-  "Clear the cache for `doom-refresh-packages'."
-  (setq doom--refreshed-p nil)
-  (doom-cache-set 'last-pkg-refresh nil))
 
 ;;;###autoload
 (defun doom-package-backend (name &optional noerror)
   "Get which backend the package NAME was installed with. Can either be elpa or
 quelpa. Throws an error if NOERROR is nil and the package isn't installed."
   (cl-assert (symbolp name) t)
-  (cond ((and (or (quelpa-setup-p)
-                  (error "Could not initialize quelpa"))
-              (assq name quelpa-cache))
+  (cond ((assq name quelpa-cache)
          'quelpa)
         ((assq name package-alist)
          'elpa)
@@ -50,7 +83,6 @@ quelpa. Throws an error if NOERROR is nil and the package isn't installed."
 list, whose car is NAME, and cdr the current version list and latest version
 list of the package."
   (cl-assert (symbolp name) t)
-  (doom-initialize-packages)
   (when-let* ((desc (cadr (assq name package-alist))))
     (let* ((old-version (package-desc-version desc))
            (new-version
@@ -76,20 +108,30 @@ list of the package."
   "Return PROPerty in NAME's plist."
   (cl-assert (symbolp name) t)
   (cl-assert (keywordp prop) t)
-  (doom-initialize-packages)
   (plist-get (cdr (assq name doom-packages)) prop))
 
 ;;;###autoload
 (defun doom-package-different-backend-p (name)
-  "Return t if NAME (a package's symbol) has a new backend than what it was
-installed with. Returns nil otherwise, or if package isn't installed."
+  "Return t if a package named NAME (a symbol) has a new backend than what it
+was installed with. Returns nil otherwise, or if package isn't installed."
   (cl-assert (symbolp name) t)
-  (doom-initialize-packages)
   (and (package-installed-p name)
        (let* ((plist (cdr (assq name doom-packages)))
               (old-backend (doom-package-backend name 'noerror))
               (new-backend (if (plist-get plist :recipe) 'quelpa 'elpa)))
          (not (eq old-backend new-backend)))))
+
+;;;###autoload
+(defun doom-package-different-recipe-p (name)
+  "Return t if a package named NAME (a symbol) has a different recipe than it
+was installed with."
+  (cl-assert (symbolp name) t)
+  (when (package-installed-p name)
+    (let ((quelpa-recipe (assq name quelpa-cache))
+          (doom-recipe (assq name doom-packages)))
+      (and quelpa-recipe doom-recipe
+           (not (equal (cdr quelpa-recipe)
+                       (cdr (plist-get (cdr doom-recipe) :recipe))))))))
 
 ;;;###autoload
 (defun doom-get-packages (&optional installed-only-p)
@@ -104,7 +146,7 @@ Warning: this function is expensive; it re-evaluates all of doom's config files.
 Be careful not to use it in a loop.
 
 If INSTALLED-ONLY-P, only return packages that are installed."
-  (doom-initialize-packages t)
+  (doom-initialize-packages 'internal)
   (cl-loop with packages = (append doom-core-packages (mapcar #'car doom-packages))
            for sym in (cl-delete-duplicates packages)
            if (and (or (not installed-only-p)
@@ -137,19 +179,19 @@ containing (PACKAGE-SYMBOL OLD-VERSION-LIST NEW-VERSION-LIST).
 If INCLUDE-FROZEN-P is non-nil, check frozen packages as well.
 
 Used by `doom//packages-update'."
+  (doom-initialize-packages 'internal)
   (require 'async)
   (let (quelpa-pkgs elpa-pkgs)
     ;; Separate quelpa from elpa packages
-    (dolist (pkg (doom-get-packages t))
-      (let ((sym (car pkg)))
-        (when (and (or (not (doom-package-prop sym :freeze))
-                       include-frozen-p)
-                   (not (doom-package-prop sym :ignore))
-                   (not (doom-package-different-backend-p sym)))
-          (push sym
-                (if (eq (doom-package-backend sym) 'quelpa)
-                    quelpa-pkgs
-                  elpa-pkgs)))))
+    (dolist (pkg (mapcar #'car package-alist))
+      (when (and (or (not (doom-package-prop pkg :freeze))
+                     include-frozen-p)
+                 (not (doom-package-prop pkg :ignore))
+                 (not (doom-package-different-backend-p pkg)))
+        (push pkg
+              (if (eq (doom-package-backend pkg) 'quelpa)
+                  quelpa-pkgs
+                elpa-pkgs))))
     ;; The bottleneck in this process is quelpa's version checks, so check them
     ;; asynchronously.
     (let (futures)
@@ -160,6 +202,9 @@ Used by `doom//packages-update'."
                   (setq user-emacs-directory ,user-emacs-directory)
                   (let ((noninteractive t))
                     (load ,(expand-file-name "core.el" doom-core-dir)))
+                  (setq doom-packages ',doom-packages
+                        doom-modules ',doom-modules
+                        quelpa-cache ',quelpa-cache)
                   (doom-package-outdated-p ',pkg)))
               futures))
       (delq nil
@@ -172,7 +217,7 @@ Used by `doom//packages-update'."
 depended on.
 
 Used by `doom//packages-autoremove'."
-  (doom-initialize-packages t)
+  (doom-initialize-packages 'internal)
   (let ((package-selected-packages
          (append (mapcar #'car doom-packages) doom-core-packages)))
     (append (package--removable-packages)
@@ -192,6 +237,7 @@ If INCLUDE-IGNORED-P is non-nil, includes missing packages that are ignored,
 i.e. they have an :ignore property.
 
 Used by `doom//packages-install'."
+  (doom-initialize-packages 'internal)
   (cl-loop for desc in (doom-get-packages)
            for (name . plist) = desc
            if (and (or include-ignored-p
@@ -199,51 +245,9 @@ Used by `doom//packages-install'."
                    (or (plist-get plist :pin)
                        (not (assq name package--builtins)))
                    (or (not (assq name package-alist))
-                       (doom-package-different-backend-p name)))
+                       (doom-package-different-backend-p name)
+                       (doom-package-different-recipe-p name)))
            collect desc))
-
-;;;###autoload
-(defun doom*package-delete (desc &rest _)
-  "Update `quelpa-cache' upon a successful `package-delete'."
-  (let ((name (package-desc-name desc)))
-    (when (and (not (package-installed-p name))
-               (quelpa-setup-p)
-               (assq name quelpa-cache))
-      (map-delete quelpa-cache name)
-      (quelpa-save-cache)
-      (let ((path (expand-file-name (symbol-name name) quelpa-build-dir)))
-        (when (file-exists-p path)
-          (delete-directory path t))))))
-
-;;; Private functions
-(defsubst doom--sort-alpha (it other)
-  (string-lessp (symbol-name (car it))
-                (symbol-name (car other))))
-
-(defun doom--packages-choose (prompt)
-  (let ((table (cl-loop for pkg in package-alist
-                        unless (package-built-in-p (cdr pkg))
-                        collect (cons (package-desc-full-name (cdr pkg))
-                                      (cdr pkg)))))
-    (cdr (assoc (completing-read prompt
-                                 (mapcar #'car table)
-                                 nil t)
-                table))))
-
-(defmacro doom--condition-case! (&rest body)
-  `(condition-case-unless-debug ex
-       (condition-case ex2
-           (progn ,@body)
-         ('file-error
-          (message! (bold (red "  FILE ERROR: %s" (error-message-string ex2))))
-          (message! "  Trying again...")
-          (quiet! (doom-refresh-packages t))
-          ,@body))
-     ('user-error
-      (message! (bold (red "  ERROR: %s" ex))))
-     ('error
-      (doom-refresh-clear-cache)
-      (message! (bold (red "  FATAL ERROR: %s" ex))))))
 
 
 ;;
@@ -256,7 +260,8 @@ example; the package name can be omitted)."
   (doom-initialize-packages)
   (when (and (package-installed-p name)
              (not (package-built-in-p name)))
-    (if (doom-package-different-backend-p name)
+    (if (or (doom-package-different-backend-p name)
+            (doom-package-different-recipe-p name))
         (doom-delete-package name t)
       (user-error "%s is already installed" name)))
   (let* ((inhibit-message (not doom-debug-mode))
@@ -264,7 +269,12 @@ example; the package name can be omitted)."
          (recipe (plist-get plist :recipe))
          quelpa-upgrade-p)
     (if recipe
-        (quelpa recipe)
+        (condition-case-unless-debug _
+            (quelpa recipe)
+          ('error
+           (let ((pkg-build-dir (expand-file-name (symbol-name name) quelpa-build-dir)))
+             (when (file-directory-p pkg-build-dir)
+               (delete-directory pkg-build-dir t)))))
       (package-install name))
     (when (package-installed-p name)
       (cl-pushnew (cons name plist) doom-packages :test #'eq :key #'car)
@@ -282,8 +292,6 @@ package.el as appropriate."
           (desc (cadr (assq name package-alist))))
       (pcase (doom-package-backend name)
         ('quelpa
-         (or (quelpa-setup-p)
-             (error "Failed to initialize quelpa"))
          (let ((quelpa-upgrade-p t))
            (quelpa (assq name quelpa-cache))))
         ('elpa
@@ -305,8 +313,6 @@ package.el as appropriate."
     (user-error "%s isn't installed" name))
   (let ((inhibit-message (not doom-debug-mode))
         quelpa-p)
-    (unless (quelpa-setup-p)
-      (error "Could not initialize QUELPA"))
     (when (assq name quelpa-cache)
       (map-delete quelpa-cache name)
       (quelpa-save-cache)
@@ -340,7 +346,9 @@ package.el as appropriate."
                               (lambda (pkg)
                                 (format "+ %s (%s)"
                                         (car pkg)
-                                        (cond ((doom-package-different-backend-p (car pkg))
+                                        (cond ((doom-package-different-recipe-p (car pkg))
+                                               "new recipe")
+                                              ((doom-package-different-backend-p (car pkg))
                                                (if (plist-get (cdr pkg) :recipe)
                                                    "ELPA -> QUELPA"
                                                  "QUELPA -> ELPA"))
@@ -353,13 +361,14 @@ package.el as appropriate."
            (message! (yellow "Aborted!")))
 
           (t
-           (doom-refresh-packages doom-debug-mode)
+           (doom-refresh-packages-maybe doom-debug-mode)
            (dolist (pkg packages)
              (message! "Installing %s" (car pkg))
              (doom--condition-case!
               (message! "%s%s"
                         (cond ((and (package-installed-p (car pkg))
-                                    (not (doom-package-different-backend-p (car pkg))))
+                                    (not (doom-package-different-backend-p (car pkg)))
+                                    (not (doom-package-different-recipe-p (car pkg))))
                                (dark (white "⚠ ALREADY INSTALLED")))
                               ((doom-install-package (car pkg) (cdr pkg))
                                (green "✓ DONE"))
@@ -376,8 +385,8 @@ package.el as appropriate."
 (defun doom//packages-update ()
   "Interactive command for updating packages."
   (interactive)
-  (doom-refresh-packages doom-debug-mode)
   (message! "Looking for outdated packages...")
+  (doom-refresh-packages-maybe doom-debug-mode)
   (let ((packages (sort (doom-get-outdated-packages) #'doom--sort-alpha)))
     (cond ((not packages)
            (message! (green "Everything is up-to-date")))
@@ -459,38 +468,6 @@ package.el as appropriate."
 ;;
 
 ;;;###autoload
-(defalias 'doom/install-package #'package-install)
-
-;;;###autoload
-(defun doom/reinstall-package (desc)
-  "Reinstalls package package with optional quelpa RECIPE (see `quelpa-recipe' for
-an example; the package package can be omitted)."
-  (declare (interactive-only t))
-  (interactive
-   (list (doom--packages-choose "Reinstall package: ")))
-  (let ((package (package-desc-name desc)))
-    (doom-delete-package package t)
-    (doom-install-package package (cdr (assq package doom-packages)))))
-
-;;;###autoload
-(defun doom/delete-package (desc)
-  "Prompts the user with a list of packages and deletes the selected package.
-Use this interactively. Use `doom-delete-package' for direct calls."
-  (declare (interactive-only t))
-  (interactive
-   (list (doom--packages-choose "Delete package: ")))
-  (let ((package (package-desc-name desc)))
-    (if (package-installed-p package)
-        (if (y-or-n-p (format "%s will be deleted. Confirm?" package))
-            (message "%s %s"
-                     (if (doom-delete-package package t)
-                         "Deleted"
-                       "Failed to delete")
-                     package)
-          (message "Aborted"))
-      (message "%s isn't installed" package))))
-
-;;;###autoload
 (defun doom/update-package (pkg)
   "Prompts the user with a list of outdated packages and updates the selected
 package. Use this interactively. Use `doom-update-package' for direct
@@ -504,6 +481,7 @@ calls."
                                         nil t)
                      (user-error "All packages are up to date"))))
      (list (cdr (assq (car (assoc package package-alist)) packages)))))
+  (doom-initialize-packages)
   (cl-destructuring-bind (package old-version new-version) pkg
     (if-let* ((desc (doom-package-outdated-p package)))
         (let ((old-v-str (package-version-join old-version))
@@ -516,10 +494,21 @@ calls."
             (message "Aborted")))
       (message "%s is up-to-date" package))))
 
+
+;;
+;; Advice
+;;
+
 ;;;###autoload
-(defun doom/refresh-packages (&optional force-p)
-  "Synchronize package metadata with the sources in `package-archives'. If
-FORCE-P (the universal argument) is set, ignore the cache."
-  (declare (interactive-only t))
-  (interactive "P")
-  (doom-refresh-packages force-p))
+(defun doom*package-delete (desc &rest _)
+  "Update `quelpa-cache' upon a successful `package-delete'."
+  (doom-initialize-packages)
+  (let ((name (package-desc-name desc)))
+    (when (and (not (package-installed-p name))
+               (assq name quelpa-cache))
+      (map-delete quelpa-cache name)
+      (quelpa-save-cache)
+      (let ((path (expand-file-name (symbol-name name) quelpa-build-dir)))
+        (when (file-exists-p path)
+          (delete-directory path t))))))
+

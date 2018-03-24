@@ -2,14 +2,10 @@
 ;;;###if (featurep! +intero)
 
 (def-package! intero
-  :hook (haskell-mode . intero-mode)
+  :after haskell-mode
   :config
-  (unless (executable-find "stack")
-    (warn "haskell-mode: couldn't find stack, disabling intero")
-    (remove-hook 'haskell-mode-hook #'intero-mode))
-
+  (add-hook 'haskell-mode-hook #'+haskell|init-intero)
   (add-hook! 'intero-mode-hook #'(flycheck-mode eldoc-mode))
-
   (set! :lookup 'haskell-mode :definition #'intero-goto-definition))
 
 

@@ -24,6 +24,7 @@ is loaded.")
   :config
   (add-hook! 'python-mode-hook #'(flycheck-mode highlight-numbers-mode))
 
+  (set! :env "PYTHONPATH" "PYENV_ROOT")
   (set! :company-backend 'python-mode '(company-anaconda))
   (set! :electric 'python-mode :chars '(?:))
   (set! :repl 'python-mode #'+python/repl)
@@ -100,7 +101,8 @@ environment variables."
   :when (featurep! :completion company)
   :after anaconda-mode
   :config
-  (map! :map python-mode-map
+  (map! :map anaconda-mode-map
+        :n "gf" nil
         :localleader
         :prefix "f"
         :nv "d" #'anaconda-mode-find-definitions

@@ -32,15 +32,16 @@ shorter major mode name in the mode-line. See `doom|set-mode-name'.")
 (defvar doom-init-ui-hook nil
   "List of hooks to run when core-ui is initialized.")
 
-(defvar doom-init-theme-hook nil
-  "List of hooks to run when the theme (and font) is initialized (or reloaded
-with `doom//reload-theme').")
-
 (setq-default
  bidi-display-reordering nil ; disable bidirectional text for tiny performance boost
  blink-matching-paren nil    ; don't blink--too distracting
+ compilation-always-kill t        ; kill compilation process before starting another
+ compilation-ask-about-save nil   ; save all buffers on `compile'
+ compilation-scroll-output 'first-error
+ confirm-nonexistent-file-or-buffer t
  cursor-in-non-selected-windows nil  ; hide cursors in other windows
  display-line-numbers-width 3
+ enable-recursive-minibuffers nil
  frame-inhibit-implied-resize t
  ;; remove continuation arrow on right fringe
  fringe-indicator-alist (delq (assq 'continuation fringe-indicator-alist)
@@ -73,50 +74,6 @@ with `doom//reload-theme').")
  visible-bell nil)
 
 (fset #'yes-or-no-p #'y-or-n-p) ; y/n instead of yes/no
-
-
-;;
-;; A minor mode for hiding the mode-line
-;;
-
-(defvar-local doom--modeline-format nil
-  "The modeline format to use when `doom-hide-modeline-mode' is active. Don't
-set this directly. Let-bind it instead.")
-
-(defvar-local doom--old-modeline-format nil
-  "The old modeline format, so `doom-hide-modeline-mode' can revert when it's
-disabled.")
-
-(define-minor-mode doom-hide-modeline-mode
-  "Minor mode to hide the mode-line in the current buffer."
-  :init-value nil
-  :global nil
-  (cond (doom-hide-modeline-mode
-         (add-hook 'after-change-major-mode-hook #'doom|hide-modeline-mode-reset nil t)
-         (setq mode-line-format (or doom--old-modeline-format doom--modeline-format)
-               doom--old-modeline-format nil))
-        (t
-         (remove-hook 'after-change-major-mode-hook #'doom|hide-modeline-mode-reset t)
-         (setq mode-line-format doom--old-modeline-format
-               doom--old-modeline-format nil)))
-  (force-mode-line-update))
-
-;; Ensure major-mode or theme changes don't overwrite these variables
-(put 'doom--modeline-format 'permanent-local t)
-(put 'doom--old-modeline-format 'permanent-local t)
-(put 'doom-hide-modeline-mode 'permanent-local t)
-(put 'doom-hide-modeline-mode 'permanent-local-hook t)
-(put 'doom|hide-modeline-mode-reset 'permanent-local-hook t)
-
-(defun doom|hide-modeline-mode-reset ()
-  "Sometimes, a major-mode is activated after `doom-hide-modeline-mode' is
-activated, thus disabling it (because changing major modes invokes
-`kill-all-local-variables' and specifically seems to kill `mode-line-format's
-local value, whether or not it's permanent-local. Therefore, we cycle
-`doom-hide-modeline-mode' to fix this."
-  (when doom-hide-modeline-mode
-    (doom-hide-modeline-mode -1)
-    (doom-hide-modeline-mode +1)))
 
 
 ;;
@@ -213,6 +170,10 @@ DEFAULT is non-nil, set the default mode-line for all buffers."
 (def-package! hideshow ; built-in
   :commands (hs-minor-mode hs-toggle-hiding hs-already-hidden-p)
   :config (setq hs-hide-comments-when-hiding-all nil))
+
+(def-package! hide-mode-line
+  :commands hide-mode-line-mode
+  :init (add-hook 'completion-list-mode-hook #'hide-mode-line-mode))
 
 (def-package! highlight-indentation
   :commands (highlight-indentation-mode highlight-indentation-current-column-mode))
@@ -313,6 +274,68 @@ DEFAULT is non-nil, set the default mode-line for all buffers."
 (defun server-remove-kill-buffer-hook ()
   (remove-hook 'kill-buffer-query-functions 'server-kill-buffer-query-function))
 (add-hook 'server-visit-hook 'server-remove-kill-buffer-hook)
+
+
+;;
+;; Custom hooks
+;;
+
+(defvar doom-load-theme-hook nil
+  "Hook run when the theme (and font) is initialized (or reloaded
+with `doom//reload-theme').")
+(define-obsolete-variable-alias 'doom-init-theme-hook 'doom-load-theme-hook "2.1.0")
+
+(defvar doom-before-switch-window-hook nil
+  "Hook run before `switch-window' or `switch-frame' are called. See
+`doom-after-switch-window-hook'.")
+
+(defvar doom-after-switch-window-hook nil
+  "Hook run after `switch-window' or `switch-frame' are called. See
+`doom-before-switch-window-hook'.")
+
+(defvar doom-before-switch-buffer-hook nil
+  "Hook run before `switch-to-buffer' and `display-buffer' are called. See
+`doom-after-switch-buffer-hook'.")
+
+(defvar doom-after-switch-buffer-hook nil
+  "Hook run before `switch-to-buffer' and `display-buffer' are called. See
+`doom-before-switch-buffer-hook'.")
+
+(defun doom*switch-window-hooks (orig-fn &rest args)
+  (run-hook-with-args 'doom-before-switch-window-hook)
+  (prog1 (apply orig-fn args)
+    (run-hook-with-args 'doom-after-switch-window-hook)))
+(defun doom*switch-buffer-hooks (orig-fn &rest args)
+  (run-hook-with-args 'doom-before-switch-buffer-hook)
+  (prog1 (apply orig-fn args)
+    (run-hook-with-args 'doom-after-switch-buffer-hook)))
+
+(advice-add #'select-frame     :around #'doom*switch-window-hooks)
+(advice-add #'select-window    :around #'doom*switch-window-hooks)
+(advice-add #'switch-to-buffer :around #'doom*switch-buffer-hooks)
+(advice-add #'display-buffer   :around #'doom*switch-buffer-hooks)
+
+(defun doom*load-theme-hooks (&rest _)
+  (run-hook-with-args 'doom-load-theme-hook))
+(advice-add #'load-theme       :after  #'doom*load-theme-hooks)
+
+
+;;
+;; Silence motion errors in minibuffer
+;;
+
+(defun doom*silence-motion-errors (orig-fn &rest args)
+  (if (and (minibufferp)
+           (<= (point) (minibuffer-prompt-end)))
+      (progn
+        (ignore-errors (apply orig-fn args))
+        (goto-char (minibuffer-prompt-end)))
+    (apply orig-fn args)))
+
+(advice-add #'left-char :around #'doom*silence-motion-errors)
+(advice-add #'right-char :around #'doom*silence-motion-errors)
+(advice-add #'delete-backward-char :around #'doom*silence-motion-errors)
+(advice-add #'backward-kill-sentence :around #'doom*silence-motion-errors)
 
 
 ;;
@@ -433,38 +456,35 @@ character that looks like a space that `whitespace-mode' won't affect.")
 ;; Theme & font
 ;;
 
+(defun doom|init-fonts (&optional frame)
+  "Initialize fonts."
+  (when (fontp doom-font)
+    (map-put default-frame-alist 'font (font-xlfd-name doom-font)))
+  (or frame (setq frame (selected-frame)))
+  (condition-case-unless-debug ex
+      (progn
+        (when (fontp doom-font)
+          (set-face-attribute 'fixed-pitch frame :font doom-font))
+        ;; Fallback to `doom-unicode-font' for Unicode characters
+        (when (fontp doom-unicode-font)
+          (set-fontset-font t 'unicode doom-unicode-font frame))
+        ;; ...and for variable-pitch-mode:
+        (when (fontp doom-variable-pitch-font)
+          (set-face-attribute 'variable-pitch frame :font doom-variable-pitch-font)))
+    ('error
+     (if (string-prefix-p "Font not available: " (error-message-string ex))
+         (lwarn 'doom-ui :warning
+                "Could not find the '%s' font on your system, falling back to system font"
+                (font-get (caddr ex) :family))
+       (lwarn 'doom-ui :error
+              "Unexpected error while initializing fonts: %s"
+              (error-message-string ex))))))
+
 (defun doom|init-theme ()
   "Set the theme and load the font, in that order."
   (when doom-theme
     (load-theme doom-theme t))
-  (add-hook 'after-make-frame-functions #'doom|init-theme-in-frame)
-  (run-hooks 'doom-init-theme-hook))
-
-(defun doom|init-fonts (&optional frame)
-  "Initialize fonts."
-  (add-hook 'after-make-frame-functions #'doom|init-fonts)
-  (when (fontp doom-font)
-    (map-put default-frame-alist 'font (font-xlfd-name doom-font)))
-  (when (display-graphic-p)
-    (or frame (setq frame (selected-frame)))
-    (condition-case-unless-debug ex
-        (progn
-          (when (fontp doom-font)
-            (set-face-attribute 'fixed-pitch frame :font doom-font))
-          ;; Fallback to `doom-unicode-font' for Unicode characters
-          (when (fontp doom-unicode-font)
-            (set-fontset-font t 'unicode doom-unicode-font frame))
-          ;; ...and for variable-pitch-mode:
-          (when (fontp doom-variable-pitch-font)
-            (set-face-attribute 'variable-pitch frame :font doom-variable-pitch-font)))
-      ('error
-       (if (string-prefix-p "Font not available: " (error-message-string ex))
-           (lwarn 'doom-ui :warning
-                  "Could not find the '%s' font on your system, falling back to system font"
-                  (font-get (caddr ex) :family))
-         (lwarn 'doom-ui :error
-                "Unexpected error while initializing fonts: %s"
-                (error-message-string ex)))))))
+  (add-hook 'after-make-frame-functions #'doom|init-theme-in-frame))
 
 ;; Getting themes to remain consistent across GUI Emacs, terminal Emacs and
 ;; daemon Emacs is hairy. `doom|init-theme' sorts out the initial GUI frame.
@@ -504,8 +524,6 @@ character that looks like a space that `whitespace-mode' won't affect.")
 
 ;; a good indicator that Emacs isn't frozen
 (add-hook 'doom-init-ui-hook #'blink-cursor-mode)
-;; no modeline in completion popups
-(add-hook 'completion-list-mode-hook #'doom-hide-modeline-mode)
 ;; line numbers in most modes
 (add-hook! (prog-mode text-mode conf-mode) #'doom|enable-line-numbers)
 
@@ -519,6 +537,10 @@ confirmation."
           (ignore (message "Aborted")))
     t))
 (setq confirm-kill-emacs #'doom-quit-p)
+
+(defun doom|ansi-color-apply ()
+  "TODO"
+  (ansi-color-apply-on-region compilation-filter-start (point)))
 
 (defun doom|no-fringes-in-minibuffer ()
   "Disable fringes in the minibuffer window."
@@ -554,15 +576,19 @@ windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
           ((eq buf (doom-fallback-buffer))
            (message "Can't kill the fallback buffer."))
           ((doom-real-buffer-p buf)
-           (when (or ;; if there aren't more real buffers than visible buffers,
-                     ;; then there are no real, non-visible buffers left.
-                     (not (cl-set-difference (doom-real-buffer-list)
-                                             (doom-visible-buffers)))
-                     ;; if we end up back where we start (or previous-buffer
-                     ;; returns nil), we have nowhere left to go
-                     (memq (previous-buffer) (list buf 'nil)))
-             (switch-to-buffer (doom-fallback-buffer)))
-           (kill-buffer buf))
+           (if (and (buffer-modified-p buf)
+                    (not (y-or-n-p "Buffer %s is modified; kill anyway?")))
+               (message "Aborted")
+             (set-buffer-modified-p nil)
+             (when (or ;; if there aren't more real buffers than visible buffers,
+                       ;; then there are no real, non-visible buffers left.
+                       (not (cl-set-difference (doom-real-buffer-list)
+                                               (doom-visible-buffers)))
+                       ;; if we end up back where we start (or previous-buffer
+                       ;; returns nil), we have nowhere left to go
+                       (memq (previous-buffer) (list buf 'nil)))
+               (switch-to-buffer (doom-fallback-buffer)))
+             (kill-buffer buf)))
           (t
            (funcall orig-fn)))))
 
@@ -577,6 +603,8 @@ windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
   (add-hook 'kill-buffer-query-functions #'doom|protect-visible-buffers)
   ;; Renames major-modes [pedantry intensifies]
   (add-hook 'after-change-major-mode-hook #'doom|set-mode-name)
+  ;; Ensure ansi codes in compilation buffers are replaced
+  (add-hook 'compilation-filter-hook #'doom|ansi-color-apply)
   ;;
   (run-hooks 'doom-init-ui-hook))
 

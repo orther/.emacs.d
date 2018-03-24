@@ -14,17 +14,18 @@
   "Tries to kill BUFFER, as was requested by a transient timer. If it fails, eg.
 the buffer is visible, then set another timer and try again later."
   (when (buffer-live-p buffer)
-    (let ((kill-buffer-hook (delq '+popup|kill-buffer-hook kill-buffer-hook)))
+    (let ((inhibit-quit t)
+          (kill-buffer-hook (remq '+popup|kill-buffer-hook kill-buffer-hook)))
       (cond ((eq ttl 0)
              (kill-buffer buffer))
             ((get-buffer-window buffer)
              (with-current-buffer buffer
                (setq +popup--timer
                      (run-at-time ttl nil #'+popup--kill-buffer buffer ttl))))
-            (t
-             (with-demoted-errors "Error killing transient buffer: %s"
-               (when-let* ((process (get-buffer-process (current-buffer))))
-                 (kill-process process))
+            ((with-demoted-errors "Error killing transient buffer: %s"
+               (let (confirm-kill-processes)
+                 (when-let* ((process (get-buffer-process (current-buffer))))
+                   (kill-process process)))
                (kill-buffer buffer)))))))
 
 (defun +popup--init (window &optional alist)
@@ -60,11 +61,10 @@ and enables `+popup-buffer-mode'."
   (let ((buffer (window-buffer window))
         ttl)
     (when (and (buffer-file-name buffer)
-               (buffer-modified-p buffer))
-      (with-current-buffer buffer
-        (if (y-or-n-p "Popup buffer is modified. Save it?")
-            (save-buffer)
-          (set-buffer-modified-p nil))))
+               (buffer-modified-p buffer)
+               (y-or-n-p "Popup buffer is modified. Save it?"))
+      (with-current-buffer buffer (save-buffer)))
+    (set-buffer-modified-p nil)
     (let ((ignore-window-parameters t))
       (delete-window window))
     (unless (window-live-p window)
@@ -181,6 +181,7 @@ Uses `shrink-window-if-larger-than-buffer'."
          (add-hook 'doom-unreal-buffer-functions #'+popup-buffer-p)
          (add-hook 'doom-escape-hook #'+popup|close-on-escape t)
          (add-hook 'doom-cleanup-hook #'+popup|cleanup-rules)
+         (add-hook 'after-change-major-mode-hook #'+popup|set-modeline-on-enable)
          (setq +popup--old-display-buffer-alist display-buffer-alist
                display-buffer-alist +popup--display-buffer-alist
                window--sides-inhibit-check t)
@@ -190,11 +191,12 @@ Uses `shrink-window-if-larger-than-buffer'."
          (remove-hook 'doom-unreal-buffer-functions #'+popup-buffer-p)
          (remove-hook 'doom-escape-hook #'+popup|close-on-escape)
          (remove-hook 'doom-cleanup-hook #'+popup|cleanup-rules)
+         (remove-hook 'after-change-major-mode-hook #'+popup|set-modeline-on-enable)
          (setq display-buffer-alist +popup--old-display-buffer-alist
                window--sides-inhibit-check nil)
          (+popup|cleanup-rules)
          (dolist (prop +popup-window-parameters)
-           (map-delete prop window-persistent-parameters)))))
+           (map-delete window-persistent-parameters prop)))))
 
 ;;;###autoload
 (define-minor-mode +popup-buffer-mode
@@ -222,7 +224,7 @@ disabled."
     (set-window-fringes nil f f fringes-outside-margins)))
 
 ;;;###autoload
-(defun +popup|set-modeline ()
+(defun +popup|set-modeline-on-enable ()
   "Don't show modeline in popup windows without a `modeline' window-parameter.
 
 + If one exists and it's a symbol, use `doom-modeline' to grab the format.
@@ -230,17 +232,22 @@ disabled."
 + If nil (or omitted), then hide the modeline entirely (the default).
 + If a function, it takes the current buffer as its argument and must return one
   of the above values."
-  (if +popup-buffer-mode
-      (let ((modeline (+popup-parameter-fn 'modeline nil (current-buffer))))
-        (cond ((eq modeline 't))
-              ((or (eq modeline 'nil)
-                   (not modeline))
-               (doom-hide-modeline-mode +1))
-              ((symbolp modeline)
-               (when-let* ((doom--modeline-format (doom-modeline modeline)))
-                 (doom-hide-modeline-mode +1)))))
-    (when doom-hide-modeline-mode
-      (doom-hide-modeline-mode -1))))
+  (when +popup-buffer-mode
+    (let ((modeline (+popup-parameter-fn 'modeline nil (current-buffer))))
+      (cond ((eq modeline 't))
+            ((or (eq modeline 'nil)
+                 (null modeline))
+             (hide-mode-line-mode +1))
+            ((symbolp modeline)
+             (when-let* ((hide-mode-line-format (doom-modeline modeline)))
+               (hide-mode-line-mode +1)))))))
+
+;;;###autoload
+(defun +popup|unset-modeline-on-disable ()
+  "Restore the modeline when `+popup-buffer-mode' is deactivated."
+  (when (and (not +popup-buffer-mode)
+             (bound-and-true-p hide-mode-line-mode))
+    (hide-mode-line-mode -1)))
 
 ;;;###autoload
 (defun +popup|close-on-escape ()
@@ -525,7 +532,7 @@ Accepts the same arguments as `display-buffer-in-side-window'. You must set
           ((not (numberp slot))
            (error "Invalid slot %s specified" slot))
           ((not (numberp vslot))
-           (error "Invalid vslot %s specified" slot)))
+           (error "Invalid vslot %s specified" vslot)))
 
     (let* ((major (get-window-with-predicate
                    (lambda (window)

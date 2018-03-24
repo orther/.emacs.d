@@ -1,14 +1,15 @@
 ;;; core-lib.el -*- lexical-binding: t; -*-
 
-(let ((load-path doom--site-load-path))
+(let ((load-path doom-site-load-path))
   (require 'subr-x)
   (require 'cl-lib)
   (require 'map))
 
-(when (version< emacs-version "26")
-  (with-no-warnings
-    (defalias 'if-let* #'if-let)
-    (defalias 'when-let* #'when-let)))
+(eval-and-compile
+  (when (version< emacs-version "26")
+    (with-no-warnings
+      (defalias 'if-let* #'if-let)
+      (defalias 'when-let* #'when-let))))
 
 
 ;;
@@ -59,20 +60,34 @@
 
 (defalias 'lambda! 'λ!)
 
-(defmacro after! (feature &rest forms)
+(defmacro after! (features &rest body)
   "A smart wrapper around `with-eval-after-load'. Supresses warnings during
 compilation."
   (declare (indent defun) (debug t))
-  `(,(if (or (not (bound-and-true-p byte-compile-current-file))
-             (if (symbolp feature)
-                 (require feature nil :no-error)
-               (load feature :no-message :no-error)))
-         #'progn
-       #'with-no-warnings)
-    (with-eval-after-load ',feature ,@forms)))
+  (list (if (or (not (bound-and-true-p byte-compile-current-file))
+                (dolist (next (doom-enlist features))
+                  (if (symbolp next)
+                      (require next nil :no-error)
+                    (load next :no-message :no-error))))
+            #'progn
+          #'with-no-warnings)
+        (cond ((symbolp features)
+               `(eval-after-load ',features '(progn ,@body)))
+              ((and (consp features)
+                    (memq (car features) '(:or :any)))
+               `(progn
+                  ,@(cl-loop for next in (cdr features)
+                             collect `(after! ,next ,@body))))
+              ((and (consp features)
+                    (memq (car features) '(:and :all)))
+               (dolist (next (cdr features))
+                 (setq body `(after! ,next ,@body)))
+               body)
+              ((listp features)
+               `(after! (:all ,@features) ,@body)))))
 
 (defmacro quiet! (&rest forms)
-  "Run FORMS without making any noise."
+  "Run FORMS without making any output."
   `(if doom-debug-mode
        (progn ,@forms)
      (let ((old-fn (symbol-function 'write-region)))
@@ -91,10 +106,10 @@ compilation."
 (defmacro add-transient-hook! (hook &rest forms)
   "Attaches transient forms to a HOOK.
 
-HOOK can be a quoted hook or a sharp-quoted function (which will be advised).
+This means FORMS will be evaluated once when that function/hook is first
+invoked, then never again.
 
-These forms will be evaluated once when that function/hook is first invoked,
-then it detaches itself."
+HOOK can be a quoted hook or a sharp-quoted function (which will be advised)."
   (declare (indent 1))
   (let ((append (eq (car forms) :after))
         (fn (intern (format "doom-transient-hook-%s" (cl-incf doom--transient-counter)))))

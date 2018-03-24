@@ -56,41 +56,67 @@ Possible values:
 
 (define-derived-mode +doom-dashboard-mode special-mode
   (format "DOOM v%s" doom-version)
+  :syntax-table nil
+  :abbrev-table nil
   "Major mode for the DOOM dashboard buffer."
-  (read-only-mode +1)
-  (setq truncate-lines t)
+  (setq truncate-lines t
+        buffer-read-only t)
   (setq-local whitespace-style nil)
   (setq-local show-trailing-whitespace nil)
   (cl-loop for (car . _cdr) in fringe-indicator-alist
            collect (cons car nil) into alist
-           finally do (setq fringe-indicator-alist alist)))
+           finally do (setq fringe-indicator-alist alist))
+  (add-hook 'post-command-hook #'+doom-dashboard|reposition-point nil t))
 
 (map! :map +doom-dashboard-mode-map
-      "n" #'+doom-dashboard/next-button
-      "p" #'+doom-dashboard/previous-button
-      "N" #'+doom-dashboard/last-button
-      "P" #'+doom-dashboard/first-button
-      [remap evil-insert]  #'ignore
-      [remap evil-replace] #'ignore
-      [remap evil-change]  #'ignore
-      [remap evil-visual-char]  #'ignore
-      [remap evil-visual-line]  #'ignore
+      "n"            #'forward-button
+      :gn [down]     #'forward-button
+      :gn "C-n"      #'forward-button
+      :gn [tab]      #'forward-button
+      :gn "TAB"      #'forward-button
+      "p"            #'backward-button
+      :gn [up]       #'backward-button
+      :gn "C-p"      #'backward-button
+      :gn [backtab]  #'backward-button
+      :gn "S-TAB"    #'backward-button
       (:when (featurep! :feature evil)
-        :em "j" #'+doom-dashboard/next-button
-        :em "k" #'+doom-dashboard/previous-button
-        :em "gg" #'+doom-dashboard/first-button
-        :em "G"  #'+doom-dashboard/last-button))
+        :m "j" #'forward-button
+        :m "k" #'backward-button
+
+        [remap evil-delete]        #'ignore
+        [remap evil-delete-line]   #'ignore
+        [remap evil-insert]        #'ignore
+        [remap evil-append]        #'ignore
+        [remap evil-replace]       #'ignore
+        [remap evil-replace-state] #'ignore
+        [remap evil-change]        #'ignore
+        [remap evil-change-line]   #'ignore
+        [remap evil-visual-char]   #'ignore
+        [remap evil-visual-line]   #'ignore))
 
 
 ;;
 ;; Hooks
 ;;
 
+(defun +doom-dashboard|reposition-point ()
+  "Trap the point in the buttons."
+  (when (region-active-p)
+    (deactivate-mark t)
+    (when (bound-and-true-p evil-mode)
+      (evil-change-to-previous-state)))
+  (or (ignore-errors
+        (if (button-at (point))
+            (forward-button 0)
+          (backward-button 1)))
+      (progn (goto-char (point-min))
+             (forward-button 1))))
+
 (defun +doom-dashboard|init ()
   "Initializes Doom's dashboard."
-  (add-hook 'focus-in-hook #'+doom-dashboard-reload)
   (add-hook 'window-configuration-change-hook #'+doom-dashboard|resize)
   (add-hook 'kill-buffer-query-functions #'+doom-dashboard|reload-on-kill)
+  (add-hook 'doom-after-switch-buffer-hook #'+doom-dashboard|reload-on-kill)
   (when (daemonp)
     (add-hook 'after-make-frame-functions #'+doom-dashboard|make-frame))
   ;; `persp-mode' integration: update `default-directory' when switching
@@ -262,10 +288,7 @@ controlled by `+doom-dashboard-pwd-policy'."
    (propertize
     (+doom-dashboard--center
      +doom-dashboard--width
-     (format "Loaded %d packages in %d modules in %.02fs"
-             (length doom--package-load-path)
-             (hash-table-size doom-modules)
-             doom-init-time))
+     (doom-packages--benchmark))
     'face 'font-lock-comment-face)
    "\n\n"))
 
@@ -291,9 +314,9 @@ controlled by `+doom-dashboard-pwd-policy'."
                         (file-exists-p (expand-file-name persp-auto-save-fname persp-save-dir)))
                '("Reload last session" "history"
                  (+workspace/load-session)))
-            ,(when (featurep! :org org)
+            ,(when (featurep! :lang org)
                '("See agenda for this week" "calendar"
-                 (call-interactively 'org-agenda-list)))
+                 (call-interactively #'org-agenda-list)))
             ("Recently opened files" "file-text"
              (call-interactively (or (command-remapping #'recentf-open-files)
                                      #'recentf-open-files)))
@@ -303,5 +326,8 @@ controlled by `+doom-dashboard-pwd-policy'."
             ("Jump to bookmark" "bookmark"
              (call-interactively (or (command-remapping #'bookmark-jump)
                                      #'bookmark-jump)))
-            ("Edit emacs.d" "tools"
+            ,(when (featurep! :config private)
+               '("Open custom init script" "settings"
+                 (find-file (expand-file-name "init.el" +private-config-path))))
+            ("Edit Doom Emacs" "tools"
              (doom-project-find-file doom-emacs-dir))))))

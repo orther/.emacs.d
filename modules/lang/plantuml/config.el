@@ -2,14 +2,11 @@
 
 (def-package! plantuml-mode
   :mode "\\.p\\(lant\\)?uml$"
+  :init
+  (setq plantuml-jar-path (concat doom-etc-dir "plantuml.jar")
+        org-plantuml-jar-path plantuml-jar-path)
   :config
-  (setq plantuml-jar-path (concat doom-etc-dir "plantuml.jar"))
-  (set! :popup "^\\*PLANTUML" '((size . 0.4)) '((select) (transient . 0)))
-
-  (unless (executable-find "java")
-    (warn "plantuml-mode: can't find java, preview disabled."))
-  (unless (file-exists-p plantuml-jar-path)
-    (warn "plantuml-mode: can't find plantuml.jar; run M-x +plantuml/install.")))
+  (set! :popup "^\\*PLANTUML" '((size . 0.4)) '((select) (transient . 0))))
 
 
 (def-package! flycheck-plantuml

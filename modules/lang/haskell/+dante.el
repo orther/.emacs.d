@@ -6,10 +6,14 @@
   :hook (haskell-mode . dante-mode)
   :config
   (add-hook 'haskell-mode-hook #'interactive-haskell-mode)
-
-  (unless (executable-find "cabal")
-    (warn "haskell-mode: couldn't find cabal")
-    (remove-hook 'haskell-mode-hook #'dante-mode))
-
   (add-hook 'dante-mode-hook #'flycheck-mode))
 
+
+(def-package! company-ghc
+  :when (featurep! :completion company)
+  :after haskell-mode
+  :init
+  (add-hook 'haskell-mode-hook #'ghc-comp-init)
+  :config
+  (setq company-ghc-show-info 'oneline)
+  (set! :company-backend 'haskell-mode #'company-ghc))

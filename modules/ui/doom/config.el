@@ -1,43 +1,73 @@
 ;;; ui/doom/config.el -*- lexical-binding: t; -*-
 
+(defvar +doom-solaire-themes
+  '(doom-city-lights
+    doom-dracula
+    doom-molokai
+    doom-nord
+    doom-nova
+    doom-one
+    doom-one-light
+    doom-solarized-light
+    doom-spacegrey
+    doom-vibrant)
+  "A list of themes that supports `solaire-mode'; if these themes are detected,
+`solaire-mode' will be enabled.")
+
+
+;;
+;; Plugins
+;;
+
 ;; <https://github.com/hlissner/emacs-doom-theme>
 (def-package! doom-themes
   :config
   (unless doom-theme
-    (setq doom-theme 'doom-one)
-    (after! solaire-mode
-      (add-hook 'doom-init-theme-hook #'solaire-mode-swap-bg t)))
+    (setq doom-theme 'doom-one))
 
-  ;; Ensure `doom/reload-load-path' reloads common faces
-  (defun +doom|reload-theme () (load "doom-themes-common.el" nil t))
-  (add-hook 'doom-pre-reload-theme-hook #'+doom|reload-theme)
+  ;; Reload common faces when reloading doom-themes live
+  (defun +doom*reload (&rest _) (load "doom-themes-common.el" nil t))
+  (advice-add #'doom//reload-theme :before #'+doom*reload-common)
 
   ;; improve integration w/ org-mode
-  (add-hook 'doom-init-theme-hook #'doom-themes-org-config)
+  (add-hook 'doom-load-theme-hook #'doom-themes-org-config)
 
   ;; more Atom-esque file icons for neotree
-  (add-hook 'doom-init-theme-hook #'doom-themes-neotree-config)
+  (add-hook 'doom-load-theme-hook #'doom-themes-neotree-config)
   (setq doom-neotree-enable-variable-pitch t
         doom-neotree-file-icons 'simple
         doom-neotree-line-spacing 2))
 
 
 (def-package! solaire-mode
-  :hook (after-change-major-mode . turn-on-solaire-mode)
+  :commands (solaire-mode turn-on-solaire-mode solaire-mode-swap-bg)
+  :init
+  (defun +doom|solaire-mode-swap-bg-maybe ()
+    (when (memq doom-theme +doom-solaire-themes)
+      (require 'solaire-mode)
+      (solaire-mode-swap-bg)))
+  (add-hook 'doom-load-theme-hook #'+doom|solaire-mode-swap-bg-maybe t)
   :config
+  (add-hook 'after-change-major-mode-hook #'turn-on-solaire-mode)
   (setq solaire-mode-real-buffer-fn #'doom-real-buffer-p)
-  ;; Prevent color glitches when reloading either DOOM or the theme
-  (add-hook! '(doom-init-theme-hook doom-reload-hook) #'solaire-mode-reset))
+  ;; fringe can become unstyled when deleting or focusing frames
+  (add-hook 'focus-in-hook #'solaire-mode-reset)
+  ;; Prevent color glitches when reloading either DOOM or loading a new theme
+  (add-hook! :append '(doom-load-theme-hook doom-reload-hook)
+    #'solaire-mode-reset)
+  ;; org-capture takes an org buffer and narrows it. The result is erroneously
+  ;; considered an unreal buffer, so solaire-mode must be restored.
+  (add-hook 'org-capture-mode-hook #'turn-on-solaire-mode))
 
 
 (after! hideshow
   (defface +doom-folded-face
     `((((background dark))
-       (:inherit font-lock-comment-face :background ,(doom-color 'base0)))
+       (:inherit font-lock-comment-face :background ,(doom-color 'base0) :weight light))
       (((background light))
-       (:inherit font-lock-comment-face :background ,(doom-color 'base3))))
+       (:inherit font-lock-comment-face :background ,(doom-color 'base3) :weight light)))
     "Face to hightlight `hideshow' overlays."
-    :group 'doom)
+    :group 'doom-themes)
 
   ;; Nicer code-folding overlays (with fringe indicators)
   (defun +doom-set-up-overlay (ov)

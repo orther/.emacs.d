@@ -20,11 +20,25 @@
 (autoload 'goto-last-change "goto-chg")
 (autoload 'goto-last-change-reverse "goto-chg")
 
+
+(def-package! evil-collection
+  :when (featurep! +everywhere)
+  :after evil
+  :preface
+  ;; must be set before evil/evil-collcetion is loaded
+  (setq evil-want-integration nil
+        evil-collection-company-use-tng nil)
+  :config
+  (delq 'kotlin-mode evil-collection-mode-list) ; doesn't do anything useful
+  (evil-collection-init))
+
+
 (def-package! evil
   :init
   (setq evil-want-C-u-scroll t
-        evil-want-visual-char-semi-exclusive t
+        evil-want-C-w-delete t
         evil-want-Y-yank-to-eol t
+        evil-want-visual-char-semi-exclusive t
         evil-magic t
         evil-echo-state t
         evil-indent-convert-tabs t
@@ -49,6 +63,9 @@
   (add-hook 'doom-init-hook #'evil-mode)
   (evil-select-search-module 'evil-search-module 'evil-search)
 
+  ;; ensure `doom-mode-map' has high precedence
+  (evil-make-overriding-map doom-mode-map)
+
   (set! :popup "^\\*evil-registers" '((size . 0.3)))
   (set! :popup "^\\*Command Line" '((size . 8)))
 
@@ -59,13 +76,7 @@
 
   (defun +evil|update-cursor-color ()
     (setq +evil--default-cursor-color (face-background 'cursor)))
-  (add-hook 'doom-init-theme-hook #'+evil|update-cursor-color)
-
-  ;; default modes
-  (dolist (mode '(tabulated-list-mode view-mode comint-mode term-mode calendar-mode Man-mode))
-    (evil-set-initial-state mode 'emacs))
-  (dolist (mode '(help-mode debugger-mode grep-mode))
-    (evil-set-initial-state mode 'normal))
+  (add-hook 'doom-load-theme-hook #'+evil|update-cursor-color)
 
 
   ;; --- keybind fixes ----------------------
@@ -94,7 +105,9 @@
   (defun +evil|save-buffer ()
     "Shorter, vim-esque save messages."
     (message "\"%s\" %dL, %dC written"
-             (file-relative-name buffer-file-truename (doom-project-root))
+             (if buffer-file-name
+                 (file-relative-name (file-truename buffer-file-name) (doom-project-root))
+               (buffer-name))
              (count-lines (point-min) (point-max))
              (buffer-size)))
   (setq save-silently t)
@@ -140,16 +153,21 @@
 
   ;; Other commands can make use of this
   (evil-define-interactive-code "<//>"
-    :ex-arg buffer-match (list (when (evil-ex-p) evil-ex-argument)))
+    :ex-arg buffer-match (list (if (evil-ex-p) evil-ex-argument)))
   (evil-define-interactive-code "<//g>"
-    :ex-arg global-match (list (when (evil-ex-p) evil-ex-argument)))
+    :ex-arg global-match (list (if (evil-ex-p) evil-ex-argument)))
 
   ;; Forward declare these so that ex completion works, even if the autoloaded
   ;; functions aren't loaded yet.
   (evil-set-command-properties
    '+evil:align :move-point t :ex-arg 'buffer-match :ex-bang t :evil-mc t :keep-visual t :suppress-operator t)
   (evil-set-command-properties
-   '+evil:mc :move-point nil :ex-arg 'global-match :ex-bang t :evil-mc t))
+   '+evil:mc :move-point nil :ex-arg 'global-match :ex-bang t :evil-mc t)
+
+  ;; Ensure jump points are created
+  (defun +evil*set-jump (&rest _)
+    (evil-set-jump))
+  (advice-add #'counsel-git-grep-action :before #'+evil*set-jump))
 
 
 ;;
@@ -292,9 +310,8 @@ the new algorithm is confusing, like in python or ruby."
   (global-evil-mc-mode +1)
 
   ;; Add custom commands to whitelisted commands
-  (dolist (fn '(doom/deflate-space-maybe doom/inflate-space-maybe
-                doom/backward-to-bol-or-indent doom/forward-to-last-non-comment-or-eol
-                doom/backward-kill-to-bol-and-indent doom/newline-and-indent))
+  (dolist (fn '(doom/backward-to-bol-or-indent doom/forward-to-last-non-comment-or-eol
+                doom/backward-kill-to-bol-and-indent))
     (push (cons fn '((:default . evil-mc-execute-default-call)))
           evil-mc-custom-known-commands))
 
@@ -319,7 +336,10 @@ the new algorithm is confusing, like in python or ruby."
         evil-snipe-scope 'line
         evil-snipe-repeat-scope 'visible
         evil-snipe-char-fold t
-        evil-snipe-disabled-modes '(magit-mode elfeed-show-mode elfeed-search-mode)
+        evil-snipe-disabled-modes
+        '(org-agenda-mode magit-mode git-rebase-mode
+          elfeed-show-mode elfeed-search-mode ranger-mode
+          magit-repolist-mode)
         evil-snipe-aliases '((?\[ "[[{(]")
                              (?\] "[]})]")
                              (?\; "[;:]")))
@@ -336,11 +356,14 @@ the new algorithm is confusing, like in python or ruby."
 
 
 (def-package! evil-vimish-fold
-  :commands evil-vimish-fold-mode
+  :commands (evil-vimish-fold/next-fold evil-vimish-fold/previous-fold
+             evil-vimish-fold/delete evil-vimish-fold/delete-all
+             evil-vimish-fold/create evil-vimish-fold/create-line)
   :init
   (setq vimish-fold-dir (concat doom-cache-dir "vimish-fold/")
         vimish-fold-indication-mode 'right-fringe)
-  (add-hook 'doom-post-init-hook #'evil-vimish-fold-mode t))
+  :config
+  (vimish-fold-global-mode +1))
 
 
 ;; Without `evil-visualstar', * and # grab the word at point and search, no
@@ -365,7 +388,10 @@ the new algorithm is confusing, like in python or ruby."
 (def-package! evil-args
   :commands (evil-inner-arg evil-outer-arg
              evil-forward-arg evil-backward-arg
-             evil-jump-out-args))
+             evil-jump-out-args)
+  :config
+  (push "<" evil-args-openers)
+  (push ">" evil-args-closers))
 
 
 (def-package! evil-indent-plus

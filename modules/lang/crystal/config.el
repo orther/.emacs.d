@@ -4,6 +4,9 @@
   :mode "\\.cr$"
   :interpreter "crystal"
   :config
+  (set! :lookup 'crystal-mode
+    :definition #'crystal-def-jump
+    :references #'crystal-tool-imp)
   (set! :eval 'crystal-mode
         '((:command     . "crystal")
           (:exec        . "%c %s")
@@ -13,3 +16,7 @@
 (def-package! flycheck-crystal
   :after crystal-mode
   :config (add-hook 'crystal-mode-hook #'flycheck-mode))
+
+
+(def-package! inf-crystal
+  :commands (inf-crystal crystal-switch-to-inf))

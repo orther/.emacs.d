@@ -11,7 +11,7 @@
         auto-revert-verbose nil
         ;; files
         image-dired-dir (concat doom-cache-dir "image-dired/")
-        image-dired-db-file (concat image-dired-dir "image-dired/db.el")
+        image-dired-db-file (concat image-dired-dir "db.el")
         image-dired-gallery-dir (concat image-dired-dir "gallery/")
         image-dired-temp-image-file (concat image-dired-dir "temp-image")
         image-dired-temp-rotate-image-file (concat image-dired-dir "temp-rotate-image"))
@@ -36,14 +36,13 @@
         (make-directory parent-directory t))))
   (push #'+dired|create-non-existent-directory find-file-not-found-functions)
 
-  ;; Don't interfere with leader key
-  (define-key dired-mode-map (kbd doom-leader-key) nil))
+  ;; Kill buffer when quitting dired buffers
+  (define-key dired-mode-map [remap quit-window] (λ! (quit-window t))))
 
 
 (def-package! dired-k
   :after dired
   :config
-  (setq dired-k-style 'git)
   (add-hook 'dired-initial-position-hook #'dired-k)
   (add-hook 'dired-after-readin-hook #'dired-k-no-revert)
 

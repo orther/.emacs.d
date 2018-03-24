@@ -123,7 +123,7 @@ evil-window-move-* (e.g. `evil-window-move-far-left')"
              (not (zerop (length arg))))
     (condition-case lossage
         (let ((pattern (evil-ex-make-substitute-pattern
-                        (if evil-ex-bang (regexp-quote arg) arg)
+                        arg
                         (or flags (list))))
               (range (or (evil-copy-range evil-ex-range)
                          (evil-range (or beg (line-beginning-position))
@@ -167,15 +167,25 @@ evil-window-move-* (e.g. `evil-window-move-far-left')"
 
 ;;;###autoload (autoload '+evil:align "feature/evil/autoload/evil" nil t)
 (evil-define-operator +evil:align (beg end pattern &optional bang)
-  "Ex interface to `align-regexp'. Accepts vim-style regexps."
-  (interactive "<r><//><!>")
+  "Ex interface to `align-regexp'. PATTERN is a vim-style regexp. If BANG,
+repeat the alignment for all matches (otherwise just the first match on each
+line)."
+  (interactive "<r><//g><!>")
   (align-regexp
    beg end
-   (concat "\\(\\s-*\\)"
-           (if bang
-               (regexp-quote pattern)
-             (evil-transform-vim-style-regexp pattern)))
-   1 1))
+   (concat "\\(\\s-*\\)" (evil-transform-vim-style-regexp pattern))
+   1 1 bang))
+
+;;;###autoload (autoload '+evil:align-right "feature/evil/autoload/evil" nil t)
+(evil-define-operator +evil:align-right (beg end pattern &optional bang)
+  "Like `+evil:align', except alignments are right-justified. PATTERN is a
+vim-style regexp. If BANG, repeat the alignment for all matches (otherwise just
+the first match on each line)."
+  (interactive "<r><//g><!>")
+  (align-regexp
+   beg end
+   (concat "\\(" (evil-transform-vim-style-regexp pattern) "\\)")
+   -1 1 bang))
 
 
 ;; --- wgrep ------------------------------

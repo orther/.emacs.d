@@ -5,14 +5,17 @@
 (add-hook! (css-mode sass-mode)
   #'(yas-minor-mode-on flycheck-mode highlight-numbers-mode))
 
+;; An improved newline+continue comment function
+(add-hook! css-mode (setq-local comment-indent-function #'+css/comment-indent-new-line))
+
 (after! smartparens
   (sp-with-modes '(css-mode scss-mode less-css-mode stylus-mode)
-    (sp-local-pair "/*" "*/" :post-handlers '(("[d-3]||\n[i]" "RET") ("| " "SPC")))))
+    (sp-local-pair "/*" "*/" :post-handlers '(("||\n[i]" "RET") ("| " "SPC")))))
 
 (map! :map* (css-mode-map scss-mode-map less-css-mode-map)
       :n "M-R" #'+css/web-refresh-browser
       (:localleader
-        :n  "rb" #'+css/toggle-inline-or-block))
+        :n "rb" #'+css/toggle-inline-or-block))
 
 
 ;;
@@ -36,15 +39,18 @@
   :mode "\\.css$"
   :mode ("\\.scss$" . scss-mode)
   :config
-  (set! :company-backend '(css-mode scss-mode) '(company-css company-yasnippet))
-  (map! :map scss-mode-map :localleader "b" #'+css/scss-build))
+  (set! :docset 'css-mode "CSS")
+  (set! :docset 'scss-mode "Sass")
+  (set! :company-backend '(css-mode scss-mode) 'company-css)
+  (map! :map scss-mode-map :localleader :n "b" #'+css/scss-build))
 
 
 (def-package! sass-mode
   :mode "\\.sass$"
   :config
-  (set! :company-backend 'sass-mode '(company-css company-yasnippet))
-  (map! :map scss-mode-map :localleader "b" #'+css/sass-build))
+  (set! :docset 'sass-mode "Sass")
+  (set! :company-backend 'sass-mode 'company-css)
+  (map! :map scss-mode-map :localleader :n "b" #'+css/sass-build))
 
 
 (def-package! less-css-mode

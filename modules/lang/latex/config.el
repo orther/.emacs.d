@@ -19,17 +19,27 @@
   `(setq +latex-bibtex-dir ,dir))
 
 
+(after! smartparens-latex
+  (map-delete sp-pairs 'LaTeX-mode)
+  (map-delete sp-pairs 'latex-mode)
+  (map-delete sp-pairs 'tex-mode)
+  (map-delete sp-pairs 'plain-tex-mode))
+
+
+;;
+;; Plugins
+;;
+
 (def-package! tex-site
   :init
-  ;; Manually load the AUCTEX autoloads. This is normally done by package-initialize,
-  ;; ... which we do not use.
+  ;; Manually load the AUCTEX autoloads. This is normally done by
+  ;; package-initialize, ... which we do not use.
   (load "auctex.el" nil t t)
   (load "auctex-autoloads.el" nil t t)
   :config
   ;; Set some varibles to fontify common LaTeX commands.
   (load! +fontification)
-  (setq
-        ;; Enable parse on load.
+  (setq ;; Enable parse on load.
         TeX-parse-self t
         ;; When running TeX, just save, don't ask
         TeX-save-query nil
@@ -38,7 +48,8 @@
         ;; Use hidden directories for AUCTeX files.
         TeX-auto-local ".auctex-auto"
         TeX-style-local ".auctex-style"
-        ;; When correlating sources to rendered PDFs, don't start the emacs server
+        ;; When correlating sources to rendered PDFs, don't start the emacs
+        ;; server
         TeX-source-correlate-start-server nil
         TeX-source-correlate-mode t
         TeX-source-correlate-method 'synctex
@@ -49,38 +60,37 @@
   (set! :popup " output\\*$" '((size . 15)))
 
   ;; TeX Font Styling
-  (def-package! tex-style
-    :defer t)
+  ;; (def-package! tex-style :defer t)
 
   ;; TeX Folding
-  (def-package! tex-fold
-    :defer t
-    :init
-    (add-hook! 'TeX-mode-hook 'TeX-fold-mode))
+  (add-hook 'TeX-mode-hook 'TeX-fold-mode)
 
   (def-package! latex
     :defer t
     :init
-    (setq
-     ;; Add the toc entry to the sectioning hooks.
-     LaTeX-section-hook
-       '(LaTeX-section-heading
-         LaTeX-section-title
-         LaTeX-section-toc
-         LaTeX-section-section
-         LaTeX-section-label)
-     LaTeX-fill-break-at-separators nil
-     ;; Item indentation.
-     LaTeX-item-indent 0)
+    (setq LaTeX-section-hook ; Add the toc entry to the sectioning hooks.
+          '(LaTeX-section-heading
+            LaTeX-section-title
+            LaTeX-section-toc
+            LaTeX-section-section
+            LaTeX-section-label)
+          LaTeX-fill-break-at-separators nil
+          LaTeX-item-indent 0) ; item indentation.
     :config
     (map! :map LaTeX-mode-map "C-j" nil)
-    ;; Do not prompt for Master files, this allows auto-insert to add templates to .tex files
-    (add-hook! '(LaTeX-mode TeX-mode) '(lambda () (remove-hook 'find-file-hooks (car find-file-hooks) 'local)))
+    ;; Do not prompt for Master files, this allows auto-insert to add templates
+    ;; to .tex files
+    (add-hook! '(LaTeX-mode TeX-mode)
+      (remove-hook 'find-file-hook (car find-file-hook) 'local))
     ;; Adding useful things for latex
-    (add-hook! LaTeX-mode (LaTeX-math-mode) (TeX-source-correlate-mode)(TeX-global-PDF-mode t)
-                          (TeX-PDF-mode t) (visual-line-mode +1))
+    (add-hook! LaTeX-mode
+      (LaTeX-math-mode)
+      (TeX-source-correlate-mode)
+      (TeX-global-PDF-mode t)
+      (TeX-PDF-mode t)
+      (visual-line-mode +1))
     (when (featurep! :feature spellcheck)
-      (add-hook! LaTeX-mode (flyspell-mode t)))
+      (add-hook 'LaTeX-mode-hook #'flyspell-mode))
     ;; Default language setting.
     (setq ispell-dictionary "english")
     ;; Use chktex to search for errors in a latex file.
@@ -95,19 +105,28 @@
 (after! latex
   ;; Use Okular is the user says so.
   (when (featurep! +okular)
-    ;; Configure Okular as viewer. Including a bug fix (https://bugs.kde.org/show_bug.cgi?id=373855)
+    ;; Configure Okular as viewer. Including a bug fix
+    ;; (https://bugs.kde.org/show_bug.cgi?id=373855)
     (add-to-list 'TeX-view-program-list
                  '("Okular" ("okular --unique file:%o" (mode-io-correlate "#src:%n%a"))))
     (add-to-list 'TeX-view-program-selection
                  '(output-pdf "Okular"))))
 
+(after! latex
+  (when (featurep! +skim)
+    (add-to-list 'TeX-view-program-list
+                 '("Skim" "/Applications/Skim.app/Contents/SharedSupport/displayline -b -g %n %o %b"))
+    (add-to-list 'TeX-view-program-selection
+                 '(output-pdf "Skim"))))
+
+
 (def-package! preview
-  ;; The preview package is currently broken with the latest AUCTeX version ("11.90.2.2017-07-25)
-  ;; ... and Ghostscript 9.22. It's now fixed in AUCTeX master, so we just have to wait.
+  ;; The preview package is currently broken with the latest AUCTeX version
+  ;; ("11.90.2.2017-07-25) ... and Ghostscript 9.22. It's now fixed in AUCTeX
+  ;; master, so we just have to wait.
   :init
-  (progn
-    (setq-default preview-scale 1.4
-                  preview-scale-function '(lambda () (* (/ 10.0 (preview-document-pt)) preview-scale))))
+  (setq-default preview-scale 1.4
+                preview-scale-function '(lambda () (* (/ 10.0 (preview-document-pt)) preview-scale)))
   (add-hook! LaTeX-mode #'LaTeX-preview-setup))
 
 (def-package! reftex
@@ -117,8 +136,8 @@
         reftex-toc-split-windows-fraction 0.3)
   (unless (string-empty-p +latex-bibtex-file)
     (setq reftex-default-bibliography (list (expand-file-name +latex-bibtex-file))))
-  ; Get ReTeX working with biblatex
-  ; http://tex.stackexchange.com/questions/31966/setting-up-reftex-with-biblatex-citation-commands/31992#31992
+  ;; Get ReTeX working with biblatex
+  ;; http://tex.stackexchange.com/questions/31966/setting-up-reftex-with-biblatex-citation-commands/31992#31992
   (setq reftex-cite-format
         '((?t . "\\textcite[]{%l}")
           (?a . "\\autocite[]{%l}")
@@ -156,25 +175,23 @@
   :init
   (setq latex-preview-pane-multifile-mode 'auctex)
   (add-hook! (latex-mode LaTeX-mode) #'latex-preview-pane-enable)
-  (add-to-list 'TeX-view-program-list
-                 '("preview-pane"
-                   latex-preview-pane-mode))
-  (add-to-list 'TeX-view-program-selection
-                 '(output-pdf "preview-pane"))
+  (add-to-list 'TeX-view-program-list '("preview-pane" latex-preview-pane-mode))
+  (add-to-list 'TeX-view-program-selection '(output-pdf "preview-pane"))
   :config
   (map! :map doc-view-mode-map
         "ESC" #'delete-window
         "q"   #'delete-window
         "k" (λ! (quit-window) (delete-window))))
 
-;; Enable latexmk only if the user explicitly says so with the module flag '+latexmk'.
+;; Enable latexmk only if the user explicitly says so with the module flag
+;; '+latexmk'.
 (def-package! auctex-latexmk
   :when (featurep! +latexmk)
   :init
   ;; Pass the -pdf flag when TeX-PDF-mode is active
   (setq auctex-latexmk-inherit-TeX-PDF-mode t)
   ;; Set LatexMk as the default
-  (add-hook 'LaTeX-mode-hook '(lambda () (setq TeX-command-default "LatexMk")))
+  (add-hook! LaTeX-mode (setq TeX-command-default "LatexMk"))
   :config
   ;; Add latexmk as a TeX target
   (auctex-latexmk-setup))
@@ -211,8 +228,8 @@
   :commands (company-auctex-init)
   :init
   ;; We can't use the (set! :company-backend ...) because Auctex reports its
-  ;; major-mode as `latex-mode', but uses LaTeX-mode-hook for its mode, which
-  ;; is not anticipated by :company-backend (and shouldn't have to!)
+  ;; major-mode as `latex-mode', but uses LaTeX-mode-hook for its mode, which is
+  ;; not anticipated by :company-backend (and shouldn't have to!)
   (add-hook! LaTeX-mode
     (make-variable-buffer-local 'company-backends)
     (company-auctex-init)))
@@ -221,5 +238,5 @@
 (def-package! adaptive-wrap
   :commands (adaptive-wrap-prefix-mode)
   :init
-  (add-hook! LaTeX-mode 'adaptive-wrap-prefix-mode)
+  (add-hook 'LaTeX-mode-hook #'adaptive-wrap-prefix-mode)
   (setq-default adaptive-wrap-extra-indent 0))

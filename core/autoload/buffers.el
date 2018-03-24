@@ -126,9 +126,9 @@ If DERIVED-P, test with `derived-mode-p', otherwise use `eq'."
 
 ;;;###autoload
 (defun doom-visible-windows (&optional window-list)
-  "Return a list of the visible, non-popup windows."
+  "Return a list of the visible, non-popup (dedicated) windows."
   (cl-loop for window in (or window-list (window-list))
-           unless (eq (window-dedicated-p window) 'side)
+           unless (window-dedicated-p window)
            collect window))
 
 ;;;###autoload
@@ -170,7 +170,7 @@ If DERIVED-P, test with `derived-mode-p', otherwise use `eq'."
 regex PATTERN. Returns the number of killed buffers."
   (let ((buffers (doom-matching-buffers pattern buffer-list)))
     (dolist (buf buffers (length buffers))
-      (kill-buffer buf t))))
+      (kill-buffer buf))))
 
 
 ;;
@@ -199,16 +199,13 @@ If DONT-SAVE, don't prompt to save modified buffers (discarding their changes)."
 (defun doom/kill-all-buffers (&optional project-p)
   "Kill all buffers and closes their windows.
 
-If PROJECT-P (universal argument), kill only buffers that belong to the current
-project."
+If PROJECT-P (universal argument), don't close windows and only kill buffers
+that belong to the current project."
   (interactive "P")
-  (let ((buffers (if project-p (doom-project-buffer-list) (doom-buffer-list)))
-        (ignore-window-parameters t))
-    (delete-other-windows)
-    (switch-to-buffer (doom-fallback-buffer))
-    (let (kill-buffer-query-functions)
-      (message "Killed %s buffers"
-               (length (delq nil (mapcar #'kill-buffer buffers)))))))
+  (unless project-p
+    (delete-other-windows))
+  (switch-to-buffer (doom-fallback-buffer))
+  (doom/cleanup-session (if project-p (doom-project-buffer-list))))
 
 ;;;###autoload
 (defun doom/kill-other-buffers (&optional project-p)
@@ -240,14 +237,14 @@ project."
       (message "Killed %s buffers" n))))
 
 ;;;###autoload
-(defun doom/cleanup-session (&optional all-p)
+(defun doom/cleanup-session (&optional buffer-list)
   "Clean up buried buries and orphaned processes in the current workspace. If
 ALL-P (universal argument), clean them up globally."
-  (interactive (list current-prefix-arg))
-  (let ((buffers (doom-buried-buffers (if all-p (buffer-list))))
+  (interactive)
+  (let ((buffers (doom-buried-buffers buffer-list))
         (n 0))
     (mapc #'kill-buffer buffers)
-    (setq n (+ n (length buffers) (doom/cleanup-processes)))
+    (setq n (+ n (length buffers) (doom/cleanup-buffer-processes)))
     (dolist (hook doom-cleanup-hook)
       (let ((m (funcall hook)))
         (when (integerp m)
@@ -256,7 +253,7 @@ ALL-P (universal argument), clean them up globally."
     n))
 
 ;;;###autoload
-(defun doom/cleanup-processes ()
+(defun doom/cleanup-buffer-processes ()
   "Kill all processes that have no visible associated buffers. Return number of
 processes killed."
   (interactive)

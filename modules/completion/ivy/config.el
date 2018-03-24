@@ -42,7 +42,9 @@ immediately runs it on the current candidate (ending the ivy session)."
         ;; don't show recent files in switch-buffer
         ivy-use-virtual-buffers nil
         ;; ...but if that ever changes, show their full path
-        ivy-virtual-abbreviate 'full)
+        ivy-virtual-abbreviate 'full
+        ;; don't quit minibuffer on delete-error
+        ivy-on-del-error-function nil)
 
   (after! magit     (setq magit-completing-read-function #'ivy-completing-read))
   (after! yasnippet (push #'+ivy-yas-prompt yas-prompt-functions))
@@ -80,7 +82,7 @@ immediately runs it on the current candidate (ending the ivy session)."
              counsel-describe-face counsel-M-x counsel-file-jump
              counsel-find-file counsel-find-library counsel-info-lookup-symbol
              counsel-imenu counsel-recentf counsel-yank-pop
-             counsel-descbinds)
+             counsel-descbinds counsel-org-capture)
   :init
   (map! [remap apropos]                  #'counsel-apropos
         [remap bookmark-jump]            #'counsel-bookmark
@@ -90,10 +92,11 @@ immediately runs it on the current candidate (ending the ivy session)."
         [remap execute-extended-command] #'counsel-M-x
         [remap find-file]                #'counsel-find-file
         [remap find-library]             #'counsel-find-library
-        [remap yank-pop]                 #'counsel-yank-pop
         [remap info-lookup-symbol]       #'counsel-info-lookup-symbol
         [remap imenu]                    #'counsel-imenu
-        [remap recentf-open-files]       #'counsel-recentf)
+        [remap recentf-open-files]       #'counsel-recentf
+        [remap org-capture]              #'counsel-org-capture
+        [remap swiper]                   #'counsel-grep-or-swiper)
   :config
   (set! :popup "^\\*ivy-occur" '((size . 0.35)) '((transient . 0) (quit)))
 
@@ -106,13 +109,7 @@ immediately runs it on the current candidate (ending the ivy session)."
   (dolist (cmd '(counsel-ag counsel-rg counsel-pt))
     (ivy-add-actions
      cmd
-     '(("O" +ivy-git-grep-other-window-action "open in other window"))))
-
-  ;; Removes character limit from `counsel-ag-function'
-  ;;
-  ;; This may need to be updated frequently, to meet changes upstream
-  ;; counsel-ag, counsel-rg and counsel-pt all use this function
-  (advice-add #'counsel-ag-function :override #'+ivy*counsel-ag-function))
+     '(("O" +ivy-git-grep-other-window-action "open in other window")))))
 
 
 (def-package! counsel-projectile

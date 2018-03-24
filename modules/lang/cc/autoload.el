@@ -20,33 +20,13 @@
     (+cc|irony-init-compile-options)))
 
 ;;;###autoload
-(defun +cc*align-lambda-arglist (orig-fun &rest args)
-  "Improve indentation of continued C++11 lambda function opened as argument."
-  (if (and (eq major-mode 'c++-mode)
-           (ignore-errors
-             (save-excursion
-               (goto-char (c-langelem-pos langelem))
-               ;; Detect "[...](" or "[...]{". preceded by "," or "(",
-               ;;   and with unclosed brace.
-               (looking-at-p ".*[(,][ \t]*\\[[^]]*\\][ \t]*[({][^}]*$"))))
-      0 ; no additional indent
-    (apply orig-fun args)))
-
-;;;###autoload
-(defun +cc/autoclose->-maybe ()
-  "For some reason smartparens won't autoskip >'s, this hack does."
-  (interactive)
-  (if (save-excursion
-        (backward-char)
-        (looking-at-p "[^ \t]>"))
-      (forward-char)
-    (call-interactively #'self-insert-command)))
-
-;;;###autoload
 (defun +cc-sp-point-is-template-p (id action context)
   "Return t if point is in the right place for C++ angle-brackets."
   (and (sp-in-code-p id action context)
-       (sp-point-after-word-p id action context)))
+       (cond ((eq action 'insert)
+              (sp-point-after-word-p id action context))
+             ((eq action 'autoskip)
+              (/= (char-before) 32)))))
 
 ;;;###autoload
 (defun +cc-sp-point-after-include-p (id action context)
@@ -57,17 +37,26 @@
          (looking-at-p "[ 	]*#include[^<]+"))))
 
 ;;;###autoload
-(defun +cc-c-lineup-inclass (_langelem)
-  "Indent privacy keywords at same level as class properties."
-  (if (memq major-mode '(c-mode c++-mode))
-      (let ((inclass (assq 'inclass c-syntactic-context)))
-        (save-excursion
-          (goto-char (c-langelem-pos inclass))
-          (if (or (looking-at "struct")
-                  (looking-at "typedef struct"))
-              '+
-            '++)))
-    '+))
+(defun +cc-c++-lineup-inclass (langelem)
+  "Indent inclass lines one level further than access modifier keywords."
+  (when (and (eq major-mode 'c++-mode)
+             (or (assoc 'access-label c-syntactic-context)
+                 (save-excursion
+                   (save-match-data
+                     (re-search-backward
+                      "\\(?:p\\(?:ublic\\|r\\(?:otected\\|ivate\\)\\)\\)"
+                      (c-langelem-pos langelem) t)))))
+    '++))
+
+;;;###autoload
+(defun +cc-lineup-arglist-close (langlem)
+  "Line up the closing brace in an arglist with the opening brace IF cursor is
+preceded by the opening brace or a comma (disregarding whitespace in between)."
+  (when (save-excursion
+          (save-match-data
+            (skip-chars-backward " \t\n" (c-langelem-pos langelem))
+            (memq (char-before) (list ?, ?\( ?\;))))
+    (c-lineup-arglist langlem)))
 
 
 ;;
@@ -99,3 +88,14 @@ compilation dbs."
                         nconc (list "-I" path)))
        (doom-project-root)))))
 
+;;;###autoload
+(defun +cc|init-rtags ()
+  "Start an rtags server in c-mode and c++-mode buffers."
+  (when (memq major-mode '(c-mode c++-mode))
+    (rtags-start-process-unless-running)))
+
+;;;###autoload
+(defun +cc|cleanup-rtags ()
+  "Kill rtags server(s) if there are no C/C++ buffers open."
+  (unless (doom-buffers-in-mode '(c-mode c++-mode) (buffer-list))
+    (rtags-cancel-process)))

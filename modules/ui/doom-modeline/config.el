@@ -1,26 +1,5 @@
 ;;; ui/doom-modeline/config.el -*- lexical-binding: t; -*-
 
-(def-package! eldoc-eval
-  :config
-  (defun +doom-modeline-eldoc (text)
-    (concat (when (display-graphic-p)
-              (+doom-modeline--make-xpm 'doom-modeline-eldoc-bar))
-            text))
-
-  ;; Show eldoc in the mode-line with `eval-expression'
-  (defun +doom-modeline--show-eldoc (input)
-    "Display string STR in the mode-line next to minibuffer."
-    (with-current-buffer (eldoc-current-buffer)
-      (let* ((str              (and (stringp input) input))
-             (mode-line-format (or (and str (or (+doom-modeline-eldoc str) str))
-                                   mode-line-format))
-             mode-line-in-non-selected-windows)
-        (force-mode-line-update)
-        (sit-for eldoc-show-in-mode-line-delay))))
-  (setq eldoc-in-minibuffer-show-fn #'+doom-modeline--show-eldoc)
-
-  (eldoc-in-minibuffer-mode +1))
-
 ;; anzu and evil-anzu expose current/total state that can be displayed in the
 ;; mode-line.
 (def-package! evil-anzu
@@ -32,6 +11,15 @@
   (setq anzu-cons-mode-line-p nil
         anzu-minimum-input-length 1
         anzu-search-threshold 250)
+
+  (defun +doom-modeline*fix-anzu-count (positions here)
+    (cl-loop for (start . end) in positions
+             collect t into before
+             when (and (>= here start) (<= here end))
+             return (length before)
+             finally return 0))
+  (advice-add #'anzu--where-is-here :override #'+doom-modeline*fix-anzu-count)
+
   ;; Avoid anzu conflicts across buffers
   (mapc #'make-variable-buffer-local
         '(anzu--total-matched anzu--current-position anzu--state
@@ -53,12 +41,17 @@
   "Sets `+doom-modeline-current-window' appropriately"
   (when-let* ((win (frame-selected-window)))
     (unless (minibuffer-window-active-p win)
-      (setq +doom-modeline-current-window win))))
+      (setq +doom-modeline-current-window win)
+      (force-mode-line-update))))
+
+(defun +doom-modeline|unset-selected-window ()
+  (setq +doom-modeline-current-window nil)
+  (force-mode-line-update))
 
 (add-hook 'window-configuration-change-hook #'+doom-modeline|set-selected-window)
 (add-hook 'focus-in-hook #'+doom-modeline|set-selected-window)
-(advice-add #'handle-switch-frame :after #'+doom-modeline|set-selected-window)
-(advice-add #'select-window :after #'+doom-modeline|set-selected-window)
+(add-hook 'focus-out-hook #'+doom-modeline|unset-selected-window)
+(add-hook 'doom-after-switch-window-hook #'+doom-modeline|set-selected-window)
 
 
 ;;
@@ -101,8 +94,8 @@ file-name => comint.el")
 ;;
 
 (defgroup +doom-modeline nil
-  ""
-  :group 'doom)
+  "TODO"
+  :group 'faces)
 
 (defface doom-modeline-buffer-path
   '((t (:inherit (mode-line-emphasis bold))))
@@ -245,13 +238,13 @@ If TRUNCATE-TAIL is t also truncate the parent directory of the file."
     (if (null root)
         (propertize "%b" 'face (if active 'doom-modeline-buffer-file))
       (let* ((modified-faces (if (buffer-modified-p) 'doom-modeline-buffer-modified))
-             (relative-dirs (file-relative-name (file-name-directory buffer-file-truename)
+             (relative-dirs (file-relative-name (file-name-directory (file-truename buffer-file-name))
                                                 (if include-project (concat root "../") root)))
              (relative-faces (or modified-faces (if active 'doom-modeline-buffer-path)))
              (file-faces (or modified-faces (if active 'doom-modeline-buffer-file))))
         (if (equal "./" relative-dirs) (setq relative-dirs ""))
         (concat (propertize relative-dirs 'face (if relative-faces `(:inherit ,relative-faces)))
-                (propertize (file-name-nondirectory buffer-file-truename)
+                (propertize (file-name-nondirectory (file-truename buffer-file-name))
                             'face (if file-faces `(:inherit ,file-faces))))))))
 
 (defun +doom-modeline--buffer-file-name (truncate-project-root-parent)
@@ -640,11 +633,12 @@ Returns \"\" to not break --no-window-system."
   (setq +doom-modeline--bar-active   (+doom-modeline--make-xpm 'doom-modeline-bar)
         +doom-modeline--bar-inactive (+doom-modeline--make-xpm 'doom-modeline-inactive-bar))
 
-  ;; These buffers are already created and don't get modelines. For the love of
-  ;; Emacs, someone give the man a modeline!
-  (dolist (bname '("*scratch*" "*Messages*"))
-    (with-current-buffer bname
-      (doom-set-modeline 'main))))
+  (unless after-init-time
+    ;; These buffers are already created and don't get modelines. For the love
+    ;; of Emacs, someone give the man a modeline!
+    (dolist (bname '("*scratch*" "*Messages*"))
+      (with-current-buffer bname
+        (doom-set-modeline 'main)))))
 
 (defun +doom-modeline|set-special-modeline ()
   (doom-set-modeline 'special))
@@ -668,3 +662,20 @@ Returns \"\" to not break --no-window-system."
 
 (add-hook 'image-mode-hook #'+doom-modeline|set-media-modeline)
 (add-hook 'circe-mode-hook #'+doom-modeline|set-special-modeline)
+
+;; TODO Refactor me
+(defvar +doom-modeline-remap-face-cookie nil)
+(defun +doom-modeline|focus ()
+  (require 'face-remap)
+  (when +doom-modeline-remap-face-cookie
+    (face-remap-remove-relative +doom-modeline-remap-face-cookie)))
+
+(defun +doom-modeline|unfocus ()
+  (require 'face-remap)
+  (setq +doom-modeline-remap-face-cookie (face-remap-add-relative 'mode-line 'mode-line-inactive)))
+
+(add-hook 'focus-in-hook #'+doom-modeline|focus)
+(add-hook 'focus-out-hook #'+doom-modeline|unfocus)
+
+;;
+;; (add-hook 'doom-big-font-mode-hook #'+doom-modeline|resize-for-big-font)

@@ -1,6 +1,19 @@
 ;;; org/org/autoload/org.el -*- lexical-binding: t; -*-
 
 ;;;###autoload
+(defun +org-get-property (name &optional _file) ; TODO Add FILE
+  "Get a propery from an org file."
+  (save-excursion
+    (goto-char 1)
+    (re-search-forward (format "^#\\+%s:[ \t]*\\([^\n]+\\)" (upcase name)) nil t)
+    (buffer-substring-no-properties (match-beginning 1) (match-end 1))))
+
+
+;;
+;; Modes
+;;
+
+;;;###autoload
 (define-minor-mode +org-pretty-mode
   "TODO"
   :init-value nil
@@ -12,18 +25,10 @@
    ;; In case the above un-align tables
    (org-table-map-tables 'org-table-align t)))
 
-;;;###autoload
-(defun +org|realign-table-maybe ()
-  "Auto-align table under cursor and re-calculate formulas."
-  (when (org-at-table-p)
-    (save-excursion
-      (quiet! (org-table-recalculate)))))
 
-;;;###autoload
-(defun +org|update-cookies ()
-  "Update counts in headlines (aka \"cookies\")."
-  (when (and buffer-file-name (file-exists-p buffer-file-name))
-    (org-update-statistics-cookies t)))
+;;
+;; Commands
+;;
 
 ;;;###autoload
 (defun +org/dwim-at-point ()
@@ -33,7 +38,8 @@ If on a:
 - checkbox list item or todo heading: toggle it.
 - clock: update its time.
 - headline: toggle latex fragments and inline images underneath.
-- footnote definition: jump to the footnote
+- footnote reference: jump to the footnote's definition
+- footnote definition: jump to the first reference of this footnote
 - table-row or a TBLFM: recalculate the table's formulas
 - table-cell: clear it and go into insert mode. If this is a formula cell,
   recaluclate it instead.
@@ -62,14 +68,17 @@ If on a:
              ((string= "ARCHIVE" (car-safe (org-get-tags)))
               (org-force-cycle-archived))
              (t
+              (+org/refresh-inline-images)
               (org-remove-latex-fragment-image-overlays)
               (org-toggle-latex-fragment '(4)))))
 
       (`clock (org-clock-update-time-maybe))
 
+      (`footnote-reference
+       (org-footnote-goto-definition (org-element-property :label context)))
+
       (`footnote-definition
-       (goto-char (org-element-property :post-affiliated context))
-       (call-interactively #'org-footnote-action))
+       (org-footnote-goto-previous-reference (org-element-property :label context)))
 
       ((or `planning `timestamp)
        (org-follow-timestamp-link))
@@ -111,61 +120,6 @@ If on a:
     (set-window-start nil scroll-pt)))
 
 ;;;###autoload
-(defun +org/indent ()
-  "Indent the current item (header or item). Otherwise, forward to
-`self-insert-command'."
-  (interactive)
-  (cond ((org-at-item-p)
-         (org-indent-item-tree))
-        ((org-at-heading-p)
-         (ignore-errors (org-demote)))
-        ((org-in-src-block-p t)
-         (doom/dumb-indent))
-        (t
-         (call-interactively #'self-insert-command))))
-
-;;;###autoload
-(defun +org/indent-or-next-field-or-yas-expand ()
-  "Depending on the context either a) indent the current line, b) go the next
-table field or c) run `yas-expand'."
-  (interactive)
-  (call-interactively
-   (cond ((and (bound-and-true-p yas-minor-mode)
-               (yas--templates-for-key-at-point))
-          #'yas-expand)
-         ((org-at-table-p)
-          #'org-table-next-field)
-         (t
-          #'+org/indent))))
-
-;;;###autoload
-(defun +org/dedent ()
-  "Dedent the current item (header or item). Otherwise, forward to
-`self-insert-command'."
-  (interactive)
-  (cond ((org-at-item-p)
-         (org-list-indent-item-generic
-          -1 nil
-          (save-excursion
-            (when (org-region-active-p)
-              (goto-char (region-beginning)))
-            (org-list-struct))))
-        ((org-at-heading-p)
-         (ignore-errors (org-promote)))
-        (t
-         (call-interactively #'self-insert-command))))
-
-;;;###autoload
-(defun +org/dedent-or-prev-field ()
-  "Depending on the context either dedent the current item or go the previous
-table field."
-  (interactive)
-  (call-interactively
-   (if (org-at-table-p)
-       #'org-table-previous-field
-     #'+org/dedent)))
-
-;;;###autoload
 (defun +org/insert-item (direction)
   "Inserts a new heading, table cell or item, depending on the context.
 DIRECTION can be 'above or 'below.
@@ -187,12 +141,12 @@ wrong places)."
     (cond ((memq type '(item plain-list))
            (let ((marker (org-element-property :bullet context))
                  (pad (save-excursion
+                        (org-beginning-of-item)
                         (back-to-indentation)
-                        (- (point) (line-beginning-position))))
-                 afterp)
+                        (- (point) (line-beginning-position)))))
              (save-match-data
                (pcase direction
-                 ('below
+                 (`below
                   (org-end-of-item)
                   (backward-char)
                   (end-of-line)
@@ -203,7 +157,7 @@ wrong places)."
                           (org-next-item)
                           (org-end-of-line)))
                     (insert "\n" (make-string pad 32) (or marker ""))))
-                 ('above
+                 (`above
                   (goto-char (line-beginning-position))
                   (if (and marker (string-match-p "[0-9]+[).]" marker))
                       (org-insert-item)
@@ -224,8 +178,9 @@ wrong places)."
                             (org-element-property :level context)
                           1)))
              (pcase direction
-               ('below
-                (let ((at-eol (= (point) (1- (line-end-position)))))
+               (`below
+                (let ((at-eol (>= (point) (1- (line-end-position))))
+                      org-insert-heading-respect-content)
                   (goto-char (line-end-position))
                   (org-end-of-subtree)
                   (insert (concat "\n"
@@ -235,11 +190,12 @@ wrong places)."
                                       "\n"))
                                   (make-string level ?*)
                                   " "))))
-               ('above
+               (`above
                 (org-back-to-heading)
-                (org-insert-heading)
-                (when (= level 1)
-                  (save-excursion (insert "\n")))))
+                (insert (make-string level ?*) " ")
+                (save-excursion
+                  (insert "\n")
+                  (if (= level 1) (insert "\n")))))
              (when (org-element-property :todo-type context)
                (org-todo 'todo))))
 
@@ -251,12 +207,19 @@ wrong places)."
       (evil-insert 1))))
 
 ;;;###autoload
-(defun +org-get-property (name &optional _file) ; TODO Add FILE
-  "Get a propery from an org file."
-  (save-excursion
-    (goto-char 1)
-    (re-search-forward (format "^#\\+%s:[ \t]*\\([^\n]+\\)" (upcase name)) nil t)
-    (buffer-substring-no-properties (match-beginning 1) (match-end 1))))
+(defun +org/dedent ()
+  "TODO"
+  (interactive)
+  (cond ((org-at-item-p)
+         (org-list-indent-item-generic
+          -1 nil
+          (save-excursion
+            (when (org-region-active-p)
+              (goto-char (region-beginning)))
+            (org-list-struct))))
+        ((org-at-heading-p)
+         (ignore-errors (org-promote)))
+        ((call-interactively #'self-insert-command))))
 
 ;;;###autoload
 (defun +org/refresh-inline-images ()
@@ -272,6 +235,20 @@ wrong places)."
      (if (org-before-first-heading-p)
          (line-end-position)
        (save-excursion (org-end-of-subtree) (point))))))
+
+;;;###autoload
+(defun +org/remove-link ()
+  "Unlink the text at point."
+  (interactive)
+  (unless (org-in-regexp org-bracket-link-regexp 1)
+    (user-error "No link at point"))
+  (save-excursion
+    (let ((remove (list (match-beginning 0) (match-end 0)))
+          (description (if (match-end 3)
+                           (match-string-no-properties 3)
+                         (match-string-no-properties 1))))
+      (apply #'delete-region remove)
+      (insert description))))
 
 ;;;###autoload
 (defun +org/toggle-checkbox ()
@@ -300,17 +277,75 @@ with `org-cycle'). Also:
              (org-cycle)
              (set-window-start nil window-beg))))))
 
-;;;###autoload
-(defun +org/remove-link ()
-  "Unlink the text at point."
-  (interactive)
-  (unless (org-in-regexp org-bracket-link-regexp 1)
-    (user-error "No link at point"))
-  (save-excursion
-    (let ((remove (list (match-beginning 0) (match-end 0)))
-          (description (if (match-end 3)
-                           (match-string-no-properties 3)
-                         (match-string-no-properties 1))))
-      (apply #'delete-region remove)
-      (insert description))))
 
+;;
+;; Hooks
+;;
+
+;;;###autoload
+(defun +org|delete-backward-char ()
+  "TODO"
+  (when (eq major-mode 'org-mode)
+    (org-check-before-invisible-edit 'delete-backward)
+    (save-match-data
+      (when (and (org-at-table-p)
+                 (not (org-region-active-p))
+                 (string-match-p "|" (buffer-substring (point-at-bol) (point)))
+                 (looking-at-p ".*?|"))
+        (let ((pos (point))
+              (noalign (looking-at-p "[^|\n\r]*  |"))
+              (c org-table-may-need-update))
+          (delete-char -1)
+          (unless overwrite-mode
+            (skip-chars-forward "^|")
+            (insert " ")
+            (goto-char (1- pos)))
+          ;; noalign: if there were two spaces at the end, this field
+          ;; does not determine the width of the column.
+          (when noalign (setq org-table-may-need-update c)))
+        t))))
+
+;;;###autoload
+(defun +org|indent-maybe ()
+  "Indent the current item (header or item), if possible. Made for
+`org-tab-first-hook' in evil-mode."
+  (interactive)
+  (cond ((or (not (bound-and-true-p evil-mode))
+             (not (eq evil-state 'insert)))
+         nil)
+        ((org-at-item-p)
+         (org-indent-item-tree)
+         t)
+        ((org-at-heading-p)
+         (ignore-errors (org-demote))
+         t)
+        ((org-in-src-block-p t)
+         (org-babel-do-in-edit-buffer
+          (call-interactively #'indent-for-tab-command))
+         t)))
+
+;;;###autoload
+(defun +org|realign-table-maybe ()
+  "Auto-align table under cursor and re-calculate formulas."
+  (when (and (org-at-table-p) org-table-may-need-update)
+    (quiet!
+     (org-table-recalculate)
+     (if org-table-may-need-update (org-table-align)))))
+
+;;;###autoload
+(defun +org|update-cookies ()
+  "Update counts in headlines (aka \"cookies\")."
+  (when (and buffer-file-name (file-exists-p buffer-file-name))
+    (org-update-statistics-cookies t)))
+
+;;;###autoload
+(defun +org|yas-expand-maybe ()
+  "Tries to expand a yasnippet snippet, if one is available. Made for
+`org-tab-first-hook'."
+  (when (and (if (bound-and-true-p evil-mode)
+                 (eq evil-state 'insert)
+               t)
+             (bound-and-true-p yas-minor-mode)
+             (yas--templates-for-key-at-point))
+    (call-interactively #'yas-expand)
+    t))

@@ -1,4 +1,4 @@
-;;; private/default/+evil-commands.el -*- lexical-binding: t; -*-
+;;; config/default/+evil-commands.el -*- lexical-binding: t; -*-
 
 (defalias 'ex! 'evil-ex-define-cmd)
 
@@ -17,6 +17,12 @@
     (kill-new default-directory)
     (message "Copied to clipboard")))
 
+(evil-define-command doom:make (command &optional from-pwd)
+  (interactive "<sh><!>")
+  (let ((default-directory (if from-pwd default-directory (doom-project-root t)))
+        (command (and command (evil-ex-replace-special-filenames command))))
+    (compile command)))
+
 
 ;;
 ;; Commands
@@ -30,6 +36,7 @@
 ;; Editing
 (ex! "@"            #'+evil:macro-on-all-lines)   ; TODO Test me
 (ex! "al[ign]"      #'+evil:align)
+(ex! "ral[ign]"     #'+evil:align-right)
 (ex! "enhtml"       #'+web:encode-html-entities)
 (ex! "dehtml"       #'+web:decode-html-entities)
 (ex! "mc"           #'+evil:mc)
@@ -78,6 +85,8 @@
        (ex! "agc[wd]"  #'+ivy:ag-cwd)
        (ex! "rg"       #'+ivy:rg)
        (ex! "rgc[wd]"  #'+ivy:rg-cwd)
+       (ex! "grep"      #'+ivy:grep)
+       (ex! "grepc[wd]" #'+ivy:grep-cwd)
        (ex! "sw[iper]" #'+ivy:swiper)
        (ex! "todo"     #'+ivy:todo))
       ((featurep! :completion helm)
@@ -88,7 +97,7 @@
        (ex! "sw[oop]"  #'+helm:swoop)
        (ex! "todo"     #'+helm:todo)))
 ;; Project tools
-(ex! "build"       #'+eval/build)
+(ex! "mak[e]"      #'doom:make)
 (ex! "debug"       #'+debug/run)
 (ex! "er[rors]"    #'flycheck-list-errors)
 ;; File operations

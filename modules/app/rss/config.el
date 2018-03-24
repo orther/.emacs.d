@@ -4,8 +4,9 @@
 ;; by apps Reeder and Readkit. It can be invoked via `=rss'. Otherwise, if you
 ;; don't care for the UI you can invoke elfeed directly with `elfeed'.
 
-(defvar +rss-elfeed-files (list "rss/elfeed.org")
-  "The files that configure `elfeed's rss feeds.")
+(defvar +rss-elfeed-files (list "elfeed.org")
+  "Where to look for elfeed.org files, relative to `+org-dir'. Can be absolute
+paths.")
 
 (defvar +rss-split-direction 'below
   "What direction to pop up the entry buffer in elfeed.")
@@ -25,6 +26,10 @@
         elfeed-show-entry-delete #'+rss/delete-pane
         shr-max-image-proportion 0.6)
 
+  (set! :popup "^\\*elfeed-entry"
+    '((size . 0.75) (side . bottom))
+    '((select . t) (quit) (transient . t)))
+
   (make-directory elfeed-db-directory t)
 
   ;; Ensure elfeed buffers are treated as real
@@ -35,25 +40,27 @@
   (add-hook 'elfeed-show-mode-hook #'+rss|elfeed-wrap)
 
   (map! (:map (elfeed-search-mode-map elfeed-show-mode-map)
-          [remap kill-this-buffer]      "q"
-          [remap kill-buffer]           "q")
+          [remap kill-this-buffer] #'+rss/quit
+          [remap kill-buffer]      #'+rss/quit)
 
         (:map elfeed-search-mode-map
-          :n "q"   #'+rss/quit
-          :n "r"   #'elfeed-update
-          :n "s"   #'elfeed-search-live-filter
-          :n "RET" #'elfeed-search-show-entry)
+          :n "q"     #'+rss/quit
+          :n "r"     #'elfeed-update
+          :n "s"     #'elfeed-search-live-filter
+          :n "RET"   #'elfeed-search-show-entry
+          :n "M-RET" #'elfeed-search-browse-url)
 
         (:map elfeed-show-mode-map
           :n "q"  #'elfeed-kill-buffer
           :m "j"  #'evil-next-visual-line
           :m "k"  #'evil-previous-visual-line
-          [remap next-buffer]           #'+rss/next
-          [remap previous-buffer]       #'+rss/previous)))
+          [remap next-buffer]     #'+rss/next
+          [remap previous-buffer] #'+rss/previous)))
 
 
 (def-package! elfeed-org
-  :after (:all org elfeed)
+  :when (featurep! +org)
+  :after elfeed
   :config
   (setq rmh-elfeed-org-files
         (let ((default-directory +org-dir))

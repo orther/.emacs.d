@@ -13,7 +13,7 @@
         neo-auto-indent-point nil
         neo-autorefresh nil
         neo-mode-line-type 'none
-        neo-window-width 25
+        neo-window-width 28
         neo-show-updir-line nil
         neo-theme 'nerd ; fallback
         neo-banner-message nil
@@ -38,4 +38,18 @@
     '((quit . current) (select . t)))
 
   (when (bound-and-true-p winner-mode)
-    (push neo-buffer-name winner-boring-buffers)))
+    (push neo-buffer-name winner-boring-buffers))
+
+  ;; The cursor always sits at bol. `+neotree*fix-cursor' and
+  ;; `+neotree*indent-cursor' change that behavior, so that the cursor is always
+  ;; on the first non-blank character on the line, in the neo buffer.
+  (defun +neotree*fix-cursor (&rest _)
+    (with-current-buffer neo-global--buffer
+      (+neotree*indent-cursor)))
+  (add-hook 'neo-enter-hook #'+neotree*fix-cursor)
+
+  (defun +neotree*indent-cursor (&rest _)
+    (beginning-of-line)
+    (skip-chars-forward " \t\r"))
+  (advice-add #'neotree-next-line :after #'+neotree*indent-cursor)
+  (advice-add #'neotree-previous-line :after #'+neotree*indent-cursor))

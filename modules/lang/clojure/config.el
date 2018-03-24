@@ -3,42 +3,53 @@
 (def-package! clojure-mode
   :mode "\\.clj$"
   :mode ("\\.cljs$" . clojurescript-mode)
+  :mode ("\\.cljc$" . clojurec-mode)
   :config
-  (map! :map clojure-mode-map
-        (:localleader
-         :n  "'"      #'cider-jack-in
-         :n  "\""     #'cider-jack-in-clojurescript
-         :n  "B"      #'cider-switch-to-repl-buffer
-         :n  "b"      #'cider-eval-buffer
-         :n  "n"      #'cider-repl-set-ns
-         :n  "j"      #'cider-find-var
-         :n  "d"      #'cider-doc
-         :n  "c"      #'cider-repl-clear-buffer
-         :n  "p"      #'cider-eval-sexp-at-point
-         :n  "r"      #'cider-eval-region)))
+  (add-hook 'clojure-mode #'rainbow-delimiters-mode))
 
 
 (def-package! clj-refactor
   :after clojure-mode
   :config
   ;; setup some extra namespace auto completion for great awesome
-  (dolist (mapping '(("re-frame" . "re-frame.core")
-                     ("reagent"  . "reagent.core")
-                     ("str"      . "clojure.str")))
-    (add-to-list 'cljr-magic-require-namespaces mapping t)))
+  (nconc cljr-magic-require-namespaces
+         '(("re-frame" . "re-frame.core")
+           ("reagent"  . "reagent.core")
+           ("str"      . "clojure.str"))))
 
 
 (def-package! cider
-  ;; NOTE: if you don't have an org directory set (the dir doesn't exist), cider jack in won't work.
-  :commands (cider-jack-in cider-mode cider-jack-in-clojurescript)
+  ;; NOTE: if you don't have an org directory set (the dir doesn't exist), cider
+  ;; jack in won't work.
+  :commands (cider-jack-in cider-jack-in-clojurescript)
+  :hook (clojure-mode . cider-mode)
   :config
-  (setq nrepl-hide-special-buffers t)
-
-  ;; settings for cider repl as a popup (prevent it from being closed on escape, especially.)
-  (set! :popup "^\\*cider" nil '((quit) (select)))
-
-  ;; Setup cider for clojurescript / figwheel dev.
-  (setq cider-cljs-lein-repl
+  (setq nrepl-hide-special-buffers t
+        cider-stacktrace-default-filters '(tooling dup)
+        cider-prompt-save-file-on-load nil
+        cider-repl-use-clojure-font-lock t
+        ;; Setup cider for clojurescript / figwheel dev.
+        cider-cljs-lein-repl
         "(do (require 'figwheel-sidecar.repl-api)
          (figwheel-sidecar.repl-api/start-figwheel!)
-         (figwheel-sidecar.repl-api/cljs-repl))"))
+         (figwheel-sidecar.repl-api/cljs-repl))")
+
+  (set! :popup "^\\*cider-repl" nil '((quit) (select)))
+  (set! :repl 'clojure-mode #'+clojure/repl)
+  (set! :eval 'clojure-mode #'cider-eval-region)
+  (set! :lookup 'clojure-mode
+    :definition #'cider-browse-ns-find-at-point
+    :documentation #'cider-browse-ns-doc-at-point)
+
+  (map! :map cider-mode-map
+        :localleader
+        :n  "'"  #'cider-jack-in
+        :n  "\"" #'cider-jack-in-clojurescript
+        :n  "B"  #'cider-switch-to-repl-buffer
+        :n  "b"  #'cider-eval-buffer
+        :n  "n"  #'cider-repl-set-ns
+        :n  "j"  #'cider-find-var
+        :n  "d"  #'cider-doc
+        :n  "c"  #'cider-repl-clear-buffer
+        :n  "p"  #'cider-eval-sexp-at-point
+        :n  "r"  #'cider-eval-region))

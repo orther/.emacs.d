@@ -43,11 +43,13 @@ compilation database is present in the project.")
          (equal (file-name-extension buffer-file-name) "h")
          (re-search-forward "@\\<interface\\>" magic-mode-regexp-match-limit t)))
 
-  (push (cons #'+cc-c++-header-file-p  'c++-mode)  magic-mode-alist)
-  (push (cons #'+cc-objc-header-file-p 'objc-mode) magic-mode-alist)
+  (push '(+cc-c++-header-file-p  . c++-mode)  magic-mode-alist)
+  (push '(+cc-objc-header-file-p . objc-mode) magic-mode-alist)
 
   :init
-  (setq-default c-basic-offset tab-width)
+  (setq-default c-basic-offset tab-width
+                c-backspace-function #'delete-backward-char
+                c-default-style "doom")
 
   :config
   (set! :electric '(c-mode c++-mode objc-mode java-mode)
@@ -60,42 +62,60 @@ compilation database is present in the project.")
   ;; C/C++ style settings
   (c-toggle-electric-state -1)
   (c-toggle-auto-newline -1)
-  (c-set-offset 'substatement-open '0) ; don't indent brackets
-  (c-set-offset 'inline-open       '+)
-  (c-set-offset 'block-open        '+)
-  (c-set-offset 'brace-list-open   '+)
-  (c-set-offset 'case-label        '+)
-  (c-set-offset 'access-label      '-)
-  (c-set-offset 'arglist-intro     '+)
-  (c-set-offset 'arglist-close     '0)
-  ;; Indent privacy keywords at same level as class properties
-  ;; (c-set-offset 'inclass #'+cc-c-lineup-inclass)
 
   ;;; Better fontification (also see `modern-cpp-font-lock')
   (add-hook 'c-mode-common-hook #'rainbow-delimiters-mode)
   (add-hook! (c-mode c++-mode) #'highlight-numbers-mode)
   (add-hook! (c-mode c++-mode) #'+cc|fontify-constants)
 
-  ;; Improve indentation of inline lambdas in C++11
-  (advice-add #'c-lineup-arglist :around #'+cc*align-lambda-arglist)
+  ;; Custom style, based off of linux
+  (map-put c-style-alist "doom"
+           `((c-basic-offset . ,tab-width)
+             (c-comment-only-line-offset . 0)
+             (c-hanging-braces-alist (brace-list-open)
+                                     (brace-entry-open)
+                                     (substatement-open after)
+                                     (block-close . c-snug-do-while)
+                                     (arglist-cont-nonempty))
+             (c-cleanup-list brace-else-brace)
+             (c-offsets-alist
+              (statement-block-intro . +)
+              (knr-argdecl-intro . 0)
+              (substatement-open . 0)
+              (substatement-label . 0)
+              (statement-cont . +)
+              (case-label . +)
+              ;; align args with open brace OR don't indent at all (if open brace
+              ;; is at eolp and close brace is after arg with no trailing comma)
+              (arglist-intro . +)
+              (arglist-close +cc-lineup-arglist-close 0)
+              ;; don't over-indent lambda blocks
+              (inline-open . 0)
+              (inlambda . 0)
+              ;; indent access keywords +1 level, and properties beneath them
+              ;; another level
+              (access-label . -)
+              (inclass +cc-c++-lineup-inclass +)
+              (label . 0))))
 
   ;;; Keybindings
   ;; Completely disable electric keys because it interferes with smartparens and
   ;; custom bindings. We'll do this ourselves.
   (setq c-tab-always-indent nil
         c-electric-flag nil)
-  (dolist (key '("#" "{" "}" "/" "*" ";" "," ":" "(" ")"))
+  (dolist (key '("#" "{" "}" "/" "*" ";" "," ":" "(" ")" "\177"))
     (define-key c-mode-base-map key nil))
   ;; Smartparens and cc-mode both try to autoclose angle-brackets intelligently.
   ;; The result isn't very intelligent (causes redundant characters), so just do
   ;; it ourselves.
-  (map! :map c++-mode-map
-        "<" nil
-        :i ">" #'+cc/autoclose->-maybe)
+  (map! :map c++-mode-map "<" nil ">" nil)
 
   ;; ...and leave it to smartparens
+  (sp-with-modes '(c++-mode objc-mode)
+    (sp-local-pair "<" ">"
+                   :when '(+cc-sp-point-is-template-p +cc-sp-point-after-include-p)
+                   :post-handlers '(("| " "SPC"))))
   (sp-with-modes '(c-mode c++-mode objc-mode java-mode)
-    (sp-local-pair "<" ">" :when '(+cc-sp-point-is-template-p +cc-sp-point-after-include-p))
     (sp-local-pair "/*" "*/" :post-handlers '(("||\n[i]" "RET") ("| " "SPC")))
     ;; Doxygen blocks
     (sp-local-pair "/**" "*/" :post-handlers '(("||\n[i]" "RET") ("||\n[i]" "SPC")))
@@ -109,15 +129,15 @@ compilation database is present in the project.")
 (def-package! irony
   :after cc-mode
   :commands (irony-install-server irony-mode)
-  :preface (setq irony-server-install-prefix (concat doom-etc-dir "irony-server/"))
+  :preface
+  (setq irony-server-install-prefix (concat doom-etc-dir "irony-server/"))
   :init
   (defun +cc|init-irony-mode ()
     (when (memq major-mode '(c-mode c++-mode objc-mode))
       (irony-mode +1)))
   (add-hook! (c-mode c++-mode objc-mode) #'+cc|init-irony-mode)
   :config
-  (unless (file-directory-p irony-server-install-prefix)
-    (warn "irony-mode: server isn't installed; run M-x irony-install-server"))
+  (setq irony-cdb-search-directory-list '("." "build" "build-conda"))
   ;; Initialize compilation database, if present. Otherwise, fall back on
   ;; `+cc-default-compiler-options'.
   (add-hook 'irony-mode-hook #'+cc|irony-init-compile-options))
@@ -185,9 +205,7 @@ compilation database is present in the project.")
   :when (featurep! :completion company)
   :after glsl-mode
   :config
-  (if (executable-find "glslangValidator")
-      (warn "glsl-mode: couldn't find glslangValidator, disabling company-glsl")
-    (set! :company-backend 'glsl-mode '(company-glsl))))
+  (set! :company-backend 'glsl-mode '(company-glsl)))
 
 
 ;;
@@ -195,7 +213,9 @@ compilation database is present in the project.")
 ;;
 
 (def-package! rtags
-  :after cc-mode
+  :commands (rtags-restart-process rtags-start-process-unless-running)
+  :init
+  (add-hook! (c-mode c++-mode) #'+cc|init-rtags)
   :config
   (setq rtags-autostart-diagnostics t
         rtags-use-bookmarks nil
@@ -206,33 +226,22 @@ compilation database is present in the project.")
         ;; ...and don't auto-jump to first match before making a selection.
         rtags-jump-to-first-match nil)
 
-  (let ((bins (cl-remove-if #'executable-find '("rdm" "rc"))))
-    (if (/= (length bins) 0)
-        (warn "cc-mode: couldn't find the rtag client and/or server programs %s, disabling rtags support" bins)
-      (add-hook! (c-mode c++-mode) #'rtags-start-process-unless-running)
-      (set! :lookup '(c-mode c++-mode)
-        :definition #'rtags-find-symbol-at-point
-        :references #'rtags-find-references-at-point)))
+  (set! :lookup '(c-mode c++-mode)
+    :definition #'rtags-find-symbol-at-point
+    :references #'rtags-find-references-at-point)
 
-  (add-hook 'doom-cleanup-hook #'rtags-cancel-process)
+  (add-hook 'doom-cleanup-hook #'+cc|cleanup-rtags)
   (add-hook! kill-emacs (ignore-errors (rtags-cancel-process)))
 
   ;; Use rtags-imenu instead of imenu/counsel-imenu
   (map! :map (c-mode-map c++-mode-map) [remap imenu] #'rtags-imenu)
 
-  (add-hook 'rtags-jump-hook #'evil-set-jump)
+  (when (featurep 'evil) (add-hook 'rtags-jump-hook #'evil-set-jump))
   (add-hook 'rtags-after-find-file-hook #'recenter))
 
 (def-package! ivy-rtags
   :when (featurep! :completion ivy)
   :after rtags
-  :init
-  ;; NOTE Ivy integration breaks when rtags is byte-compiled with Emacs 26 or
-  ;; later, so we un-byte-compile it before we load it.
-  (eval-when-compile
-    (when (>= emacs-major-version 26)
-      (when-let* ((elc-file (locate-library "rtags.elc" t doom--package-load-path)))
-        (delete-file elc-file))))
   :config (setq rtags-display-result-backend 'ivy))
 
 (def-package! helm-rtags

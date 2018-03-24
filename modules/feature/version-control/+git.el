@@ -14,12 +14,13 @@
 
 
 (def-package! git-gutter-fringe
-  :commands git-gutter-mode
+  :defer t
   :init
   (defun +version-control|git-gutter-maybe ()
     "Enable `git-gutter-mode' in non-remote buffers."
     (when (and (buffer-file-name)
                (not (file-remote-p (buffer-file-name))))
+      (require 'git-gutter-fringe)
       (git-gutter-mode +1)))
   (add-hook! (text-mode prog-mode conf-mode) #'+version-control|git-gutter-maybe)
   :config
@@ -64,14 +65,11 @@
 (def-package! git-timemachine
   :commands (git-timemachine git-timemachine-toggle)
   :config
-  (require 'magit-blame)
-
   ;; Sometimes I forget `git-timemachine' is enabled in a buffer, so instead of
   ;; showing revision details in the minibuffer, show them in
   ;; `header-line-format', which has better visibility.
-  (setq git-timemachine-show-minibuffer-details nil)
-  (add-hook 'git-timemachine-mode-hook #'+vcs|init-header-line)
-  (advice-add #'git-timemachine-show-revision :after #'+vcs*update-header-line)
+  (setq git-timemachine-show-minibuffer-details t)
+  (advice-add #'git-timemachine--show-minibuffer-details :override #'+vcs*update-header-line)
 
   ;; Force evil to rehash keybindings for the current state
   (add-hook 'git-timemachine-mode-hook #'evil-force-normal-state))
