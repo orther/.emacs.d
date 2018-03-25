@@ -1,5 +1,7 @@
 .local/
 .cask/
+.sx
+.local-*/
 var/
 /init.el
 modules/private/
