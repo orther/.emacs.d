@@ -33,21 +33,23 @@
 (require 'core (concat user-emacs-directory "core/core"))
 
 (doom! :feature
-       popup             ; tame sudden yet inevitable temporary windows
-      ;debugger        ; FIXME stepping through code, to help you add bugs
-       eval            ; run code, run (also, repls)
-       evil            ; come to the dark side, we have cookies
-       file-templates  ; auto-snippets for empty files
+       (popup            ; tame sudden yet inevitable temporary windows
+        +all             ; catch all popups that start with an asterix
+        +defaults)       ; default popup rules
+      ;debugger          ; FIXME stepping through code, to help you add bugs
+       eval              ; run code, run (also, repls)
+       (evil +everywhere); come to the dark side, we have cookies
+       file-templates    ; auto-snippets for empty files
        (lookup           ; helps you navigate your code and documentation
         +devdocs         ; ...on devdocs.io online
         +docsets)        ; ...or in Dash docsets locally
        services          ; TODO managing external services & code builders
-       snippets        ; my elves. They type so I don't have to
-       spellcheck      ; tasing you for misspelling mispelling
-       syntax-checker  ; tasing you for every semicolon you forget
-       version-control ; remember, remember that commit in November
-       workspaces      ; tab emulation, persistence & separate workspaces
-       search          ; advanced searching functionality (copied from bmacs)
+       snippets          ; my elves. They type so I don't have to
+       spellcheck        ; tasing you for misspelling mispelling
+       syntax-checker    ; tasing you for every semicolon you forget
+       version-control   ; remember, remember that commit in November
+       workspaces        ; tab emulation, persistence & separate workspaces
+       ;search          ; advanced searching functionality (copied from bmacs)
 
        :completion
        company         ; the ultimate code completion backend
@@ -75,10 +77,11 @@
        gist            ; interacting with github gists
        imenu           ; an imenu sidebar and searchable code index
        impatient-mode  ; show off code over HTTP
-       macos           ; MacOS-specific commands
+       ;macos           ; MacOS-specific commands
        make            ; run make tasks from Emacs
        neotree         ; a project drawer, like NERDTree for vim
        password-store  ; password manager for nerds
+       pdf               ; pdf enhancements
        rotate-text     ; cycle region at point between text candidates
        term            ; terminals in Emacs
        ;tmux            ; an API for interacting with tmux
@@ -93,7 +96,7 @@
        elixir          ; erlang done right
       ;elm             ; care for a cup of TEA?
        emacs-lisp      ; drown in parentheses
-       go              ; the hipster dialect
+      ;go              ; the hipster dialect
       ;haskell         ; a language that's lazier than I am
       ;hy              ; readability of scheme w/ speed of python
       ;java            ; the poster child for carpal tunnel syndrome
@@ -104,17 +107,17 @@
       ;lua             ; one-based indices? one-based indices
        markdown        ; writing docs for people to ignore
       ;ocaml           ; an objective camel
-       (org              ; organize your plain life in plain text
-        +attach          ; custom attachment system
-        +babel           ; running code in org
-        +capture         ; org-capture in and outside of Emacs
-        +export          ; centralized export system + more backends
-        +present         ; Emacs for presentations
-        ;; TODO +publish
-        )
+       ;; (org              ; organize your plain life in plain text
+       ;;  +attach          ; custom attachment system
+       ;;  +babel           ; running code in org
+       ;;  +capture         ; org-capture in and outside of Emacs
+       ;;  +export          ; Exporting org to whatever you want
+       ;;  +present         ; Emacs for presentations
+       ;;  +publish)
+                                        ; Emacs+Org as a static site generator
       ;perl            ; write code no one else can comprehend
       ;php             ; make php less awful to work with
-       plantuml        ; diagrams for confusing people more
+      ;plantuml        ; diagrams for confusing people more
       ;purescript      ; javascript, but functional
        python          ; beautiful is better than ugly
        rest            ; Emacs as a REST client
@@ -146,6 +149,19 @@
       ;twitter         ; twitter client https://twitter.com/vnought
       ;write           ; emacs as a word processor (latex + org + markdown)
 
-       ;; Private modules named after your username are loaded automatically.
-       ;; Leaving this here is harmless though.
-       :private orther)
+       :config
+       ;; The default module set reasonable defaults for Emacs. It also provides
+       ;; a Spacemacs-inspired keybinding scheme, a custom yasnippet library,
+       ;; and additional ex commands for evil-mode. Use it as a reference for
+       ;; your own modules.
+       (default +bindings +snippets +evil-commands)
+
+       ;; This allows you to store your private module at
+       ;; $XDG_CONFIG_HOME/doom/. Without +xdg it uses ~/.doom.d/. If your
+       ;; config directory doesn't exist, this module does nothing.
+       (private +xdg)
+
+       ;; ;; Private modules named after your username are loaded automatically.
+       ;; ;; Leaving this here is harmless though.
+       ;; :private orther)
+       )
