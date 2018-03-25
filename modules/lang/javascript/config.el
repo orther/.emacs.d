@@ -51,6 +51,7 @@
   (map! :map js2-mode-map
         :localleader
         :nr "r" #'+javascript/refactor-menu
+        :n  "f" #'eslintd-fix
         :n  "S" #'+javascript/skewer-this-buffer))
 
 
