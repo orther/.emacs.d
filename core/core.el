@@ -56,6 +56,9 @@ Use this for files that change often, like cache files.")
 (defvar doom-packages-dir (concat doom-local-dir "packages/")
   "Where package.el and quelpa plugins (and their caches) are stored.")
 
+(defconst EMACS26+ (not (version< emacs-version "26")))
+(defconst EMACS27+ (not (version< emacs-version "27")))
+
 
 ;;;
 ;; UTF-8 as the default coding system
@@ -177,8 +180,8 @@ this, you'll get stuttering and random freezes), and resets
           file-name-handler-alist doom--file-name-handler-alist)
     t)
 
-  (add-hook! '(emacs-startup-hook doom-reload-hook) #'doom|finalize)
-  (add-hook 'emacs-startup-hook #'doom|after-init))
+  (add-hook 'emacs-startup-hook #'doom|after-init)
+  (add-hook! '(doom-finalize-hook doom-reload-hook) #'doom|finalize))
 
 
 ;;
@@ -221,12 +224,6 @@ with functions that require it (like modeline segments)."
                 buffer-file-truename (file-truename file-name)))))
     buffer))
 (advice-add #'make-indirect-buffer :around #'doom*set-indirect-buffer-filename)
-
-(defun doom*no-authinfo-for-tramp (orig-fn &rest args)
-  "Don't look into .authinfo for local sudo TRAMP buffers."
-  (let ((auth-sources (if (equal tramp-current-method "sudo") nil auth-sources)))
-    (apply orig-fn args)))
-(advice-add #'tramp-read-passwd :around #'doom*no-authinfo-for-tramp)
 
 (provide 'core)
 ;;; core.el ends here

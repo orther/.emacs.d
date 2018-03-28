@@ -3,6 +3,7 @@
 
 (package! pass)
 (package! password-store)
+(package! auth-source-pass)
 
 (when (featurep! +auth)
   (package! auth-source-pass))

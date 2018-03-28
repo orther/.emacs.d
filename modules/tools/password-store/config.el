@@ -36,6 +36,8 @@
 
 
 ;; Is built into Emacs 26+
-(def-package! auth-source-pass
-  :when (featurep! +auth)
-  :config (auth-source-pass-enable))
+(when (featurep! +auth)
+  (if (require 'auth-store-pass nil t)
+      (auth-source-pass-enable)
+    (def-package! auth-source-store
+      :config (auth-source-pass-enable))))

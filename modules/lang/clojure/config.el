@@ -2,6 +2,8 @@
 
 (def-package! clojure-mode
   :mode "\\.clj$"
+  :mode "\\.edn$"
+  :mode "\\(?:build\\|profile\\)\\.boot$"
   :mode ("\\.cljs$" . clojurescript-mode)
   :mode ("\\.cljc$" . clojurec-mode)
   :config
@@ -15,7 +17,7 @@
   (nconc cljr-magic-require-namespaces
          '(("re-frame" . "re-frame.core")
            ("reagent"  . "reagent.core")
-           ("str"      . "clojure.str"))))
+           ("str"      . "clojure.string"))))
 
 
 (def-package! cider

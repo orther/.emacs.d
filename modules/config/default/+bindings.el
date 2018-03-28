@@ -116,10 +116,12 @@
           :desc "Spelling correction"   :n  "S" #'flyspell-correct-word-generic)
 
         (:desc "search" :prefix "/"
-          :desc "Swiper"                :nv "/" #'swiper
-          :desc "Imenu"                 :nv "i" #'imenu
-          :desc "Imenu across buffers"  :nv "I" #'imenu-anywhere
-          :desc "Online providers"      :nv "o" #'+lookup/online-select)
+          :desc "Project"                :nv "p" #'+ivy/project-search
+          :desc "Directory"              :nv "d" (λ! (+ivy/project-search t))
+          :desc "Buffer"                 :nv "b" #'swiper
+          :desc "Symbols"                :nv "i" #'imenu
+          :desc "Symbols across buffers" :nv "I" #'imenu-anywhere
+          :desc "Online providers"       :nv "o" #'+lookup/online-select)
 
         (:desc "workspace" :prefix "TAB"
           :desc "Display tab bar"          :n "TAB" #'+workspace/display
@@ -201,27 +203,25 @@
         (:desc "help" :prefix "h"
           :n "h" help-map
           :desc "Apropos"               :n  "a" #'apropos
-          :desc "Reload theme"          :n  "R" #'doom//reload-theme
-          :desc "Find library"          :n  "l" #'find-library
-          :desc "Toggle Emacs log"      :n  "m" #'view-echo-area-messages
-          :desc "Command log"           :n  "L" #'global-command-log-mode
-          :desc "Describe function"     :n  "f" #'describe-function
-          :desc "Describe key"          :n  "k" #'describe-key
           :desc "Describe char"         :n  "c" #'describe-char
-          :desc "Describe mode"         :n  "M" #'describe-mode
-          :desc "Describe variable"     :n  "v" #'describe-variable
-          :desc "Describe face"         :n  "F" #'describe-face
-          :desc "Describe DOOM setting" :n  "s" #'doom/describe-setting
           :desc "Describe DOOM module"  :n  "d" #'doom/describe-module
           :desc "Open Doom manual"      :n  "D" #'doom/help
-          :desc "Find definition"       :n  "." #'+lookup/definition
-          :desc "Find references"       :n  "/" #'+lookup/references
-          :desc "Find documentation"    :n  "h" #'+lookup/documentation
+          :desc "Describe function"     :n  "f" #'describe-function
+          :desc "Describe face"         :n  "F" #'describe-face
+          :desc "Info"                  :n  "i" #'info-lookup-symbol
+          :desc "Describe key"          :n  "k" #'describe-key
+          :desc "Find documentation"    :n  "K" #'+lookup/documentation
+          :desc "Find library"          :n  "l" #'find-library
+          :desc "Command log"           :n  "L" #'global-command-log-mode
+          :desc "Toggle Emacs log"      :n  "m" #'view-echo-area-messages
+          :desc "Describe mode"         :n  "M" #'describe-mode
+          :desc "Toggle profiler"       :n  "p" #'doom/toggle-profiler
+          :desc "Reload theme"          :n  "R" #'doom//reload-theme
+          :desc "Describe DOOM setting" :n  "s" #'doom/describe-setting
+          :desc "Describe variable"     :n  "v" #'describe-variable
           :desc "Describe at point"     :n  "." #'helpful-at-point
           :desc "What face"             :n  "'" #'doom/what-face
-          :desc "What minor modes"      :n  ";" #'doom/what-minor-mode
-          :desc "Info"                  :n  "i" #'info
-          :desc "Toggle profiler"       :n  "p" #'doom/toggle-profiler)
+          :desc "What minor modes"      :n  ";" #'doom/what-minor-mode)
 
         (:desc "insert" :prefix "i"
           :desc "From kill-ring"        :nv "y" #'counsel-yank-pop
@@ -321,8 +321,8 @@
       :n  "gR" #'+eval/buffer
       :v  "gR" #'+eval:replace-region
       :m  "gs" #'+default/easymotion  ; lazy-load `evil-easymotion'
-      :v  "@"  #'+evil:macro-on-all-lines
-      :n  "g@" #'+evil:macro-on-all-lines
+      :v  "@"  #'+evil:apply-macro
+      :n  "g@" #'+evil:apply-macro
       ;; repeat in visual mode (FIXME buggy)
       :v  "."  #'evil-repeat
       ;; don't leave visual mode after shifting
@@ -663,9 +663,11 @@
         ;; TAB auto-completion in term buffers
         :map comint-mode-map [tab] #'company-complete)
 
-      (:map help-mode-map
-        :n "o"   #'ace-link-help
-        :n "Q"   #'ivy-resume)
+      (:map* (help-mode-map helpful-mode-map)
+        :n "o"  #'ace-link-help
+        :n "Q"  #'ivy-resume
+        :n "]l" #'forward-button
+        :n "[l" #'backward-button)
 
       (:after vc-annotate
         :map vc-annotate-mode-map
@@ -730,3 +732,28 @@
       (:after view
         (:map view-mode-map "<escape>" #'View-quit-all)))
 
+
+;;
+;; Evil-collection fixes
+;;
+
+(when (featurep 'evil-collection)
+  ;; don't interfere with leader key
+  (evil-define-key* '(normal visual) special-mode-map (kbd doom-leader-key) nil)
+  (after! dired
+    (evil-define-key* 'normal dired-mode-map (kbd doom-leader-key) nil))
+
+  ;; don't remap gd or K; Doom does this already
+  ;; TODO find a better way
+  (after! compile
+    (evil-define-key* '(normal visual) compilation-mode-map "gd" nil "K" nil))
+  (after! racer
+    (evil-define-key* 'normal racer-mode-map "gd" nil "K" nil))
+  (after! anaconda-mode
+    (evil-define-key* 'normal anaconda-mode-map "gd" nil "K" nil))
+  (after! alchemist
+    (evil-define-key* 'normal alchemist-mode-map "gd" nil "K" nil "gz" nil))
+  (after! go-mode
+    (evil-define-key* 'normal go-mode-map "gd" nil "K" nil))
+  (after! lua-mode
+    (evil-define-key* 'normal lua-mode-map "K" nil)))

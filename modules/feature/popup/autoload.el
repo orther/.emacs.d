@@ -1,6 +1,6 @@
 ;;; feature/popup/autoload.el -*- lexical-binding: t; -*-
 
-(defvar +popup--populate-wparams (version< emacs-version "26.1"))
+(defvar +popup--populate-wparams (not EMACS26+))
 
 (defun +popup--remember (windows)
   "Remember WINDOWS (a list of windows) for later restoration."
@@ -94,6 +94,15 @@ and enables `+popup-buffer-mode'."
            (params (map-merge 'list
                               +popup-default-parameters
                               (cdr (assq 'window-parameters alist)))))
+      ;; translate side => window-(width|height)
+      (when-let* ((size (cdr (assq 'size alist)))
+                  (side (or (cdr (assq 'side alist)) 'bottom)))
+        (map-delete alist 'size)
+        (map-put alist (if (memq side '(left right))
+                           'window-width
+                         'window-height)
+                 size))
+      ;;
       (map-put alist 'window-parameters params)
       (nreverse alist))))
 
@@ -423,7 +432,7 @@ prevent the popup(s) from messing up the UI (or vice versa)."
 ;; Popup actions
 ;;
 
-(when (version< emacs-version "26")
+(unless EMACS26+
   (defvar window-sides-reversed nil)
 
   (defun window--sides-reverse-on-frame-p (frame)

@@ -63,9 +63,6 @@
   (add-hook 'doom-init-hook #'evil-mode)
   (evil-select-search-module 'evil-search-module 'evil-search)
 
-  ;; ensure `doom-mode-map' has high precedence
-  (evil-make-overriding-map doom-mode-map)
-
   (set! :popup "^\\*evil-registers" '((size . 0.3)))
   (set! :popup "^\\*Command Line" '((size . 8)))
 
@@ -340,9 +337,7 @@ the new algorithm is confusing, like in python or ruby."
         '(org-agenda-mode magit-mode git-rebase-mode
           elfeed-show-mode elfeed-search-mode ranger-mode
           magit-repolist-mode)
-        evil-snipe-aliases '((?\[ "[[{(]")
-                             (?\] "[]})]")
-                             (?\; "[;:]")))
+        evil-snipe-aliases '((?\; "[;:]")))
   :config
   (evil-snipe-override-mode +1))
 

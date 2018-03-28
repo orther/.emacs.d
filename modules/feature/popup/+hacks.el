@@ -5,14 +5,14 @@
 ;; down to:
 ;;
 ;; 1. Making plugins that control their own window environment less greedy (e.g.
-;;    org agenda, trying to reconfigure the entire frame to pop up one tiny
-;;    window).
+;;    org agenda, which tries to reconfigure the entire frame (by deleting all
+;;    other windows) just to pop up one tiny window).
 ;; 2. Forcing plugins to use `display-buffer' and `pop-to-buffer' instead of
 ;;    `switch-to-buffer' (which is unaffected by `display-buffer-alist', which
 ;;    this module heavily relies on).
 ;; 3. Closing popups (temporarily) before functions that are highly destructive
 ;;    to the illusion of popup control get run (with the use of the
-;;   `save-popups!' macro).
+;;    `save-popups!' macro).
 ;;
 ;; Keep in mind, all this black magic may break in future updates, and will need
 ;; to be watched carefully for corner cases. Also, once this file is loaded, its
@@ -142,14 +142,28 @@ the command buffer."
 
 ;; `helpful'
 (after! helpful
-  (defun +popup*helpful--navigate (orig-fn &rest args)
-    (let (origin)
+  (defun +popup*helpful--navigate (button)
+    (let ((path (substring-no-properties (button-get button 'path)))
+          origin)
       (save-popups!
-       (apply orig-fn args)
+       (find-file path)
+       ;; We use `get-text-property' to work around an Emacs 25 bug:
+       ;; http://git.savannah.gnu.org/cgit/emacs.git/commit/?id=f7c4bad17d83297ee9a1b57552b1944020f23aea
+       (-when-let (pos (get-text-property button 'position
+                                          (marker-buffer button)))
+         (goto-char pos))
        (setq origin (selected-window))
        (recenter))
       (select-window origin)))
-  (advice-add #'helpful--navigate :around #'+popup*helpful--navigate))
+  (advice-add #'helpful--navigate :override #'+popup*helpful--navigate))
+
+
+;; `Info'
+(defun +popup*switch-to-info-window (&rest _)
+  (when-let* ((win (get-buffer-window "*info*")))
+    (when (+popup-window-p win)
+      (select-window win))))
+(advice-add #'info-lookup-symbol :after #'+popup*switch-to-info-window)
 
 
 ;; `neotree'
@@ -160,13 +174,6 @@ the command buffer."
 
 ;; `org'
 (after! org
-  (set! :popup "^\\*\\(?:Agenda Com\\|Calendar\\|Org \\(?:Links\\|Export Dispatcher\\|Select\\)\\)"
-    '((slot . -1) (vslot . -1) (size . +popup-shrink-to-fit))
-    '((transient . 0)))
-  (set! :popup "^\\*Org Agenda" '((size . 20)) '((select . t) (transient)))
-  (set! :popup "^\\*Org Src"    '((size . 0.3)) '((quit) (select . t)))
-  (set! :popup "^CAPTURE.*\\.org$" '((size . 0.2)) '((quit) (select . t)))
-
   ;; Org has a scorched-earth window management system I'm not fond of. i.e. it
   ;; kills all windows and monopolizes the frame. No thanks. We can do better
   ;; ourselves.
