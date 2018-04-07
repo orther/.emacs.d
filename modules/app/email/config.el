@@ -50,6 +50,7 @@ default/fallback account."
 (def-package! mu4e
   :commands (mu4e mu4e-compose-new)
   :init
+  (provide 'html2text) ; disable obsolete package
   (setq mu4e-maildir "~/.mail"
         mu4e-attachment-dir "~/.mail/.attachments"
         mu4e-user-mail-address-list nil)
@@ -146,11 +147,9 @@ default/fallback account."
 (def-package! mu4e-maildirs-extension
   :after mu4e
   :config
-  (mu4e-maildirs-extension-load)
+  (mu4e-maildirs-extension)
   (setq mu4e-maildirs-extension-title nil
         ;; mu4e-maildirs-extension-ignored-regex "^*~*"
-        mu4e-maildirs-extension-buffer-name "*Mail*"
-        mu4e-maildirs-extension-insert-before-str "\n\t[c] Compose a message"
         mu4e-maildirs-extension-action-text "\t[g] Update mail and index\n"
         mu4e-maildirs-extension-maildir-expanded-prefix "-"
         mu4e-maildirs-extension-maildir-default-prefix "|"))

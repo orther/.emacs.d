@@ -1,6 +1,12 @@
 ;;; feature/popup/autoload.el -*- lexical-binding: t; -*-
 
 (defvar +popup--populate-wparams (not EMACS26+))
+(defvar +popup--inhibit-transient nil)
+(defvar +popup--display-buffer-alist nil)
+(defvar +popup--old-display-buffer-alist nil)
+(defvar +popup--remember-last t)
+(defvar +popup--last nil)
+(defvar-local +popup--timer nil)
 
 (defun +popup--remember (windows)
   "Remember WINDOWS (a list of windows) for later restoration."
@@ -113,7 +119,7 @@ and enables `+popup-buffer-mode'."
 
 ;;;###autoload
 (defun +popup-buffer-p (&optional buffer)
-  "Return t if BUFFER is a popup buffer. Defaults to the current buffer."
+  "Return non-nil if BUFFER is a popup buffer. Defaults to the current buffer."
   (unless buffer
     (setq buffer (current-buffer)))
   (cl-assert (bufferp buffer) t)
@@ -123,7 +129,7 @@ and enables `+popup-buffer-mode'."
 
 ;;;###autoload
 (defun +popup-window-p (&optional window)
-  "Return t if WINDOW is a popup window. Defaults to the current window."
+  "Return non-nil if WINDOW is a popup window. Defaults to the current window."
   (unless window
     (setq window (selected-window)))
   (cl-assert (windowp window) t)
@@ -175,10 +181,47 @@ Uses `shrink-window-if-larger-than-buffer'."
   (unless (= (- (point-max) (point-min)) 0)
     (shrink-window-if-larger-than-buffer window)))
 
+;;;###autoload
+(defun +popup-define (condition &optional alist parameters)
+  "Define a popup rule.
+
+The buffers of new windows displayed by `pop-to-buffer' and `display-buffer'
+will be tested against CONDITION, which is either a) a regexp string (which is
+matched against the buffer's name) or b) a function that takes no arguments and
+returns a boolean.
+
+If CONDITION is met, the buffer will be displayed in a popup window with ALIST
+and window PARAMETERS. See `display-buffer-alist' for details on what ALIST may
+contain and `+popup-window-parameters' for what window parameters that the popup
+module supports.
+
+ALIST also supports the `size' parameter, which will be translated to
+`window-width' or `window-height' depending on `side'.
+
+If certain attributes/parameters are omitted, the ones from
+`+popup-default-alist' and `+popup-default-parameters' will be used."
+  (declare (indent 1))
+  (push (if (eq alist :ignore)
+            (list condition nil)
+          `(,condition
+            (+popup-buffer)
+            ,@alist
+            (window-parameters ,@parameters)))
+        +popup--display-buffer-alist))
+
 
 ;;
 ;; Minor mode
 ;;
+
+;;;###autoload
+(defvar +popup-mode-map (make-sparse-keymap)
+  "Active keymap in a session with the popup system enabled. See
+`+popup-mode'.")
+
+;;;###autoload
+(defvar +popup-buffer-mode-map (make-sparse-keymap)
+  "Active keymap in popup windows. See `+popup-buffer-mode'.")
 
 ;;;###autoload
 (define-minor-mode +popup-mode
@@ -385,6 +428,18 @@ the message buffer in a popup window."
 ;;
 ;; Macros
 ;;
+
+;;;###autoload
+(defmacro with-popup-rules! (rules &rest body)
+  "Evaluate BODY with popup RULES. RULES is a list of popup rules. Each rule
+should match the arguments of `+popup-define' or the :popup setting."
+  (declare (indent defun))
+  `(let ((+popup--display-buffer-alist +popup--old-display-buffer-alist)
+         display-buffer-alist)
+     ,@(cl-loop for rule in rules collect `(+popup-define ,@rule))
+     (when (bound-and-true-p +popup-mode)
+       (setq display-buffer-alist +popup--display-buffer-alist))
+     ,@body))
 
 ;;;###autoload
 (defmacro without-popups! (&rest body)

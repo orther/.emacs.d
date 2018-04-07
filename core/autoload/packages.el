@@ -99,8 +99,9 @@ list of the package."
                (let ((desc (cadr (assq name package-archive-contents))))
                  (when (package-desc-p desc)
                    (package-desc-version desc)))))))
-      (when (and (listp old-version) (listp new-version)
-                 (version-list-< old-version new-version))
+      (unless (and (listp old-version) (listp new-version))
+        (error "Couldn't get version for %s" name))
+      (when (version-list-< old-version new-version)
         (list name old-version new-version)))))
 
 ;;;###autoload
@@ -146,7 +147,7 @@ Warning: this function is expensive; it re-evaluates all of doom's config files.
 Be careful not to use it in a loop.
 
 If INSTALLED-ONLY-P, only return packages that are installed."
-  (doom-initialize-packages 'internal)
+  (doom-initialize-packages t)
   (cl-loop with packages = (append doom-core-packages (mapcar #'car doom-packages))
            for sym in (cl-delete-duplicates packages)
            if (and (or (not installed-only-p)
@@ -179,7 +180,7 @@ containing (PACKAGE-SYMBOL OLD-VERSION-LIST NEW-VERSION-LIST).
 If INCLUDE-FROZEN-P is non-nil, check frozen packages as well.
 
 Used by `doom//packages-update'."
-  (doom-initialize-packages 'internal)
+  (doom-initialize-packages t)
   (require 'async)
   (let (quelpa-pkgs elpa-pkgs)
     ;; Separate quelpa from elpa packages
@@ -218,7 +219,7 @@ Used by `doom//packages-update'."
 depended on.
 
 Used by `doom//packages-autoremove'."
-  (doom-initialize-packages 'internal)
+  (doom-initialize-packages t)
   (let ((package-selected-packages
          (append (mapcar #'car doom-packages) doom-core-packages)))
     (append (package--removable-packages)
@@ -238,7 +239,7 @@ If INCLUDE-IGNORED-P is non-nil, includes missing packages that are ignored,
 i.e. they have an :ignore property.
 
 Used by `doom//packages-install'."
-  (doom-initialize-packages 'internal)
+  (doom-initialize-packages t)
   (cl-loop for desc in (doom-get-packages)
            for (name . plist) = desc
            if (and (or include-ignored-p

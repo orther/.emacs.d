@@ -116,18 +116,10 @@ module to be loaded."
 ;;
 
 ;;;###autoload
-(defun +eshell|delete-window ()
-  (if (one-window-p)
-      (unless (doom-real-buffer-p (progn (previous-buffer) (current-buffer)))
-        (switch-to-buffer (doom-fallback-buffer)))
-    (delete-window)))
-
-;;;###autoload
 (defun +eshell|init ()
   "Keep track of eshell buffers."
   (let ((buf (current-buffer)))
     (remove-hook 'kill-buffer-query-functions #'doom|protect-visible-buffers t)
-    (add-hook 'kill-buffer-hook #'+eshell|delete-window nil t)
     (dolist (buf (ring-elements +eshell-buffers))
       (unless (buffer-live-p buf)
         (+eshell--remove-buffer buf)))
@@ -138,9 +130,14 @@ module to be loaded."
 (defun +eshell|cleanup ()
   "Close window (or workspace) on quit."
   (+eshell--remove-buffer (current-buffer))
-  (when (and (featurep! :feature workspaces)
-             (string= "eshell" (+workspace-current-name)))
-    (+workspace/delete "eshell")))
+  (cond ((and (featurep! :feature workspaces)
+              (string= "eshell" (+workspace-current-name)))
+         (+workspace/delete "eshell"))
+        ((one-window-p)
+         (unless (doom-real-buffer-p (progn (previous-buffer) (current-buffer)))
+           (switch-to-buffer (doom-fallback-buffer))))
+        ((delete (current-buffer) (get-buffer-window-list))
+         (delete-window))))
 
 
 ;;
@@ -204,12 +201,18 @@ delete."
 (defun +eshell/switch (buffer)
   "Interactively switch to another eshell buffer."
   (interactive
-   (if (ring-empty-p +eshell-buffers)
-       (user-error "No eshell buffers are available")
-     (list (completing-read
-            "Eshell buffers"
-            (mapc #'buffer-name (delete (current-buffer) (ring-elements +eshell-buffers)))
-            #'get-buffer
-            'require-match
-            nil nil (buffer-name (current-buffer))))))
-  (switch-to-buffer buffer))
+   (let ((buffers (cl-remove-if-not (lambda (buf) (eq (buffer-local-value 'major-mode buf) 'eshell-mode))
+                                    (delete (current-buffer) (ring-elements +eshell-buffers)))))
+     (if (not buffers)
+         (user-error "No eshell buffers are available")
+       (list (completing-read
+              "Eshell buffers"
+              (mapcar #'buffer-name buffers)
+              #'get-buffer
+              'require-match
+              nil nil
+              (when (eq major-mode 'eshell-mode)
+                (buffer-name (current-buffer))))))))
+  (if-let* ((window (get-buffer-window buffer)))
+      (select-window window)
+    (switch-to-buffer buffer)))

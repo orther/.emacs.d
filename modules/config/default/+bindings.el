@@ -185,18 +185,28 @@
           :desc "Recent files"              :n "r" #'recentf-open-files
           :desc "Recent project files"      :n "R" #'projectile-recentf
           :desc "Yank filename"             :n "y" #'+default/yank-buffer-filename
-          (:when (featurep! :config private)
-            :desc "Find file in private config" :n "p" #'+private/find-in-config
-            :desc "Browse private config"       :n "P" #'+private/browse-config))
+          :desc "Find file in private config" :n "p" #'+default/find-in-config
+          :desc "Browse private config"       :n "P" #'+default/browse-config)
 
         (:desc "git" :prefix "g"
-          :desc "Git status"            :n  "S" #'magit-status
-          :desc "Git blame"             :n  "b" #'magit-blame
-          :desc "Git time machine"      :n  "t" #'git-timemachine-toggle
-          :desc "Git stage hunk"        :n  "s" #'git-gutter:stage-hunk
+          :desc "Magit blame"           :n  "b" #'magit-blame
+          :desc "Magit commit"          :n  "c" #'magit-commit
+          :desc "Magit clone"           :n  "C" #'magit-clone
+          :desc "Magit dispatch"        :n  "d" #'magit-dispatch-popup
+          :desc "Magit find-file"       :n  "f" #'magit-find-file
+          :desc "Magit status"          :n  "g" #'magit-status
+          :desc "List gists"            :n  "G" #'+gist:list
+          :desc "Initialize repo"       :n  "i" #'magit-init
+          :desc "Magit buffer log"      :n  "l" #'magit-log-buffer-file
+          :desc "List repositories"     :n  "L" #'magit-list-repositories
+          :desc "Magit push popup"      :n  "p" #'magit-push-popup
+          :desc "Magit pull popup"      :n  "P" #'magit-pull-popup
           :desc "Git revert hunk"       :n  "r" #'git-gutter:revert-hunk
-          :desc "Git revert buffer"     :n  "R" #'vc-revert
-          :desc "List gists"            :n  "g" #'+gist:list
+          :desc "Git revert file"       :n  "R" #'vc-revert
+          :desc "Git status"            :n  "s" #'git-gutter:stage-hunk
+          :desc "Git stage hunk"        :n  "S" #'magit-stage-file
+          :desc "Git time machine"      :n  "t" #'git-timemachine-toggle
+          :desc "Git stage hunk"        :n  "U" #'magit-unstage-file
           :desc "Next hunk"             :nv "]" #'git-gutter:next-hunk
           :desc "Previous hunk"         :nv "[" #'git-gutter:previous-hunk)
 
@@ -646,7 +656,9 @@
           [delete]        #'+snippets/delete-forward-char-or-field)
         (:map yas-minor-mode-map
           :ig "<tab>" yas-maybe-expand
-          :v  "<tab>" #'yas-insert-snippet))
+          :v  "<tab>" #'yas-insert-snippet
+          :ig "TAB" yas-maybe-expand
+          :v  "TAB" #'yas-insert-snippet))
 
 
       ;; --- Major mode bindings --------------------------

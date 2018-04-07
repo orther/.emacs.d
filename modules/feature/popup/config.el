@@ -85,53 +85,7 @@ a brief description of some native window parameters that Emacs uses:
   "The default time-to-live for transient buffers whose popup buffers have been
 deleted.")
 
-(defvar +popup-mode-map (make-sparse-keymap)
-  "Active keymap in a session with the popup system enabled. See
-`+popup-mode'.")
-
-(defvar +popup-buffer-mode-map
-  (let ((map (make-sparse-keymap)))
-    (when (featurep! :feature evil)
-      ;; for maximum escape coverage in emacs state buffers
-      (define-key map [escape] #'doom/escape)
-      (define-key map (kbd "ESC") #'doom/escape))
-    map)
-  "Active keymap in popup windows. See `+popup-buffer-mode'.")
-
-
-(defvar +popup--inhibit-transient nil)
-(defvar +popup--display-buffer-alist nil)
-(defvar +popup--old-display-buffer-alist nil)
-(defvar +popup--remember-last t)
-(defvar +popup--last nil)
-(defvar-local +popup--timer nil)
-
-
 ;;
-(defun +popup-define (condition &optional alist parameters)
-  "Define a popup rule.
-
-The buffers of new windows displayed by `pop-to-buffer' and `display-buffer'
-will be tested against CONDITION, which is either a) a regexp string (which is
-matched against the buffer's name) or b) a function that takes no arguments and
-returns a boolean.
-
-If CONDITION is met, the buffer will be displayed in a popup window with ALIST
-and window PARAMETERS. See `display-buffer-alist' for details on what ALIST may
-contain and `+popup-window-parameters' for what window parameters that the popup
-module supports.
-
-If certain attributes/parameters are omitted, the ones from
-`+popup-default-alist' and `+popup-default-parameters' will be used."
-  (declare (indent 1))
-  (push (if (eq alist :ignore)
-            (list condition nil)
-          `(,condition
-            (+popup-buffer)
-            ,@alist
-            (window-parameters ,@parameters)))
-        +popup--display-buffer-alist))
-
 (def-setting! :popup (condition &optional alist parameters)
   "Register a popup rule.
 
@@ -175,20 +129,21 @@ example:
   (+popup-define "^\\*Completions"
     '((slot . -1) (vslot . -2))
     '((transient . 0)))
-  (+popup-define "^\\*Compil\\(ation\\|e-Log\\)"
+  (+popup-define "^\\*Compil\\(?:ation\\|e-Log\\)"
     '((size . 0.3))
     '((transient . 0) (quit . t)))
   (+popup-define "^\\*\\(?:scratch\\|Messages\\)"
     nil
     '((transient)))
   (+popup-define "^\\*doom \\(?:term\\|eshell\\)"
-    '((size . 0.25))
-    '((quit) (transient . 0)))
+    '((size . 0.25) (vslot . -10))
+    '((select . t) (quit) (transient . 0)))
   (+popup-define "^\\*doom:"
     '((size . 0.35) (side . bottom))
     '((select . t) (modeline . t) (quit) (transient . t)))
   (+popup-define "^\\*\\(?:\\(?:Pp E\\|doom e\\)val\\)"
-    '((size . +popup-shrink-to-fit)) '((transient . 0) (select . ignore)))
+    '((size . +popup-shrink-to-fit))
+    '((transient . 0) (select . ignore)))
 
   ;; `help-mode', `helpful-mode'
   (+popup-define "^\\*[Hh]elp"
@@ -207,7 +162,7 @@ example:
       '((slot . -1) (vslot . -1) (size . +popup-shrink-to-fit))
       '((transient . 0)))
     (+popup-define "^\\*Org Agenda"
-      '((size . 20))
+      '((size . 0.35))
       '((select . t) (transient)))
     (+popup-define "^\\*Org Src"
       '((size . 0.3))
@@ -221,6 +176,13 @@ example:
   #'(+popup|adjust-fringes
      +popup|set-modeline-on-enable
      +popup|unset-modeline-on-disable))
+
+(let ((map +popup-buffer-mode-map))
+  (when (featurep! :feature evil)
+    ;; for maximum escape coverage in emacs state buffers
+    (define-key map [escape] #'doom/escape)
+    (define-key map (kbd "ESC") #'doom/escape))
+  map)
 
 
 ;;
