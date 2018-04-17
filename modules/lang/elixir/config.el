@@ -5,23 +5,26 @@
   :mode "\\.elixir2$"
   :config
   ;; disable standard config; more disruptive than it needs to be
-  (dolist (beg '("fn" "do" "def" "defp" "defmodule" "if" "unless" "case" "receive"))
-    (sp-local-pair 'elixir-mode beg nil :actions :rem))
+  (map-delete sp-pairs 'elixir-mode)
   ;; only complete the basics
   (sp-with-modes 'elixir-mode
-    (sp-local-pair "do" "end" :when '(("RET" "<evil-ret>")) :post-handlers '("||\n[i]"))
-    (sp-local-pair "do " " end")
-    (sp-local-pair "fn " " end")))
+    (sp-local-pair "do" "end"
+                   :when '(("RET" "<evil-ret>"))
+                   :unless '(sp-in-comment-p sp-in-string-p)
+                   :skip-match 'sp-elixir-skip-def-p
+                   :post-handlers '("||\n[i]"))
+    (sp-local-pair "do " " end" :unless '(sp-in-comment-p sp-in-string-p))
+    (sp-local-pair "fn " " end" :unless '(sp-in-comment-p sp-in-string-p))))
 
 
 (def-package! alchemist
-  :after elixir-mode
   :hook (elixir-mode . alchemist-mode)
   :config
   (set! :lookup 'elixir-mode
     :definition #'alchemist-goto-definition-at-point
     :documentation #'alchemist-help-search-at-point)
-  (set! :eval 'elixir-mode #'alchemist-eval-region))
+  (set! :eval 'elixir-mode #'alchemist-eval-region)
+  (set! :repl 'elixir-mode #'alchemist-iex-project-run))
 
 
 (def-package! alchemist-company

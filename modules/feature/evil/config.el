@@ -26,10 +26,11 @@
   :after evil
   :preface
   ;; must be set before evil/evil-collcetion is loaded
-  (setq evil-want-integration nil
+  (setq evil-want-integration (not (featurep! +everywhere))
         evil-collection-company-use-tng nil)
   :config
   (delq 'kotlin-mode evil-collection-mode-list) ; doesn't do anything useful
+  (delq 'simple evil-collection-mode-list) ; breaks too much
   (evil-collection-init))
 
 
@@ -62,9 +63,6 @@
   :config
   (add-hook 'doom-init-hook #'evil-mode)
   (evil-select-search-module 'evil-search-module 'evil-search)
-
-  ;; ensure `doom-mode-map' has high precedence
-  (evil-make-overriding-map doom-mode-map)
 
   (set! :popup "^\\*evil-registers" '((size . 0.3)))
   (set! :popup "^\\*Command Line" '((size . 8)))
@@ -337,12 +335,10 @@ the new algorithm is confusing, like in python or ruby."
         evil-snipe-repeat-scope 'visible
         evil-snipe-char-fold t
         evil-snipe-disabled-modes
-        '(org-agenda-mode magit-mode git-rebase-mode
-          elfeed-show-mode elfeed-search-mode ranger-mode
-          magit-repolist-mode)
-        evil-snipe-aliases '((?\[ "[[{(]")
-                             (?\] "[]})]")
-                             (?\; "[;:]")))
+        '(org-agenda-mode magit-mode git-rebase-mode elfeed-show-mode
+          elfeed-search-mode ranger-mode magit-repolist-mode mu4e-main-mode
+          mu4e-view-mode mu4e-headers-mode mu4e~update-mail-mode)
+        evil-snipe-aliases '((?\; "[;:]")))
   :config
   (evil-snipe-override-mode +1))
 

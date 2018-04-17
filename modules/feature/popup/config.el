@@ -85,28 +85,6 @@ a brief description of some native window parameters that Emacs uses:
   "The default time-to-live for transient buffers whose popup buffers have been
 deleted.")
 
-(defvar +popup-mode-map (make-sparse-keymap)
-  "Active keymap in a session with the popup system enabled. See
-`+popup-mode'.")
-
-(defvar +popup-buffer-mode-map
-  (let ((map (make-sparse-keymap)))
-    (when (featurep! :feature evil)
-      ;; for maximum escape coverage in emacs state buffers
-      (define-key map [escape] #'doom/escape)
-      (define-key map (kbd "ESC") #'doom/escape))
-    map)
-  "Active keymap in popup windows. See `+popup-buffer-mode'.")
-
-
-(defvar +popup--inhibit-transient nil)
-(defvar +popup--display-buffer-alist nil)
-(defvar +popup--old-display-buffer-alist nil)
-(defvar +popup--remember-last t)
-(defvar +popup--last nil)
-(defvar-local +popup--timer nil)
-
-
 ;;
 (def-setting! :popup (condition &optional alist parameters)
   "Register a popup rule.
@@ -119,26 +97,24 @@ module.
 
 ALIST supports one custom parameter: `size', which will resolve to
 `window-height' or `window-width' depending on `side'."
-  `(let ((alist ,alist)
-         (parameters ,parameters))
-     (if (eq alist :ignore)
-         (push (list ,condition nil) +popup--display-buffer-alist)
-       ,(when alist
-          `(when-let* ((size (cdr (assq 'size alist)))
-                       (side (or (cdr (assq 'side (append alist +popup-default-alist)))
-                                 'bottom)))
-             (map-delete alist 'size)
-             (map-put alist (if (memq side '(left right))
-                                'window-width
-                              'window-height)
-                      size)))
-       (prog1 (push (append (list ,condition '(+popup-buffer))
-                            alist
-                            (list (cons 'window-parameters parameters)))
-                    +popup--display-buffer-alist)))
+  `(progn
+     (+popup-define ,condition ,alist ,parameters)
      (when (bound-and-true-p +popup-mode)
        (setq display-buffer-alist +popup--display-buffer-alist))
-     nil))
+     +popup--display-buffer-alist))
+
+(def-setting! :popups (&rest rules)
+  "Register multiple popup rules with :popup setting (`doom--set:popup'). For
+example:
+
+ (set! :popups
+   (\"^ \\*\" '((slot . 1) (vslot . -1) (size . +popup-shrink-to-fit)))
+   (\"^\\*\"  '((slot . 1) (vslot . -1)) '((select . t))))"
+  `(progn
+     ,@(cl-loop for rule in rules collect `(+popup-define ,@rule))
+     (when (bound-and-true-p +popup-mode)
+       (setq display-buffer-alist +popup--display-buffer-alist))
+     +popup--display-buffer-alist))
 
 
 ;;
@@ -146,30 +122,67 @@ ALIST supports one custom parameter: `size', which will resolve to
 ;;
 
 (when (featurep! +all)
-  (set! :popup "^ \\*" '((slot . 1) (vslot . -1) (size . +popup-shrink-to-fit)))
-  (set! :popup "^\\*"  '((slot . 1) (vslot . -1)) '((select . t))))
+  (+popup-define "^ \\*" '((slot . 1) (vslot . -1) (size . +popup-shrink-to-fit)))
+  (+popup-define "^\\*"  '((slot . 1) (vslot . -1)) '((select . t))))
 
 (when (featurep! +defaults)
-  (set! :popup "^\\*Completions" '((slot . -1) (vslot . -2)) '((transient . 0)))
-  (set! :popup "^\\*Compil\\(ation\\|e-Log\\)" '((size . 0.3)) '((transient . 0) (quit . t)))
-  (set! :popup "^\\*\\(?:scratch\\|Messages\\)" nil '((transient)))
-  (set! :popup "^\\*[Hh]elp"
-    '((slot . 2) (vslot . 2) (size . 0.2))
-    '((select . t)))
-  (set! :popup "^\\*doom \\(?:term\\|eshell\\)"
-    '((size . 0.25))
-    '((quit) (transient . 0)))
-  (set! :popup "^\\*doom:"
+  (+popup-define "^\\*Completions"
+    '((slot . -1) (vslot . -2))
+    '((transient . 0)))
+  (+popup-define "^\\*Compil\\(?:ation\\|e-Log\\)"
+    '((size . 0.3))
+    '((transient . 0) (quit . t)))
+  (+popup-define "^\\*\\(?:scratch\\|Messages\\)"
+    nil
+    '((transient)))
+  (+popup-define "^\\*doom \\(?:term\\|eshell\\)"
+    '((size . 0.25) (vslot . -10))
+    '((select . t) (quit) (transient . 0)))
+  (+popup-define "^\\*doom:"
     '((size . 0.35) (side . bottom))
     '((select . t) (modeline . t) (quit) (transient . t)))
-  (set! :popup "^\\*\\(?:\\(?:Pp E\\|doom e\\)val\\)"
-    '((size . +popup-shrink-to-fit)) '((transient . 0) (select . ignore))))
+  (+popup-define "^\\*\\(?:\\(?:Pp E\\|doom e\\)val\\)"
+    '((size . +popup-shrink-to-fit))
+    '((transient . 0) (select . ignore)))
+
+  ;; `help-mode', `helpful-mode'
+  (+popup-define "^\\*[Hh]elp"
+    '((slot . 2) (vslot . 2) (size . 0.2))
+    '((select . t)))
+  ;; `Info-mode'
+  (+popup-define "^\\*info\\*$"
+    '((slot . 2) (vslot . 2) (size . 0.35))
+    '((select . t)))
+
+  ;; `org-mode'
+  ;; Use org-load-hook instead of `after!' because the hook runs sooner,
+  ;; allowing users to override these later.
+  (add-hook! 'org-load-hook
+    (+popup-define "^\\*\\(?:Agenda Com\\|Calendar\\|Org \\(?:Links\\|Export Dispatcher\\|Select\\)\\)"
+      '((slot . -1) (vslot . -1) (size . +popup-shrink-to-fit))
+      '((transient . 0)))
+    (+popup-define "^\\*Org Agenda"
+      '((size . 0.35))
+      '((select . t) (transient)))
+    (+popup-define "^\\*Org Src"
+      '((size . 0.3))
+      '((quit) (select . t)))
+    (+popup-define "^CAPTURE.*\\.org$"
+      '((size . 0.2))
+      '((quit) (select . t)))))
 
 (add-hook 'doom-init-ui-hook #'+popup-mode)
 (add-hook! '+popup-buffer-mode-hook
   #'(+popup|adjust-fringes
      +popup|set-modeline-on-enable
      +popup|unset-modeline-on-disable))
+
+(let ((map +popup-buffer-mode-map))
+  (when (featurep! :feature evil)
+    ;; for maximum escape coverage in emacs state buffers
+    (define-key map [escape] #'doom/escape)
+    (define-key map (kbd "ESC") #'doom/escape))
+  map)
 
 
 ;;

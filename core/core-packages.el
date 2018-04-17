@@ -50,7 +50,12 @@ this is nil after Emacs has started something is wrong.")
   (make-hash-table :test #'equal :size 100 :rehash-threshold 1.0)
   "A hash table of enabled modules. Set by `doom-initialize-modules'.")
 
-(defvar doom-psuedo-module-dirs ()
+(defvar doom-modules-dirs
+  (list (expand-file-name "modules/" doom-private-dir) doom-modules-dir)
+  "A list of module root directories. Order determines priority.")
+
+(defvar doom-psuedo-module-dirs
+  (list doom-private-dir)
   "Additional paths for modules that are outside of `doom-modules-dirs'.
 `doom//reload-autoloads', `doom//byte-compile' and `doom-initialize-packages'
 will include the directories in this list.")
@@ -80,9 +85,10 @@ missing) and shouldn't be deleted.")
 (defvar doom-packages-file (concat doom-local-dir "packages.el")
   "Where to cache `load-path' and `Info-directory-list'.")
 
-(defvar doom--refreshed-p nil)
 (defvar doom--current-module nil)
+(defvar doom--init-cache-p nil)
 (defvar doom--initializing nil)
+(defvar doom--refreshed-p nil)
 (defvar generated-autoload-load-name)
 
 (setq autoload-compute-prefixes nil
@@ -134,6 +140,19 @@ missing) and shouldn't be deleted.")
 ;; Bootstrap API
 ;;
 
+(defun doom--refresh-cache ()
+  "TODO"
+  (when doom--init-cache-p
+    (doom-initialize-packages 'internal)
+    (unless noninteractive
+      (with-temp-buffer
+        (prin1 `(setq load-path ',load-path
+                      Info-directory-list ',Info-directory-list
+                      doom-disabled-packages ',doom-disabled-packages)
+               (current-buffer))
+        (write-file doom-packages-file))
+      (setq doom--init-cache-p nil))))
+
 (defun doom-initialize (&optional force-p)
   "Bootstrap the bare essentials to get Doom running, if it hasn't already. If
 FORCE-P is non-nil, do it anyway.
@@ -141,12 +160,19 @@ FORCE-P is non-nil, do it anyway.
 1. Ensures all the essential directories exist,
 2. Ensures core packages are installed,
 3. Loads your autoloads file in `doom-autoload-file',
-4. Builds and caches `load-path' and `Info-directory-list' in `doom-packages-file'"
+4. Builds and caches `load-path', `Info-directory-list' and
+   `doom-disabled-packages' in `doom-packages-file'"
   ;; Called early during initialization; only use native (and cl-lib) functions!
+  (let ((load-path doom-site-load-path))
+    (require 'subr-x)
+    (require 'cl-lib)
+    (require 'map))
   (when (or force-p (not doom-init-p))
     (unless (load doom-autoload-file t t t)
       (unless noninteractive
         (error "No autoloads file! Run make autoloads")))
+    (when (and noninteractive (file-exists-p doom-packages-file))
+      (delete-file doom-packages-file))
     (when (or force-p (not (load doom-packages-file t t t)))
       ;; Ensure core folders exist, otherwise we get errors
       (dolist (dir (list doom-local-dir doom-etc-dir doom-cache-dir doom-packages-dir))
@@ -173,13 +199,8 @@ FORCE-P is non-nil, do it anyway.
                 (message "✓ Installed %s" package)
               (error "✕ Couldn't install %s" package)))
           (message "Installing core packages...done")))
-      (unless noninteractive
-        (with-temp-buffer
-          (cl-pushnew doom-core-dir load-path :test #'string=)
-          (prin1 `(setq load-path ',load-path
-                        Info-directory-list ',Info-directory-list)
-                 (current-buffer))
-          (write-file doom-packages-file))))
+      (cl-pushnew doom-core-dir load-path :test #'string=)
+      (setq doom--init-cache-p t))
     (setq doom-init-p t)))
 
 (defun doom-initialize-autoloads ()
@@ -202,7 +223,7 @@ populated.
 
 This reads modules' packages.el files, runs `package-initialize', and
 initializes quelpa, if they haven't already. If FORCE-P is non-nil, do it
-anyway.
+anyway. If FORCE-P is 'internal, only (re)populate `doom-packages'.
 
 Use this before any of package.el, quelpa or Doom's package management's API to
 ensure all the necessary package metadata is initialized and available for
@@ -225,10 +246,6 @@ them."
       ;; the current session, but if you change an packages.el file in a module,
       ;; there's no non-trivial way to detect that, so we give you a way to
       ;; reload only doom-packages.
-      (when (eq force-p 'internal)
-        (setq force-p nil
-              doom-packages nil))
-
       ;; `doom-packages'
       (when (or force-p (not doom-packages))
         (setq doom-packages nil)
@@ -242,19 +259,20 @@ them."
                  if (file-exists-p path)
                  do (_load path)))
 
-      ;; `package-alist'
-      (when (or force-p (not (bound-and-true-p package-alist)))
-        (setq load-path doom-site-load-path)
-        (require 'package)
-        (setq package-activated-list nil)
-        (package-initialize))
+      (unless (eq force-p 'internal)
+        ;; `package-alist'
+        (when (or force-p (not (bound-and-true-p package-alist)))
+          (setq load-path doom-site-load-path)
+          (require 'package)
+          (setq package-activated-list nil)
+          (package-initialize))
 
-      ;; `quelpa-cache'
-      (when (or force-p (not (bound-and-true-p quelpa-cache)))
-        (require 'quelpa)
-        (setq quelpa-initialized-p nil)
-        (or (quelpa-setup-p)
-            (error "Could not initialize quelpa"))))))
+        ;; `quelpa-cache'
+        (when (or force-p (not (bound-and-true-p quelpa-cache)))
+          (require 'quelpa)
+          (setq quelpa-initialized-p nil)
+          (or (quelpa-setup-p)
+              (error "Could not initialize quelpa")))))))
 
 
 ;;
@@ -275,7 +293,7 @@ them."
       plist)))
 
 (defun doom-module-put (module submodule property value)
-  "TODO"
+  "Set a PROPERTY for MODULE SUBMODULE to VALUE."
   (when-let* ((plist (doom-module-get module submodule)))
     (puthash (cons module submodule)
              (plist-put plist property value)
@@ -362,7 +380,9 @@ MODULES is an malformed plist of modules to load."
             ((let ((submodule (if (listp m) (car m) m))
                    (flags     (if (listp m) (cdr m))))
                (let ((path (doom-module-find-path module submodule)))
-                 (when path
+                 (if (not path)
+                     (when doom-debug-mode
+                       (message "Couldn't find the %s %s module" module submodule))
                    (doom-module-set module submodule :flags flags :path path)
                    (push `(let ((doom--current-module ',(cons module submodule)))
                             (load! init ,path t))
@@ -373,6 +393,7 @@ MODULES is an malformed plist of modules to load."
          ,@(nreverse load-forms))
        ,(unless doom--initializing
           '(unless noninteractive
+             (doom--refresh-cache)
              (doom-initialize-modules))))))
 
 (defmacro def-package! (name &rest plist)
@@ -398,18 +419,15 @@ Under the hood, this uses use-package's `use-package-inject-hooks'.
 
 PACKAGE is a symbol; the package's name.
 WHEN should be one of the following:
-  :pre-init :post-init :pre-config :post-config :disable
-
-If WHEN is :disable then BODY is ignored, and DOOM will be instructed to ignore
-all `def-package!' blocks for PACKAGE.
+  :pre-init :post-init :pre-config :post-config
 
 WARNING: If :pre-init or :pre-config hooks return nil, the original
 `def-package!''s :init/:config block (respectively) is overwritten, so remember
 to have them return non-nil (or exploit that to overwrite Doom's config)."
   (declare (indent defun))
   (cond ((eq when :disable)
-         (push package doom-disabled-packages)
-         nil)
+         (message "Using :disable with `def-package-hook!' is deprecated. Use :disable in `package!' instead.")
+         (ignore (push package doom-disabled-packages)))
         ((memq when '(:pre-init :post-init :pre-config :post-config))
          `(progn
             (setq use-package-inject-hooks t)
@@ -512,31 +530,58 @@ Only use this macro in a module's packages.el file.
 
 Accepts the following properties:
 
- :recipe RECIPE        Takes a MELPA-style recipe (see `quelpa-recipe' in
-                       `quelpa' for an example); for packages to be installed
-                       from external sources.
- :pin ARCHIVE-NAME     Instructs ELPA to only look for this package in
-                       ARCHIVE-NAME. e.g. \"org\". Ignored if RECIPE is present.
- :ignore FORM          Do not install this package if FORM is non-nil.
- :freeze FORM          Do not update this package if FORM is non-nil."
+ :recipe RECIPE
+   Takes a MELPA-style recipe (see `quelpa-recipe' in `quelpa' for an example);
+   for packages to be installed from external sources.
+ :pin ARCHIVE-NAME
+   Instructs ELPA to only look for this package in ARCHIVE-NAME. e.g. \"org\".
+   Ignored if RECIPE is present.
+ :disable BOOL
+   Do not install or update this package AND disable all of its `def-package!'
+   blocks.
+ :ignore FORM
+   Do not install this package.
+ :freeze FORM
+   Do not update this package if FORM is non-nil."
   (declare (indent defun))
-  (unless (memq name doom-disabled-packages)
-    (let* ((old-plist (assq name doom-packages))
-           (pkg-recipe (or (plist-get plist :recipe)
-                           (and old-plist (plist-get old-plist :recipe))))
-           (pkg-pin    (or (plist-get plist :pin)
-                           (and old-plist (plist-get old-plist :pin)))))
-      (when pkg-recipe
-        (when (= 0 (% (length pkg-recipe) 2))
-          (plist-put plist :recipe (cons name pkg-recipe)))
-        (when pkg-pin
-          (plist-put plist :pin nil)))
-      (dolist (prop '(:ignore :freeze))
-        (when-let* ((val (plist-get plist prop)))
-          (plist-put plist prop (eval val))))
-      `(progn
-         ,(if (and pkg-pin t) `(map-put package-pinned-packages ',name ,pkg-pin))
-         (map-put doom-packages ',name ',plist)))))
+  (cond ((memq name doom-disabled-packages) nil)
+        ((let ((disable (plist-get plist :disable)))
+           (and disable (eval disable)))
+         (push name doom-disabled-packages)
+         (setq doom-packages (map-delete doom-packages name))
+         nil)
+        ((let* ((old-plist (assq name doom-packages))
+                (pkg-recipe (or (plist-get plist :recipe)
+                                (and old-plist (plist-get old-plist :recipe))))
+                (pkg-pin    (or (plist-get plist :pin)
+                                (and old-plist (plist-get old-plist :pin)))))
+           (when pkg-recipe
+             (when (= 0 (% (length pkg-recipe) 2))
+               (plist-put plist :recipe (cons name pkg-recipe)))
+             (when pkg-pin
+               (plist-put plist :pin nil)))
+           (dolist (prop '(:ignore :freeze))
+             (let ((val (plist-get plist prop)))
+               (when val
+                 (plist-put plist prop (eval val)))))
+           `(progn
+              ,(when (and pkg-pin t)
+                 `(map-put package-pinned-packages ',name ,pkg-pin))
+              (map-put doom-packages ',name ',plist))))))
+
+(defmacro packages! (&rest packages)
+  "A convenience macro like `package!', but allows you to declare multiple
+packages at once.
+
+Only use this macro in a module's packages.el file."
+  `(progn ,@(cl-loop for desc in packages collect `(package! ,@desc))))
+
+(defmacro disable-packages! (&rest packages)
+  "A convenience macro like `package!', but allows you to disable multiple
+packages at once.
+
+Only use this macro in a module's packages.el file."
+  `(setq doom-disabled-packages (append ',packages doom-disabled-packages)))
 
 (defmacro depends-on! (module submodule &optional flags)
   "Declares that this module depends on another.
@@ -752,47 +797,47 @@ If RECOMPILE-P is non-nil, only recompile out-of-date files."
                        else if (file-exists-p target)
                         collect target
                        finally do (setq argv nil)))
-        (unless compile-targets
-          (error "No targets to compile"))
-        (condition-case ex
-            (let ((use-package-expand-minimally t))
-              (push (expand-file-name "init.el" doom-emacs-dir) compile-targets)
-              (dolist (target (cl-delete-duplicates (mapcar #'file-truename compile-targets) :test #'string=))
-                (when (or (not recompile-p)
-                          (let ((elc-file (byte-compile-dest-file target)))
-                            (and (file-exists-p elc-file)
-                                 (file-newer-than-file-p file elc-file))))
-                  (let ((result (if (doom-packages--read-if-cookies target)
-                                    (byte-compile-file target)
-                                  'no-byte-compile))
-                        (short-name (if (file-in-directory-p target doom-emacs-dir)
-                                        (file-relative-name target doom-emacs-dir)
-                                      (abbreviate-file-name target))))
-                    (cl-incf
-                     (cond ((eq result 'no-byte-compile)
-                            (message! (dark (white "⚠ Ignored %s" short-name)))
-                            total-noop)
-                           ((null result)
-                            (message! (red "✕ Failed to compile %s" short-name))
-                            total-fail)
-                           (t
-                            (message! (green "✓ Compiled %s" short-name))
-                            (quiet! (load target t t))
-                            total-ok))))))
-              (message!
-               (bold
-                (color (if (= total-fail 0) 'green 'red)
-                       "%s %s file(s) %s"
-                       (if recompile-p "Recompiled" "Compiled")
-                       (format "%d/%d" total-ok (- (length compile-targets) total-noop))
-                       (format "(%s ignored)" total-noop)))))
-          (error
-           (message! (red "\n%%s\n\n%%s\n\n%%s")
-                     "There were breaking errors."
-                     (error-message-string ex)
-                     "Reverting changes...")
-           (doom//clean-byte-compiled-files)
-           (message! (green "Finished (nothing was byte-compiled)"))))))))
+        (if (not compile-targets)
+            (message "No targets to compile")
+          (condition-case ex
+              (let ((use-package-expand-minimally t))
+                (push (expand-file-name "init.el" doom-emacs-dir) compile-targets)
+                (dolist (target (cl-delete-duplicates (mapcar #'file-truename compile-targets) :test #'string=))
+                  (when (or (not recompile-p)
+                            (let ((elc-file (byte-compile-dest-file target)))
+                              (and (file-exists-p elc-file)
+                                   (file-newer-than-file-p file elc-file))))
+                    (let ((result (if (doom-packages--read-if-cookies target)
+                                      (byte-compile-file target)
+                                    'no-byte-compile))
+                          (short-name (if (file-in-directory-p target doom-emacs-dir)
+                                          (file-relative-name target doom-emacs-dir)
+                                        (abbreviate-file-name target))))
+                      (cl-incf
+                       (cond ((eq result 'no-byte-compile)
+                              (message! (dark (white "⚠ Ignored %s" short-name)))
+                              total-noop)
+                             ((null result)
+                              (message! (red "✕ Failed to compile %s" short-name))
+                              total-fail)
+                             (t
+                              (message! (green "✓ Compiled %s" short-name))
+                              (quiet! (load target t t))
+                              total-ok))))))
+                (message!
+                 (bold
+                  (color (if (= total-fail 0) 'green 'red)
+                         "%s %s file(s) %s"
+                         (if recompile-p "Recompiled" "Compiled")
+                         (format "%d/%d" total-ok (- (length compile-targets) total-noop))
+                         (format "(%s ignored)" total-noop)))))
+            (error
+             (message! (red "\n%%s\n\n%%s\n\n%%s")
+                       "There were breaking errors."
+                       (error-message-string ex)
+                       "Reverting changes...")
+             (doom//clean-byte-compiled-files)
+             (message! (green "Finished (nothing was byte-compiled)")))))))))
 
 (defun doom//byte-compile-core (&optional recompile-p)
   "Byte compile the core Doom files.

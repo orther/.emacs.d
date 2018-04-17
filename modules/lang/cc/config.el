@@ -2,8 +2,8 @@
 
 (defvar +cc-default-include-paths (list "include/")
   "A list of default paths, relative to a project root, to search for headers in
-C/C++. Paths can be absolute. This is ignored if your project has a JSON
-compilation database.")
+C/C++. Paths can be absolute. This is ignored if your project has a compilation
+database.")
 
 (defvar +cc-default-compiler-options
   `((c-mode . nil)
@@ -103,7 +103,7 @@ compilation database is present in the project.")
   ;; custom bindings. We'll do this ourselves.
   (setq c-tab-always-indent nil
         c-electric-flag nil)
-  (dolist (key '("#" "{" "}" "/" "*" ";" "," ":" "(" ")" "\177"))
+  (dolist (key '("#" "}" "/" "*" ";" "," ":" "(" ")" "\177"))
     (define-key c-mode-base-map key nil))
   ;; Smartparens and cc-mode both try to autoclose angle-brackets intelligently.
   ;; The result isn't very intelligent (causes redundant characters), so just do

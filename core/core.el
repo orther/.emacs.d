@@ -1,23 +1,5 @@
 ;;; core.el --- the heart of the beast -*- lexical-binding: t; -*-
 
-;;; Naming conventions:
-;;
-;;   doom-...   public variables or non-interactive functions
-;;   doom--...  private anything (non-interactive), not safe for direct use
-;;   doom/...   an interactive function; safe for M-x or keybinding
-;;   doom//...  an interactive function for managing/maintaining Doom itself
-;;   doom:...   an evil operator, motion or command
-;;   doom|...   hook function
-;;   doom*...   advising functions
-;;   doom@...   a hydra command
-;;   ...!       a macro or function that configures DOOM
-;;   =...       an interactive command that starts an app module
-;;   %...       functions used for in-snippet logic
-;;   +...       Any of the above but part of a module, e.g. `+emacs-lisp|init-hook'
-;;
-;; Autoloaded functions are in core/autoload/*.el and modules/*/*/autoload.el or
-;; modules/*/*/autoload/*.el.
-
 (defvar doom-version "2.0.9"
   "Current version of DOOM emacs.")
 
@@ -25,7 +7,9 @@
   "If non-nil, all doom functions will be verbose. Set DEBUG=1 in the command
 line or use --debug-init to enable this.")
 
-(defvar doom-emacs-dir (eval-when-compile (file-truename user-emacs-directory))
+;;
+(defvar doom-emacs-dir
+  (eval-when-compile (file-truename user-emacs-directory))
   "The path to this emacs.d directory.")
 
 (defvar doom-core-dir (concat doom-emacs-dir "core/")
@@ -33,9 +17,6 @@ line or use --debug-init to enable this.")
 
 (defvar doom-modules-dir (concat doom-emacs-dir "modules/")
   "The main directory where Doom modules are stored.")
-
-(defvar doom-modules-dirs (list doom-modules-dir)
-  "A list of module root directories. Order determines priority.")
 
 (defvar doom-local-dir (concat doom-emacs-dir ".local/")
   "Root directory for local Emacs files. Use this as permanent storage for files
@@ -56,6 +37,19 @@ Use this for files that change often, like cache files.")
 (defvar doom-packages-dir (concat doom-local-dir "packages/")
   "Where package.el and quelpa plugins (and their caches) are stored.")
 
+(defvar doom-private-dir
+  (eval-when-compile
+    (or (let ((xdg-path (concat (or (getenv "XDG_CONFIG_HOME")
+                                    "~/.config")
+                                "/doom/")))
+          (if (file-directory-p xdg-path) xdg-path))
+        "~/.doom.d/"))
+  "Where your private customizations are placed. Must end in a slash. Respects
+XDG directory conventions if ~/.config/doom exists.")
+
+(defconst EMACS26+ (not (version< emacs-version "26")))
+(defconst EMACS27+ (not (version< emacs-version "27")))
+
 
 ;;;
 ;; UTF-8 as the default coding system
@@ -74,7 +68,6 @@ Use this for files that change often, like cache files.")
  debug-on-error (and (not noninteractive) doom-debug-mode)
  ffap-machine-p-known 'reject     ; don't ping things that look like domain names
  idle-update-delay 2              ; update ui less often
- load-prefer-newer (or noninteractive doom-debug-mode)
  ;; keep the point out of the minibuffer
  minibuffer-prompt-properties '(read-only t point-entered minibuffer-avoid-prompt face minibuffer-prompt)
  ;; History & backup settings (save nothing, that's what git is for)
@@ -129,56 +122,32 @@ ability to invoke the debugger in debug mode."
         (funcall fn))
     ('error
      (lwarn hook :error
-          "%s in '%s' -> %s"
-          (car ex) fn (error-message-string ex))))
+            "%s in '%s' -> %s"
+            (car ex) fn (error-message-string ex))))
   nil)
 
-
-;;;
-;; Initialize
-(eval-and-compile
-  (defvar doom--file-name-handler-alist file-name-handler-alist)
-  (unless (or after-init-time noninteractive)
-    ;; A big contributor to long startup times is the garbage collector, so we
-    ;; up its memory threshold, temporarily and reset it later in
-    ;; `doom|finalize'.
-    (setq gc-cons-threshold 402653184
-          gc-cons-percentage 0.6
-          file-name-handler-alist nil))
-
-  (require 'core-packages (concat doom-core-dir "core-packages"))
-  (doom-initialize noninteractive)
-  (load! core-lib)
-  (load! core-os) ; consistent behavior across OSes
-  (unless noninteractive
-    (load! core-ui)         ; draw me like one of your French editors
-    (load! core-editor)     ; baseline configuration for text editing
-    (load! core-projects)   ; making Emacs project-aware
-    (load! core-keybinds))  ; centralized keybind system + which-key
-
-  (defun doom|after-init ()
-    "Run `doom-init-hook' and `doom-post-init-hook', start the Emacs server, and
+(defun doom|after-init ()
+  "Run `doom-init-hook' and `doom-post-init-hook', start the Emacs server, and
 display the loading benchmark."
-    (dolist (hook '(doom-init-hook doom-post-init-hook))
-      (run-hook-wrapped hook #'doom-try-run-hook hook))
-    (unless noninteractive
-      (when (display-graphic-p)
-        (require 'server)
-        (unless (server-running-p)
-          (server-start)))
-      (message "%s" (doom-packages--benchmark))))
+  (unless noninteractive
+    (load (concat doom-private-dir "config") t t))
+  (dolist (hook '(doom-init-hook doom-post-init-hook))
+    (run-hook-wrapped hook #'doom-try-run-hook hook))
+  (unless noninteractive
+    (when (display-graphic-p)
+      (require 'server)
+      (unless (server-running-p)
+        (server-start)))
+    (message "%s" (doom-packages--benchmark))))
 
-  (defun doom|finalize ()
-    "Resets garbage collection settings to reasonable defaults (if you don't do
+(defun doom|finalize ()
+  "Resets garbage collection settings to reasonable defaults (if you don't do
 this, you'll get stuttering and random freezes), and resets
 `file-name-handler-alist'."
-    (setq gc-cons-threshold 16777216
-          gc-cons-percentage 0.1
-          file-name-handler-alist doom--file-name-handler-alist)
-    t)
-
-  (add-hook! '(emacs-startup-hook doom-reload-hook) #'doom|finalize)
-  (add-hook 'emacs-startup-hook #'doom|after-init))
+  (setq gc-cons-threshold 16777216
+        gc-cons-percentage 0.1
+        file-name-handler-alist doom--file-name-handler-alist)
+  t)
 
 
 ;;
@@ -222,11 +191,37 @@ with functions that require it (like modeline segments)."
     buffer))
 (advice-add #'make-indirect-buffer :around #'doom*set-indirect-buffer-filename)
 
-(defun doom*no-authinfo-for-tramp (orig-fn &rest args)
-  "Don't look into .authinfo for local sudo TRAMP buffers."
-  (let ((auth-sources (if (equal tramp-current-method "sudo") nil auth-sources)))
-    (apply orig-fn args)))
-(advice-add #'tramp-read-passwd :around #'doom*no-authinfo-for-tramp)
+
+;;;
+;; Initialize
+(eval-and-compile
+  (defvar doom--file-name-handler-alist file-name-handler-alist)
+  (unless (or after-init-time noninteractive)
+    ;; A big contributor to long startup times is the garbage collector, so we
+    ;; up its memory threshold, temporarily and reset it later in
+    ;; `doom|finalize'.
+    (setq gc-cons-threshold 402653184
+          gc-cons-percentage 0.6
+          file-name-handler-alist nil))
+
+  (when doom-private-dir
+    (load (concat doom-private-dir "early-init") t t))
+
+  (require 'core-packages (concat doom-core-dir "core-packages"))
+  (doom-initialize noninteractive)
+  (load! core-lib)
+  (load! core-os) ; consistent behavior across OSes
+  (unless noninteractive
+    (load! core-ui)         ; draw me like one of your French editors
+    (load! core-editor)     ; baseline configuration for text editing
+    (load! core-projects)   ; making Emacs project-aware
+    (load! core-keybinds))  ; centralized keybind system + which-key
+
+  (add-hook! '(emacs-startup-hook doom-reload-hook) #'doom|finalize)
+  (add-hook 'emacs-startup-hook #'doom|after-init)
+
+  (when doom-private-dir
+    (load (concat doom-private-dir "init") t t)))
 
 (provide 'core)
 ;;; core.el ends here

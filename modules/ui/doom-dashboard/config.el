@@ -216,9 +216,7 @@ controlled by `+doom-dashboard-pwd-policy'."
           (insert
            (make-string (max 0 (- (/ (window-height (get-buffer-window)) 2)
                                   (/ (count-lines (point-min) (point-max)) 2)))
-                        ?\n)))
-        (unless (button-at (point))
-          (goto-char (next-button (point-min)))))
+                        ?\n))))
       (+doom-dashboard|detect-project)
       (+doom-dashboard|resize)
       (+doom-dashboard-update-pwd)
@@ -326,8 +324,9 @@ controlled by `+doom-dashboard-pwd-policy'."
             ("Jump to bookmark" "bookmark"
              (call-interactively (or (command-remapping #'bookmark-jump)
                                      #'bookmark-jump)))
-            ,(when (featurep! :config private)
-               '("Open custom init script" "settings"
-                 (find-file (expand-file-name "init.el" +private-config-path))))
-            ("Edit Doom Emacs" "tools"
-             (doom-project-find-file doom-emacs-dir))))))
+            ,(when (file-directory-p doom-private-dir)
+               '("Open private configuration" "tools"
+                 (doom-project-find-file doom-private-dir)))
+            ("Edit my modules list" "settings"
+             (progn (make-directory doom-private-dir t)
+                    (find-file (expand-file-name "init.el" doom-private-dir))))))))

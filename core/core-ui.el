@@ -33,6 +33,7 @@ shorter major mode name in the mode-line. See `doom|set-mode-name'.")
   "List of hooks to run when core-ui is initialized.")
 
 (setq-default
+ ansi-color-for-comint-mode t
  bidi-display-reordering nil ; disable bidirectional text for tiny performance boost
  blink-matching-paren nil    ; don't blink--too distracting
  compilation-always-kill t        ; kill compilation process before starting another
@@ -112,6 +113,7 @@ Example:
         (rhs-forms (doom--prepare-modeline-segments rhs)))
     `(progn
        (defun ,sym ()
+         ,(concat "Modeline:\n" (format "  %s\n  %s" lhs rhs))
          (let ((lhs (list ,@lhs-forms))
                (rhs (list ,@rhs-forms)))
            (let ((rhs-str (format-mode-line rhs)))
@@ -301,16 +303,26 @@ with `doom//reload-theme').")
   "Hook run before `switch-to-buffer' and `display-buffer' are called. See
 `doom-before-switch-buffer-hook'.")
 
-(defun doom*switch-window-hooks (orig-fn &rest args)
-  (run-hook-with-args 'doom-before-switch-window-hook)
-  (prog1 (apply orig-fn args)
-    (run-hook-with-args 'doom-after-switch-window-hook)))
+(defun doom*switch-frame-hooks (orig-fn frame &optional norecord)
+  (if (eq frame (selected-frame))
+      (funcall orig-fn frame norecord)
+    (run-hook-with-args 'doom-before-switch-frame-hook)
+    (prog1 (funcall orig-fn frame norecord)
+      (run-hook-with-args 'doom-after-switch-frame-hook))))
+(defun doom*switch-window-hooks (orig-fn window &optional norecord)
+  (if (or (eq window (selected-window))
+          (window-minibuffer-p)
+          (window-minibuffer-p window))
+      (funcall orig-fn window norecord)
+    (run-hook-with-args 'doom-before-switch-window-hook)
+    (prog1 (funcall orig-fn window norecord)
+      (run-hook-with-args 'doom-after-switch-window-hook))))
 (defun doom*switch-buffer-hooks (orig-fn &rest args)
   (run-hook-with-args 'doom-before-switch-buffer-hook)
   (prog1 (apply orig-fn args)
     (run-hook-with-args 'doom-after-switch-buffer-hook)))
 
-(advice-add #'select-frame     :around #'doom*switch-window-hooks)
+(advice-add #'select-frame     :around #'doom*switch-frame-hooks)
 (advice-add #'select-window    :around #'doom*switch-window-hooks)
 (advice-add #'switch-to-buffer :around #'doom*switch-buffer-hooks)
 (advice-add #'display-buffer   :around #'doom*switch-buffer-hooks)
@@ -456,21 +468,23 @@ character that looks like a space that `whitespace-mode' won't affect.")
 ;; Theme & font
 ;;
 
-(defun doom|init-fonts (&optional frame)
+(defvar doom-last-window-system (if (daemonp) 'daemon window-system)
+  "The `window-system' of the last frame. If this doesn't match the current
+frame's window-system, the theme will be reloaded.")
+
+(defun doom|init-fonts ()
   "Initialize fonts."
-  (when (fontp doom-font)
-    (map-put default-frame-alist 'font (font-xlfd-name doom-font)))
-  (or frame (setq frame (selected-frame)))
   (condition-case-unless-debug ex
       (progn
         (when (fontp doom-font)
-          (set-face-attribute 'fixed-pitch frame :font doom-font))
+          (map-put default-frame-alist 'font (font-xlfd-name doom-font))
+          (set-face-attribute 'fixed-pitch nil :font doom-font))
         ;; Fallback to `doom-unicode-font' for Unicode characters
         (when (fontp doom-unicode-font)
-          (set-fontset-font t 'unicode doom-unicode-font frame))
+          (set-fontset-font t 'unicode doom-unicode-font nil))
         ;; ...and for variable-pitch-mode:
         (when (fontp doom-variable-pitch-font)
-          (set-face-attribute 'variable-pitch frame :font doom-variable-pitch-font)))
+          (set-face-attribute 'variable-pitch nil :font doom-variable-pitch-font)))
     ('error
      (if (string-prefix-p "Font not available: " (error-message-string ex))
          (lwarn 'doom-ui :warning
@@ -483,8 +497,7 @@ character that looks like a space that `whitespace-mode' won't affect.")
 (defun doom|init-theme ()
   "Set the theme and load the font, in that order."
   (when doom-theme
-    (load-theme doom-theme t))
-  (add-hook 'after-make-frame-functions #'doom|init-theme-in-frame))
+    (load-theme doom-theme t)))
 
 ;; Getting themes to remain consistent across GUI Emacs, terminal Emacs and
 ;; daemon Emacs is hairy. `doom|init-theme' sorts out the initial GUI frame.
@@ -495,11 +508,17 @@ character that looks like a space that `whitespace-mode' won't affect.")
 ;; frames, however. There's always `doom//reload-theme' if you need it!
 (defun doom|init-theme-in-frame (frame)
   "Reloads the theme in new daemon or tty frames."
-  (when (or (daemonp) (not (display-graphic-p)))
+  (when (and (framep frame)
+             (not (eq doom-last-window-system (display-graphic-p frame))))
     (with-selected-frame frame
-      (doom|init-theme))))
+      (doom|init-theme))
+    (setq doom-last-window-system (display-graphic-p frame))))
 
-(add-hook! 'doom-init-ui-hook #'(doom|init-theme doom|init-fonts))
+;; fonts
+(add-hook 'doom-init-ui-hook #'doom|init-fonts)
+;; themes
+(add-hook 'after-make-frame-functions #'doom|init-theme-in-frame)
+(add-hook 'doom-init-ui-hook #'doom|init-theme)
 
 
 ;;
@@ -576,7 +595,8 @@ windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
           ((eq buf (doom-fallback-buffer))
            (message "Can't kill the fallback buffer."))
           ((doom-real-buffer-p buf)
-           (if (and (buffer-modified-p buf)
+           (if (and buffer-file-name
+                    (buffer-modified-p buf)
                     (not (y-or-n-p "Buffer %s is modified; kill anyway?")))
                (message "Aborted")
              (set-buffer-modified-p nil)
