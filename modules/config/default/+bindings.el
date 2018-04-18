@@ -86,7 +86,7 @@
         :desc "Browse files"            :n "."   #'find-file
         :desc "Toggle last popup"       :n "~"   #'+popup/toggle
         :desc "Eval expression"         :n "`"   #'eval-expression
-        :desc "Blink cursor line"       :n "DEL" #'+doom/blink-cursor
+        :desc "Blink cursor line"       :n "DEL" #'+nav-flash/blink-cursor
         :desc "Jump to bookmark"        :n "RET" #'bookmark-jump
 
         ;; C-u is used by evil
@@ -135,6 +135,7 @@
           :desc "Delete session"           :n "X"   #'+workspace/kill-session
           :desc "Delete this workspace"    :n "d"   #'+workspace/delete
           :desc "Load session"             :n "L"   #'+workspace/load-session
+          :desc "Rename workspace"         :n "r"   #'+workspace/rename
           :desc "Next workspace"           :n "]"   #'+workspace/switch-right
           :desc "Previous workspace"       :n "["   #'+workspace/switch-left
           :desc "Switch to 1st workspace"  :n "1"   (λ! (+workspace/switch-to 0))
@@ -252,9 +253,8 @@
                                         :v  "r" #'+eval:repl
           :desc "Neotree"               :n  "n" #'+neotree/open
           :desc "Neotree: on this file" :n  "N" #'+neotree/find-this-file
-          :desc "Imenu sidebar"         :nv "i" #'imenu-list-minor-mode
-          :desc "Terminal"              :n  "t" #'+term/open-popup
-          :desc "Terminal in project"   :n  "T" #'+term/open-popup-in-project
+          :desc "Imenu sidebar"         :nv "i" #'imenu-list-smart-toggle
+          :desc "Terminal"              :n  "t" #'+term/open-popup-in-project
 
           ;; applications
           :desc "APP: elfeed"           :n "E" #'=rss
@@ -677,6 +677,7 @@
 
       (:map* (help-mode-map helpful-mode-map)
         :n "o"  #'ace-link-help
+        :n "q"  #'quit-window
         :n "Q"  #'ivy-resume
         :n "]l" #'forward-button
         :n "[l" #'backward-button)
