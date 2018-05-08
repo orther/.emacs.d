@@ -140,12 +140,11 @@ Returns t on success, nil otherwise."
   "Save a whole session as NAME. If NAME is nil, use `persp-auto-save-fname'.
 Return t on success, nil otherwise."
   (let ((fname (expand-file-name (or name persp-auto-save-fname)
-                                 persp-save-dir))
-        (persp-auto-save-opt
-         (if (or (not name)
-                 (equal name persp-auto-save-fname))
-             0
-           persp-auto-save-opt)))
+                                 persp-save-dir)))
+    ;; disable auto-saving on kill-emacs if autosaving (i.e. name is nil)
+    (when (or (not name)
+              (string= name persp-auto-save-fname))
+      (setq persp-auto-save-opt 0))
     (and (persp-save-state-to-file fname) t)))
 
 ;;;###autoload
@@ -199,6 +198,36 @@ throws an error."
 ;;
 ;; Interactive commands
 ;;
+
+;;;###autoload
+(defun +workspace/load (name)
+  "Load a workspace and switch to it. If called with C-u, try to reload the
+current workspace (by name) from session files."
+  (interactive
+   (list
+    (if current-prefix-arg
+        (+workspace-current-name)
+      (completing-read
+       "Workspace to load: "
+       (persp-list-persp-names-in-file
+        (expand-file-name +workspace-data-file persp-save-dir))))))
+  (if (not (+workspace-load name))
+      (+workspace-error (format "Couldn't load workspace %s" name))
+    (+workspace/switch-to name)
+    (+workspace/display)))
+
+;;;###autoload
+(defun +workspace/save (name)
+  "Save the current workspace. If called with C-u, autosave the current
+workspace."
+  (interactive
+   (list
+    (if current-prefix-arg
+        (+workspace-current-name)
+      (completing-read "Workspace to save: " (+workspace-list-names)))))
+  (if (+workspace-save name)
+      (+workspace-message (format "'%s' workspace saved" name) 'success)
+    (+workspace-error (format "Couldn't save workspace %s" name))))
 
 ;;;###autoload
 (defun +workspace/load-session (&optional name)

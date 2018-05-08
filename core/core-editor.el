@@ -56,14 +56,13 @@ modes are active and the buffer is read-only.")
   "Check if the buffer's file is large (see `doom-large-file-size'). If so, ask
 for confirmation to open it literally (read-only, disabled undo and in
 fundamental-mode) for performance sake."
-  (let* ((filename (buffer-file-name))
-         (size (nth 7 (file-attributes filename))))
+  (let ((size (nth 7 (file-attributes buffer-file-name))))
     (when (and (not (memq major-mode doom-large-file-modes-list))
                size (> size (* 1024 1024 doom-large-file-size))
                (y-or-n-p
                 (format (concat "%s is a large file, open literally to "
                                 "avoid performance issues?")
-                        (file-relative-name filename))))
+                        (file-relative-name buffer-file-name))))
       (setq buffer-read-only t)
       (buffer-disable-undo)
       (fundamental-mode))))
@@ -102,6 +101,7 @@ fundamental-mode) for performance sake."
   :hook (doom-init . recentf-mode)
   :config
   (setq recentf-save-file (concat doom-cache-dir "recentf")
+        recentf-auto-cleanup 60
         recentf-max-menu-items 0
         recentf-max-saved-items 300
         recentf-filename-handlers '(file-truename)
@@ -179,8 +179,7 @@ extension, try to guess one."
   (smartparens-global-mode +1)
   (require 'smartparens-config)
 
-  (setq sp-autowrap-region nil ; let evil-surround handle this
-        sp-highlight-pair-overlay nil
+  (setq sp-highlight-pair-overlay nil
         sp-cancel-autoskip-on-backward-movement nil
         sp-show-pair-delay 0
         sp-max-pair-length 3)

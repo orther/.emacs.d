@@ -18,12 +18,8 @@
   "Sets the directory where AUCTeX will search for PDFs associated to BibTeX references."
   `(setq +latex-bibtex-dir ,dir))
 
-
-(after! smartparens-latex
-  (map-delete sp-pairs 'LaTeX-mode)
-  (map-delete sp-pairs 'latex-mode)
-  (map-delete sp-pairs 'tex-mode)
-  (map-delete sp-pairs 'plain-tex-mode))
+;; sp's default latex rules are obnoxious, so disable them
+(provide 'smartparens-latex)
 
 
 ;;
@@ -89,6 +85,8 @@
       (TeX-global-PDF-mode t)
       (TeX-PDF-mode t)
       (visual-line-mode +1))
+    ;; Enable rainbow mode after applying styles to the buffer
+    (add-hook 'TeX-update-style-hook #'rainbow-delimiters-mode)
     (when (featurep! :feature spellcheck)
       (add-hook 'LaTeX-mode-hook #'flyspell-mode))
     ;; Default language setting.

@@ -144,10 +144,16 @@ example:
   (+popup-define "^\\*\\(?:\\(?:Pp E\\|doom e\\)val\\)"
     '((size . +popup-shrink-to-fit))
     '((transient . 0) (select . ignore)))
+  (+popup-define "^\\*Customize"
+    '((slot . 2) (side . right))
+    '((modeline . nil) (select . t) (quit . t)))
+  (+popup-define "^ \\*undo-tree\\*"
+    '((slot . 2) (side . left) (size . 20))
+    '((modeline . nil) (select . t) (quit . t)))
 
   ;; `help-mode', `helpful-mode'
   (+popup-define "^\\*[Hh]elp"
-    '((slot . 2) (vslot . 2) (size . 0.2))
+    '((slot . 2) (vslot . 2) (size . 0.25))
     '((select . t)))
   ;; `Info-mode'
   (+popup-define "^\\*info\\*$"

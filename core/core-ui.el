@@ -525,12 +525,8 @@ frame's window-system, the theme will be reloaded.")
 ;; Bootstrap
 ;;
 
-;; auto-enabled in Emacs 25+; I'll do it myself
-(global-eldoc-mode -1)
 ;; simple name in frame title
 (setq frame-title-format '("%b – Doom Emacs"))
-;; make `next-buffer', `other-buffer', etc. ignore unreal buffers
-(map-put default-frame-alist 'buffer-predicate #'doom-buffer-frame-predicate)
 ;; draw me like one of your French editors
 (tooltip-mode -1) ; relegate tooltips to echo area only
 (menu-bar-mode -1)
@@ -559,7 +555,8 @@ confirmation."
 
 (defun doom|ansi-color-apply ()
   "TODO"
-  (ansi-color-apply-on-region compilation-filter-start (point)))
+  (let ((inhibit-read-only t))
+    (ansi-color-apply-on-region compilation-filter-start (point))))
 
 (defun doom|no-fringes-in-minibuffer ()
   "Disable fringes in the minibuffer window."
@@ -616,6 +613,8 @@ windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
 
 (defun doom|init-ui ()
   "Initialize Doom's user interface by applying all its advice and hooks."
+  ;; Make `next-buffer', `other-buffer', etc. ignore unreal buffers.
+  (map-put default-frame-alist 'buffer-predicate #'doom-buffer-frame-predicate)
   ;; Switch to `doom-fallback-buffer' if on last real buffer
   (advice-add #'kill-this-buffer :around #'doom*switch-to-fallback-buffer-maybe)
   ;; Don't kill the fallback buffer

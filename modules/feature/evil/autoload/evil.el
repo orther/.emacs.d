@@ -19,13 +19,21 @@
 
 ;;;###autoload
 (defun +evil/reselect-paste ()
-  "Go back into visual mode and reselect the last pasted region."
+  "Return to visual mode and reselect the last pasted region."
   (interactive)
   (cl-destructuring-bind (_ _ _ beg end &optional _)
       evil-last-paste
     (evil-visual-make-selection
      (save-excursion (goto-char beg) (point-marker))
      end)))
+
+;;;###autoload
+(defun +evil/paste-preserve-register ()
+  "Call `evil-paste-after' without overwriting the clipboard (by writing to the
+0 register instead). This allows you to paste the same text again afterwards."
+  (interactive)
+  (let ((evil-this-register ?0))
+    (call-interactively #'evil-paste-after)))
 
 (defun +evil--window-swap (direction)
   "Move current window to the next window in DIRECTION. If there are no windows
@@ -307,3 +315,35 @@ more information on modifiers."
                                                 (regexp-quote (string-trim-left (car match))))
                                         path file-name t t 1))))
     (replace-regexp-in-string regexp "\\1" file-name t)))
+
+;;;###autoload (autoload '+evil*window-split "feature/evil/autoload/evil" nil t)
+(evil-define-command +evil*window-split (&optional count file)
+  "Same as `evil-window-split', but focuses (and recenters) the new split."
+  :repeat nil
+  (interactive "P<f>")
+  (split-window (selected-window) count
+                (if evil-split-window-below 'above 'below))
+  (call-interactively
+   (if evil-split-window-below
+       #'evil-window-up
+     #'evil-window-down))
+  (recenter)
+  (when (and (not count) evil-auto-balance-windows)
+    (balance-windows (window-parent)))
+  (if file (evil-edit file)))
+
+;;;###autoload (autoload '+evil*window-vsplit "feature/evil/autoload/evil" nil t)
+(evil-define-command +evil*window-vsplit (&optional count file)
+  "Same as `evil-window-vsplit', but focuses (and recenters) the new split."
+  :repeat nil
+  (interactive "P<f>")
+  (split-window (selected-window) count
+                (if evil-vsplit-window-right 'left 'right))
+  (call-interactively
+   (if evil-vsplit-window-right
+       #'evil-window-left
+     #'evil-window-right))
+  (recenter)
+  (when (and (not count) evil-auto-balance-windows)
+    (balance-windows (window-parent)))
+  (if file (evil-edit file)))

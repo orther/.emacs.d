@@ -2,7 +2,7 @@
 
 (def-package! web-mode
   :mode "\\.p?html?$"
-  :mode "\\.\\(tpl\\|blade\\)\\(\\.php\\)?$"
+  :mode "\\.\\(?:tpl\\|blade\\)\\(\\.php\\)?$"
   :mode "\\.erb$"
   :mode "\\.jsp$"
   :mode "\\.as[cp]x$"
@@ -14,7 +14,8 @@
   :mode "templates/.+\\.php$"
   :config
   (set! :company-backend 'web-mode '(company-web-html company-yasnippet))
-  (setq web-mode-enable-html-entities-fontification t)
+  (setq web-mode-enable-html-entities-fontification t
+        web-mode-enable-auto-quoting nil)
 
   (map! :map web-mode-map
         (:localleader

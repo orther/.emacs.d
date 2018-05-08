@@ -285,6 +285,7 @@
         (let ((inhibit-message t)
               (noninteractive t))
           (load "~/.emacs.d/init.el" nil t))
+        (doom-initialize t)
         (doom-initialize-packages t)
         (quiet! (doom-initialize-modules))
         (doom|finalize)
@@ -297,9 +298,7 @@
 (when (bound-and-true-p doom-modules)
   (section! "test-modules")
   (let ((indent 4))
-    (defun --quiet-require (orig-fn &rest args)
-      (quiet! (apply orig-fn args)))
-    (advice-add #'require :around #'--quiet-require)
+    (advice-add #'require :around #'doom*shut-up)
     (maphash
      (lambda (key plist)
        (condition-case ex

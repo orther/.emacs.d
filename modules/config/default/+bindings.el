@@ -25,30 +25,30 @@
       :gnvime "M-:" #'doom/open-scratch-buffer
 
       ;; Text-scaling
-      :ne "M-+"       (λ! (text-scale-set 0))
-      :ne "M-="       #'text-scale-increase
-      :ne "M--"       #'text-scale-decrease
+      :ne "M-+"   (λ! (text-scale-set 0))
+      :ne "M-="   #'text-scale-increase
+      :ne "M--"   #'text-scale-decrease
 
       ;; Simple window/frame navigation/manipulation
-      :ne "C-`"       #'+popup/toggle
-      :ne "C-~"       #'+popup/raise
-      :ne "M-t"       #'+workspace/new
-      :ne "M-T"       #'+workspace/display
-      :ne "M-w"       #'delete-window
-      :ne "M-W"       #'delete-frame
-      :ne "C-M-f"     #'toggle-frame-fullscreen
-      :ne "M-n"       #'evil-buffer-new
-      :ne "M-N"       #'make-frame
-      :ne "M-1"       (λ! (+workspace/switch-to 0))
-      :ne "M-2"       (λ! (+workspace/switch-to 1))
-      :ne "M-3"       (λ! (+workspace/switch-to 2))
-      :ne "M-4"       (λ! (+workspace/switch-to 3))
-      :ne "M-5"       (λ! (+workspace/switch-to 4))
-      :ne "M-6"       (λ! (+workspace/switch-to 5))
-      :ne "M-7"       (λ! (+workspace/switch-to 6))
-      :ne "M-8"       (λ! (+workspace/switch-to 7))
-      :ne "M-9"       (λ! (+workspace/switch-to 8))
-      :ne "M-0"       #'+workspace/switch-to-last
+      :ne "C-`"   #'+popup/toggle
+      :ne "C-~"   #'+popup/raise
+      :ne "M-t"   #'+workspace/new
+      :ne "M-T"   #'+workspace/display
+      :ne "M-w"   #'delete-window
+      :ne "M-W"   #'delete-frame
+      :ne "C-M-f" #'toggle-frame-fullscreen
+      :ne "M-n"   #'evil-buffer-new
+      :ne "M-N"   #'make-frame
+      :ne "M-1"   (λ! (+workspace/switch-to 0))
+      :ne "M-2"   (λ! (+workspace/switch-to 1))
+      :ne "M-3"   (λ! (+workspace/switch-to 2))
+      :ne "M-4"   (λ! (+workspace/switch-to 3))
+      :ne "M-5"   (λ! (+workspace/switch-to 4))
+      :ne "M-6"   (λ! (+workspace/switch-to 5))
+      :ne "M-7"   (λ! (+workspace/switch-to 6))
+      :ne "M-8"   (λ! (+workspace/switch-to 7))
+      :ne "M-9"   (λ! (+workspace/switch-to 8))
+      :ne "M-0"   #'+workspace/switch-to-last
 
       ;; Other sensible, textmate-esque global bindings
       :ne "M-r"   #'+eval/buffer
@@ -204,10 +204,10 @@
           :desc "Magit pull popup"      :n  "P" #'magit-pull-popup
           :desc "Git revert hunk"       :n  "r" #'git-gutter:revert-hunk
           :desc "Git revert file"       :n  "R" #'vc-revert
-          :desc "Git status"            :n  "s" #'git-gutter:stage-hunk
-          :desc "Git stage hunk"        :n  "S" #'magit-stage-file
+          :desc "Git stage hunk"        :n  "s" #'git-gutter:stage-hunk
+          :desc "Git stage file"        :n  "S" #'magit-stage-file
           :desc "Git time machine"      :n  "t" #'git-timemachine-toggle
-          :desc "Git stage hunk"        :n  "U" #'magit-unstage-file
+          :desc "Git unstage file"      :n  "U" #'magit-unstage-file
           :desc "Next hunk"             :nv "]" #'git-gutter:next-hunk
           :desc "Previous hunk"         :nv "[" #'git-gutter:previous-hunk)
 
@@ -230,6 +230,7 @@
           :desc "Reload theme"          :n  "R" #'doom//reload-theme
           :desc "Describe DOOM setting" :n  "s" #'doom/describe-setting
           :desc "Describe variable"     :n  "v" #'describe-variable
+          :desc "Print Doom version"    :n  "V" #'doom/version
           :desc "Describe at point"     :n  "." #'helpful-at-point
           :desc "What face"             :n  "'" #'doom/what-face
           :desc "What minor modes"      :n  ";" #'doom/what-minor-mode)
@@ -242,9 +243,7 @@
         (:desc "notes" :prefix "n"
           :desc "Find file in notes"    :n  "n" #'+default/find-in-notes
           :desc "Browse notes"          :n  "N" #'+default/browse-notes
-          :desc "Org capture"           :n  "x" #'org-capture
-          :desc "Browse mode notes"     :n  "m" #'+org/browse-notes-for-major-mode
-          :desc "Browse project notes"  :n  "p" #'+org/browse-notes-for-project)
+          :desc "Org capture"           :n  "x" #'org-capture)
 
         (:desc "open" :prefix "o"
           :desc "Default browser"       :n  "b" #'browse-url-of-file
@@ -327,6 +326,7 @@
       :m  "gd" #'+lookup/definition
       :m  "gD" #'+lookup/references
       :n  "gp" #'+evil/reselect-paste
+      :v  "gp" #'+evil/paste-preserve-register
       :n  "gr" #'+eval:region
       :n  "gR" #'+eval/buffer
       :v  "gR" #'+eval:replace-region
@@ -368,12 +368,10 @@
           "C-o"     #'company-search-kill-others
           "C-n"     #'company-select-next
           "C-p"     #'company-select-previous
-          "C-h"     #'company-quickhelp-manual-begin
-          "C-S-h"   #'company-show-doc-buffer
-          "C-S-s"   #'company-search-candidates
+          "C-h"     #'company-show-doc-buffer
           "C-s"     #'company-filter-candidates
+          "C-S-s"   #'company-search-candidates
           "C-SPC"   #'company-complete-common
-          "C-h"     #'company-quickhelp-manual-begin
           "TAB"     #'company-complete-common-or-cycle
           [tab]     #'company-complete-common-or-cycle
           "S-TAB"   #'company-select-previous

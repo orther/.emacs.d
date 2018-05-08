@@ -25,17 +25,29 @@
         ((xref-backend-identifier-at-point (xref-find-backend)))))
 
 (defun +lookup--jump-to (prop identifier)
-  (let ((fn (plist-get +lookup-current-functions prop))
-        (origin (point-marker)))
-    (setq fn (or (command-remapping fn) fn))
-    (condition-case e
-        (or (if (commandp fn)
-                (call-interactively fn)
-              (funcall fn identifier))
-            (/= (point-marker) origin))
-      ('error
-       (message "%s" e)
-       nil))))
+  (cl-loop with origin = (point-marker)
+           for fn in (plist-get (list :definition +lookup-definition-functions
+                                      :references +lookup-references-functions
+                                      :documentation +lookup-documentation-functions)
+                                prop)
+           for fn = (or (command-remapping fn) fn)
+           if (condition-case e
+                  (or (if (commandp fn)
+                          (call-interactively fn)
+                        (funcall fn identifier))
+                      (/= (point-marker) origin))
+                ('error (ignore (message "%s" e))))
+           return it))
+
+;;;###autoload
+(defun +lookup-xref-definitions (identifier)
+  "Non-interactive wrapper for `xref-find-definitions'"
+  (xref-find-definitions identifier))
+
+;;;###autoload
+(defun +lookup-xref-references (identifier)
+  "Non-interactive wrapper for `xref-find-references'"
+  (xref-find-references identifier))
 
 
 ;;
@@ -60,13 +72,8 @@ Failing all that, it will give up with an error."
   (cond ((null identifier)
          (user-error "Nothing under point"))
 
-        ((and (plist-member +lookup-current-functions :definition)
+        ((and +lookup-definition-functions
               (+lookup--jump-to :definition identifier)))
-
-        ((ignore-errors (if other-window
-                            (xref-find-definitions-other-window identifier)
-                          (xref-find-definitions identifier))
-                        t))
 
         ((and (require 'dumb-jump nil t)
               ;; dumb-jump doesn't tell us if it succeeded or not
@@ -110,11 +117,8 @@ Failing all that, it will give up with an error."
 Tries `xref-find-references' and falls back to rg/ag."
   (interactive
    (list (+lookup--symbol-or-region)))
-  (cond ((and (plist-member +lookup-current-functions :references)
+  (cond ((and +lookup-references-functions
               (+lookup--jump-to :references identifier)))
-
-        ((ignore-errors (xref-find-references identifier)
-                        t))
 
         ((and identifier
               (featurep 'counsel)
@@ -138,7 +142,7 @@ Goes down a list of possible backends:
 4. Fall back to an online search, with `+lookup/online'"
   (interactive
    (list (+lookup--symbol-or-region)))
-  (cond ((and (plist-member +lookup-current-functions :documentation)
+  (cond ((and +lookup-documentation-functions
               (+lookup--jump-to :documentation identifier)))
 
         ((and (featurep! :feature lookup +docsets)

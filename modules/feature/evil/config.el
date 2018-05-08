@@ -116,39 +116,32 @@
   (advice-add #'windmove-do-window-select :around #'+evil*restore-initial-state-on-windmove)
   ;; Don't move cursor when indenting
   (advice-add #'evil-indent :around #'+evil*static-reindent)
-  ;; monkey patch `evil-ex-replace-special-filenames' to add more ex
-  ;; substitution flags to evil-mode
+  ;; monkey patch `evil-ex-replace-special-filenames' to improve support for
+  ;; file modifiers like %:p:h. This adds support for most of vim's modifiers,
+  ;; and one custom one: %:P (expand to the project root).
   (advice-add #'evil-ex-replace-special-filenames :override #'+evil*resolve-vim-path)
 
-  ;; make `try-expand-dabbrev' from `hippie-expand' work in minibuffer
-  ;; @see `he-dabbrev-beg', so we need re-define syntax for '/'
+  ;; make `try-expand-dabbrev' from `hippie-expand' work in minibuffer. See
+  ;; `he-dabbrev-beg', so we need to redefine syntax for '/'
   (defun +evil*fix-dabbrev-in-minibuffer ()
     (set-syntax-table (let* ((table (make-syntax-table)))
                         (modify-syntax-entry ?/ "." table)
                         table)))
   (add-hook 'minibuffer-inactive-mode-hook #'+evil*fix-dabbrev-in-minibuffer)
 
-  ;; Move to new split -- setting `evil-split-window-below' &
-  ;; `evil-vsplit-window-right' to non-nil mimics this, but that doesn't update
-  ;; window history. That means when you delete a new split, Emacs leaves you on
-  ;; the 2nd to last window on the history stack, which is jarring.
-  ;;
-  ;; Also recenters window on cursor in new split
-  (defun +evil*window-follow (&rest _)  (evil-window-down 1) (recenter))
-  (advice-add #'evil-window-split  :after #'+evil*window-follow)
-  (defun +evil*window-vfollow (&rest _) (evil-window-right 1) (recenter))
-  (advice-add #'evil-window-vsplit :after #'+evil*window-vfollow)
+  ;; Focus and recenter new splits
+  (advice-add #'evil-window-split  :override #'+evil*window-split)
+  (advice-add #'evil-window-vsplit :override #'+evil*window-vsplit)
+
+  ;; By default :g[lobal] doesn't highlight matches in the current buffer. I've
+  ;; got to write my own argument type and interactive code to get it to do so.
+  (evil-ex-define-argument-type global-delim-match :runner +evil-ex-global-delim-match)
+  (dolist (sym '(evil-ex-global evil-ex-global-inverted))
+    (evil-set-command-property sym :ex-arg 'global-delim-match))
 
   ;; These arg types will highlight matches in the current buffer
   (evil-ex-define-argument-type buffer-match :runner +evil-ex-buffer-match)
   (evil-ex-define-argument-type global-match :runner +evil-ex-global-match)
-  ;; By default :g[lobal] doesn't highlight matches in the current buffer. I've
-  ;; got to write my own argument type and interactive code to get it to do so.
-  (evil-ex-define-argument-type global-delim-match :runner +evil-ex-global-delim-match)
-
-  (dolist (sym '(evil-ex-global evil-ex-global-inverted))
-    (evil-set-command-property sym :ex-arg 'global-delim-match))
-
   ;; Other commands can make use of this
   (evil-define-interactive-code "<//>"
     :ex-arg buffer-match (list (if (evil-ex-p) evil-ex-argument)))
@@ -264,12 +257,16 @@
 
 
 (def-package! evil-matchit
-  :commands (evilmi-jump-items evilmi-text-object global-evil-matchit-mode)
+  :commands (evilmi-jump-items global-evil-matchit-mode
+             evilmi-outer-text-object evilmi-inner-text-object)
   :config (global-evil-matchit-mode 1)
   :init
   (map! [remap evil-jump-item] #'evilmi-jump-items
-        :textobj "%" #'evilmi-text-object #'evilmi-text-object)
+        :textobj "%" #'evilmi-inner-text-object #'evilmi-outer-text-object)
   :config
+  ;; Fixes #519 where d% wouldn't leave a dangling end-parenthesis
+  (evil-set-command-properties 'evilmi-jump-items :type 'inclusive :jump t)
+
   (defun +evil|simple-matchit ()
     "A hook to force evil-matchit to favor simple bracket jumping. Helpful when
 the new algorithm is confusing, like in python or ruby."
@@ -334,10 +331,6 @@ the new algorithm is confusing, like in python or ruby."
         evil-snipe-scope 'line
         evil-snipe-repeat-scope 'visible
         evil-snipe-char-fold t
-        evil-snipe-disabled-modes
-        '(org-agenda-mode magit-mode git-rebase-mode elfeed-show-mode
-          elfeed-search-mode ranger-mode magit-repolist-mode mu4e-main-mode
-          mu4e-view-mode mu4e-headers-mode mu4e~update-mail-mode)
         evil-snipe-aliases '((?\; "[;:]")))
   :config
   (evil-snipe-override-mode +1))
@@ -443,22 +436,22 @@ the new algorithm is confusing, like in python or ruby."
         (setq +evil--mc-compat-evil-prev-state nil)
         (setq +evil--mc-compat-mark-was-active nil))))
 
-  (add-hook 'multiple-cursors-mode-enabled-hook '+evil|mc-compat-switch-to-emacs-state)
-  (add-hook 'multiple-cursors-mode-disabled-hook '+evil|mc-compat-back-to-previous-state)
+  (add-hook 'multiple-cursors-mode-enabled-hook #'+evil|mc-compat-switch-to-emacs-state)
+  (add-hook 'multiple-cursors-mode-disabled-hook #'+evil|mc-compat-back-to-previous-state)
+
+  ;; When running edit-lines, point will return (position + 1) as a
+  ;; result of how evil deals with regions
+  (defun +evil*mc/edit-lines (&rest _)
+    (when (+evil--visual-or-normal-p)
+      (if (> (point) (mark))
+          (goto-char (1- (point)))
+        (push-mark (1- (mark))))))
+  (advice-add #'mc/edit-lines :before #'+evil*mc/edit-lines)
 
   (defun +evil|mc-evil-compat-rect-switch-state ()
     (if rectangular-region-mode
         (+evil|mc-compat-switch-to-emacs-state)
       (setq +evil--mc-compat-evil-prev-state nil)))
-
-  ;; When running edit-lines, point will return (position + 1) as a
-  ;; result of how evil deals with regions
-  (defadvice mc/edit-lines (before change-point-by-1 activate)
-    (when (+evil--visual-or-normal-p)
-      (if (> (point) (mark))
-          (goto-char (1- (point)))
-        (push-mark (1- (mark))))))
-
   (add-hook 'rectangular-region-mode-hook '+evil|mc-evil-compat-rect-switch-state)
 
   (defvar mc--default-cmds-to-run-once nil))

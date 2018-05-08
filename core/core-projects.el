@@ -8,7 +8,8 @@
         projectile-known-projects-file (concat doom-cache-dir "projectile.projects")
         projectile-require-project-root nil
         projectile-globally-ignored-files '(".DS_Store" "Icon" "TAGS")
-        projectile-globally-ignored-file-suffixes '(".elc" ".pyc" ".o"))
+        projectile-globally-ignored-file-suffixes '(".elc" ".pyc" ".o")
+        projectile-ignored-projects '("~/" "/tmp"))
 
   :config
   (projectile-mode +1)
@@ -20,7 +21,8 @@
 
   (setq projectile-globally-ignored-directories
         (append projectile-globally-ignored-directories
-                (list (abbreviate-file-name doom-local-dir) ".sync"))
+                (list (abbreviate-file-name doom-local-dir) ".sync"
+                      "node_modules" "flow-typed"))
         projectile-other-file-alist
         (append projectile-other-file-alist
                 '(("css"  . ("scss" "sass" "less" "styl"))
