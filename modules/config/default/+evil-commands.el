@@ -1,4 +1,5 @@
 ;;; config/default/+evil-commands.el -*- lexical-binding: t; -*-
+;;;###if (featurep! :feature evil)
 
 (defalias 'ex! 'evil-ex-define-cmd)
 

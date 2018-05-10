@@ -7,7 +7,6 @@
 
 ;; core-ui.el
 (package! all-the-icons)
-(package! fringe-helper)
 (package! hide-mode-line)
 (package! highlight-indentation)
 (package! highlight-numbers)
@@ -26,11 +25,9 @@
 (package! ace-window)
 (package! avy)
 (package! command-log-mode)
-(package! editorconfig)
 (package! expand-region)
 (package! helpful)
 (package! pcre2el)
-(package! smart-forward)
 (package! smartparens)
 (package! undo-tree)
 

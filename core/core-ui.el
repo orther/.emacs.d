@@ -45,8 +45,7 @@ shorter major mode name in the mode-line. See `doom|set-mode-name'.")
  enable-recursive-minibuffers nil
  frame-inhibit-implied-resize t
  ;; remove continuation arrow on right fringe
- fringe-indicator-alist (delq (assq 'continuation fringe-indicator-alist)
-                              fringe-indicator-alist)
+ fringe-indicator-alist (map-delete fringe-indicator-alist 'continuation)
  highlight-nonselected-windows nil
  image-animate-loop t
  indicate-buffer-boundaries nil
@@ -75,6 +74,15 @@ shorter major mode name in the mode-line. See `doom|set-mode-name'.")
  visible-bell nil)
 
 (fset #'yes-or-no-p #'y-or-n-p) ; y/n instead of yes/no
+
+
+;;
+;; Shims
+;;
+
+(unless (fboundp 'define-fringe-bitmap)
+  ;; doesn't exist in terminal Emacs; define it to prevent errors
+  (defun define-fringe-bitmap (&rest _)))
 
 
 ;;
@@ -162,13 +170,6 @@ DEFAULT is non-nil, set the default mode-line for all buffers."
                 all-the-icons-wicon all-the-icons-alltheicon))
     (advice-add fn :around #'doom*disable-all-the-icons-in-tty)))
 
-(def-package! fringe-helper
-  :commands (fringe-helper-define fringe-helper-convert)
-  :init
-  (unless (fboundp 'define-fringe-bitmap)
-    ;; doesn't exist in terminal Emacs; define it to prevent errors
-    (defun define-fringe-bitmap (&rest _))))
-
 (def-package! hideshow ; built-in
   :commands (hs-minor-mode hs-toggle-hiding hs-already-hidden-p)
   :config (setq hs-hide-comments-when-hiding-all nil))
@@ -228,7 +229,7 @@ DEFAULT is non-nil, set the default mode-line for all buffers."
   :hook (lisp-mode . rainbow-delimiters-mode)
   :config (setq rainbow-delimiters-max-face-count 3))
 
-;; For a distractions-free-like UI, that dynamically resizes margets and can
+;; For a distractions-free-like UI, that dynamically resizes margins and can
 ;; center a buffer.
 (def-package! visual-fill-column
   :commands visual-fill-column-mode
@@ -277,6 +278,31 @@ DEFAULT is non-nil, set the default mode-line for all buffers."
   (remove-hook 'kill-buffer-query-functions 'server-kill-buffer-query-function))
 (add-hook 'server-visit-hook 'server-remove-kill-buffer-hook)
 
+;; whitespace-mode settings
+(setq whitespace-line-column nil
+      whitespace-style
+      '(face indentation tabs tab-mark spaces space-mark newline newline-mark
+             trailing lines-tail)
+      whitespace-display-mappings
+      '((tab-mark ?\t [?› ?\t])
+        (newline-mark ?\n [?¬ ?\n])
+        (space-mark ?\  [?·] [?.])))
+
+(defun doom|show-whitespace-maybe ()
+  "Show whitespace-mode when file has an `indent-tabs-mode' that is different
+from the default."
+  (unless (eq indent-tabs-mode (default-value 'indent-tabs-mode))
+    (require 'whitespace)
+    (set (make-local-variable 'whitespace-style)
+         (if (or (bound-and-true-p whitespace-mode)
+                 (bound-and-true-p whitespace-newline-mode))
+             (cl-union (if indent-tabs-mode '(tabs tab-mark) '(spaces space-mark))
+                       whitespace-style)
+           `(face ,@(if indent-tabs-mode '(tabs tab-mark) '(spaces space-mark))
+             trailing-lines tail)))
+    (whitespace-mode +1)))
+(add-hook 'after-change-major-mode-hook #'doom|show-whitespace-maybe)
+
 
 ;;
 ;; Custom hooks
@@ -285,7 +311,6 @@ DEFAULT is non-nil, set the default mode-line for all buffers."
 (defvar doom-load-theme-hook nil
   "Hook run when the theme (and font) is initialized (or reloaded
 with `doom//reload-theme').")
-(define-obsolete-variable-alias 'doom-init-theme-hook 'doom-load-theme-hook "2.1.0")
 
 (defvar doom-before-switch-window-hook nil
   "Hook run before `switch-window' or `switch-frame' are called. See
@@ -481,6 +506,7 @@ frame's window-system, the theme will be reloaded.")
           (set-face-attribute 'fixed-pitch nil :font doom-font))
         ;; Fallback to `doom-unicode-font' for Unicode characters
         (when (fontp doom-unicode-font)
+          (setq use-default-font-for-symbols nil)
           (set-fontset-font t 'unicode doom-unicode-font nil))
         ;; ...and for variable-pitch-mode:
         (when (fontp doom-variable-pitch-font)
@@ -542,6 +568,23 @@ frame's window-system, the theme will be reloaded.")
 ;; line numbers in most modes
 (add-hook! (prog-mode text-mode conf-mode) #'doom|enable-line-numbers)
 
+;; ensure posframe cleans up after itself
+(after! posframe
+  ;; TODO Find a better place for this
+  (defun doom|delete-posframe-on-escape ()
+    "TODO"
+    (unless (frame-parameter (selected-frame) 'posframe-buffer)
+      (cl-loop for frame in (frame-list)
+               if (and (frame-parameter frame 'posframe-buffer)
+                       (not (frame-visible-p frame)))
+               do (delete-frame frame))
+      (dolist (buffer (buffer-list))
+        (let ((frame (buffer-local-value 'posframe--frame buffer)))
+          (when (and frame (or (not (frame-live-p frame))
+                               (not (frame-visible-p frame))))
+            (posframe--kill-buffer buffer))))))
+  (add-hook 'doom-escape-hook #'doom|delete-posframe-on-escape)
+  (add-hook 'doom-cleanup-hook #'posframe-delete-all))
 
 ;; Customized confirmation prompt for quitting Emacs
 (defun doom-quit-p (&optional prompt)
