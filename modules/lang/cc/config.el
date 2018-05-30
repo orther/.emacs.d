@@ -55,10 +55,10 @@ compilation database is present in the project.")
 
   :config
   (set! :electric '(c-mode c++-mode objc-mode java-mode)
-        :chars '(?\n ?\}))
+    :chars '(?\n ?\}))
   (set! :company-backend
-        '(c-mode c++-mode objc-mode)
-        '(company-irony-c-headers company-irony))
+    '(c-mode c++-mode objc-mode)
+    '(company-irony-c-headers company-irony))
 
   ;;; Style/formatting
   ;; C/C++ style settings
@@ -101,8 +101,8 @@ compilation database is present in the project.")
               (label . 0))))
 
   ;;; Keybindings
-  ;; Completely disable electric keys because it interferes with smartparens and
-  ;; custom bindings. We'll do this ourselves.
+  ;; Disable electric keys because it interferes with smartparens and custom
+  ;; bindings. We'll do it ourselves (mostly).
   (setq c-tab-always-indent nil
         c-electric-flag nil)
   (dolist (key '("#" "}" "/" "*" ";" "," ":" "(" ")" "\177"))
@@ -129,6 +129,7 @@ compilation database is present in the project.")
 
 
 (def-package! irony
+  :when (featurep! +irony)
   :commands (irony-install-server irony-mode)
   :preface
   (setq irony-server-install-prefix (concat doom-etc-dir "irony-server/"))
@@ -136,22 +137,28 @@ compilation database is present in the project.")
   (defun +cc|init-irony-mode ()
     (when (memq major-mode '(c-mode c++-mode objc-mode))
       (irony-mode +1)))
-  (add-hook! (c-mode c++-mode objc-mode) #'+cc|init-irony-mode)
+  (add-hook 'c-mode-common-hook #'+cc|init-irony-mode)
   :config
   (setq irony-cdb-search-directory-list '("." "build" "build-conda"))
   ;; Initialize compilation database, if present. Otherwise, fall back on
   ;; `+cc-default-compiler-options'.
-  (add-hook 'irony-mode-hook #'+cc|irony-init-compile-options))
+  (add-hook 'irony-mode-hook #'+cc|irony-init-compile-options)
 
-(def-package! irony-eldoc
-  :hook (irony-mode . irony-eldoc))
+  (def-package! irony-eldoc :hook (irony-mode . irony-eldoc))
 
-(def-package! flycheck-irony
-  :when (featurep! :feature syntax-checker)
-  :after irony
-  :config
-  (add-hook 'irony-mode-hook #'flycheck-mode)
-  (flycheck-irony-setup))
+  (def-package! flycheck-irony
+    :when (featurep! :feature syntax-checker)
+    :config
+    (add-hook 'irony-mode-hook #'flycheck-mode)
+    (flycheck-irony-setup))
+
+  (def-package! company-irony
+    :when (featurep! :completion company)
+    :after irony)
+
+  (def-package! company-irony-c-headers
+    :when (featurep! :completion company)
+    :after company-irony))
 
 
 ;;
@@ -166,23 +173,13 @@ compilation database is present in the project.")
 ;;
 
 (def-package! cmake-mode
-  :mode "/CMakeLists\\.txt$"
-  :mode "\\.cmake\\$"
+  :defer t
   :config
   (set! :company-backend 'cmake-mode '(company-cmake company-yasnippet)))
 
-(def-package! cuda-mode :mode "\\.cuh?$")
+(def-package! opencl-mode :mode "\\.cl\\'")
 
-(def-package! opencl-mode :mode "\\.cl$")
-
-(def-package! demangle-mode
-  :hook llvm-mode)
-
-(def-package! glsl-mode
-  :mode "\\.glsl$"
-  :mode "\\.vert$"
-  :mode "\\.frag$"
-  :mode "\\.geom$")
+(def-package! demangle-mode :hook llvm-mode)
 
 
 ;;
@@ -192,14 +189,6 @@ compilation database is present in the project.")
 (def-package! company-cmake
   :when (featurep! :completion company)
   :after cmake-mode)
-
-(def-package! company-irony
-  :when (featurep! :completion company)
-  :after irony)
-
-(def-package! company-irony-c-headers
-  :when (featurep! :completion company)
-  :after company-irony)
 
 (def-package! company-glsl
   :when (featurep! :completion company)
@@ -213,9 +202,14 @@ compilation database is present in the project.")
 ;;
 
 (def-package! rtags
-  :commands (rtags-restart-process rtags-start-process-unless-running rtags-executable-find)
+  :commands rtags-executable-find
   :init
-  (add-hook! (c-mode c++-mode) #'+cc|init-rtags)
+  (defun +cc|init-rtags ()
+    "Start an rtags server in c-mode and c++-mode buffers."
+    (when (and (memq major-mode '(c-mode c++-mode))
+               (rtags-executable-find "rtags"))
+      (rtags-start-process-unless-running)))
+  (add-hook 'c-mode-common-hook #'+cc|init-rtags)
   :config
   (setq rtags-autostart-diagnostics t
         rtags-use-bookmarks nil
@@ -237,14 +231,14 @@ compilation database is present in the project.")
   (map! :map (c-mode-map c++-mode-map) [remap imenu] #'rtags-imenu)
 
   (when (featurep 'evil) (add-hook 'rtags-jump-hook #'evil-set-jump))
-  (add-hook 'rtags-after-find-file-hook #'recenter))
+  (add-hook 'rtags-after-find-file-hook #'recenter)
 
-(def-package! ivy-rtags
-  :when (featurep! :completion ivy)
-  :after rtags
-  :config (setq rtags-display-result-backend 'ivy))
+  (def-package! ivy-rtags
+    :when (featurep! :completion ivy)
+    :after rtags
+    :config (setq rtags-display-result-backend 'ivy))
 
-(def-package! helm-rtags
-  :when (featurep! :completion helm)
-  :after rtags
-  :config (setq rtags-display-result-backend 'helm))
+  (def-package! helm-rtags
+    :when (featurep! :completion helm)
+    :after rtags
+    :config (setq rtags-display-result-backend 'helm)))

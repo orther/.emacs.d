@@ -1,16 +1,12 @@
 ;;; feature/version-control/+git.el -*- lexical-binding: t; -*-
 
+;; see https://chris.beams.io/posts/git-commit/
+(setq git-commit-fill-column 72
+      git-commit-summary-max-length 50
+      git-commit-style-convention-checks '(overlong-summary-line non-empty-second-line))
+
 (when (featurep! :feature evil)
   (add-hook 'git-commit-mode-hook #'evil-insert-state))
-
-
-(def-package! gitconfig-mode
-  :mode "/\\.?git/?config$"
-  :mode "/\\.gitmodules$")
-
-
-(def-package! gitignore-mode
-  :mode "/\\.gitignore$")
 
 
 (def-package! git-gutter-fringe
@@ -29,15 +25,21 @@
   ;; Update git-gutter on focus (in case I was using git externally)
   (add-hook 'focus-in-hook #'git-gutter:update-all-windows)
 
-  (after! evil
-    (defun +version-control|update-git-gutter ()
-      "Refresh git-gutter on ESC. Return nil to prevent shadowing other
+  (defun +version-control|update-git-gutter (&rest _)
+    "Refresh git-gutter on ESC. Return nil to prevent shadowing other
 `doom-escape-hook' hooks."
-      (when git-gutter-mode
-        (ignore (git-gutter))))
-    (add-hook 'doom-escape-hook #'+version-control|update-git-gutter t))
+    (when git-gutter-mode
+      (ignore (git-gutter))))
 
-  (def-hydra! +version-control@git-gutter
+  (add-hook 'doom-escape-hook #'+version-control|update-git-gutter t)
+
+  ;; update git-gutter when using these commands
+  (advice-add #'magit-stage :after #'+version-control|update-git-gutter)
+  (advice-add #'magit-unstage :after #'+version-control|update-git-gutter)
+  (advice-add #'magit-stage-file :after #'+version-control|update-git-gutter)
+  (advice-add #'magit-unstage-file :after #'+version-control|update-git-gutter)
+
+  (defhydra +version-control@git-gutter
     (:body-pre (git-gutter-mode 1) :hint nil)
     "
                                      ╭─────────────────┐
@@ -63,7 +65,7 @@
 
 
 (def-package! git-timemachine
-  :commands (git-timemachine git-timemachine-toggle)
+  :defer t
   :config
   ;; Sometimes I forget `git-timemachine' is enabled in a buffer, so instead of
   ;; showing revision details in the minibuffer, show them in
@@ -71,28 +73,6 @@
   (setq git-timemachine-show-minibuffer-details t)
   (advice-add #'git-timemachine--show-minibuffer-details :override #'+vcs*update-header-line)
 
-  ;; Force evil to rehash keybindings for the current state
-  (add-hook 'git-timemachine-mode-hook #'evil-force-normal-state))
-
-
-(def-package! magit
-  :commands (magit-status magit-blame)
-  :config
-  (set! :popup "^\\*magit" :ignore)
-  (set! :evil-state 'magit-status-mode 'emacs)
   (after! evil
-    ;; Switch to emacs state only while in `magit-blame-mode', then back when
-    ;; its done (since it's a minor-mode).
-    (add-hook! 'magit-blame-mode-hook
-      (evil-local-mode (if magit-blame-mode -1 +1)))))
-
-;; BMACS - keep evil-magit
-(def-package! evil-magit
-  :when (featurep! :feature evil)
-  :after magit
-  :init (setq evil-magit-want-horizontal-movement t))
-
-
-(def-package! git-link
-  :commands (git-link git-link-commit git-link-homepage))
-
+    ;; Force evil to rehash keybindings for the current state
+    (add-hook 'git-timemachine-mode-hook #'evil-force-normal-state)))

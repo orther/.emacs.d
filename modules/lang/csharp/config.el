@@ -1,17 +1,16 @@
 ;;; lang/csharp/config.el -*- lexical-binding: t; -*-
 
-(def-package! csharp-mode :mode "\\.cs$")
-
-(def-package! shader-mode :mode "\\.shader$") ; unity shaders
+(map-put auto-mode-alist '"\\.shader$" 'dshader-mode) ; unity shaders
 
 
 (def-package! omnisharp
-  :after csharp-mode
+  :hook (csharp-mode . omnisharp-mode)
+  :commands omnisharp-install-server
   :preface
   (setq omnisharp-auto-complete-want-documentation nil
         omnisharp-cache-directory (concat doom-cache-dir "omnisharp"))
   :config
-  (add-hook! csharp-mode #'(flycheck-mode omnisharp-mode))
+  (add-hook 'csharp-mode-hook #'flycheck-mode)
 
   (defun +csharp|cleanup-omnisharp-server ()
     "Clean up the omnisharp server once you kill the last csharp-mode buffer."

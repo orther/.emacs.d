@@ -307,9 +307,17 @@ wrong places)."
 (defun +org|realign-table-maybe ()
   "Auto-align table under cursor and re-calculate formulas."
   (when (and (org-at-table-p) org-table-may-need-update)
-    (quiet!
-     (org-table-recalculate)
-     (if org-table-may-need-update (org-table-align)))))
+    (let ((pt (point)))
+      (quiet!
+       (org-table-recalculate)
+       (if org-table-may-need-update (org-table-align)))
+      (goto-char pt))))
+
+;;;###autoload
+(defun +org*realign-table-maybe (&rest _)
+  "Auto-align table under cursor and re-calculate formulas."
+  (when (eq major-mode 'org-mode)
+    (+org|realign-table-maybe)))
 
 ;;;###autoload
 (defun +org|update-cookies ()
@@ -337,14 +345,11 @@ with `org-cycle')."
   (unless (eq this-command 'org-shifttab)
     (save-excursion
       (org-beginning-of-line)
-      (cond ((org-at-heading-p)
-             (outline-toggle-children)
-             (unless (outline-invisible-p (line-end-position))
-               (org-cycle-hide-drawers 'subtree))
-             t)
-            ((org-in-src-block-p)
-             (org-babel-remove-result)
-             t)))))
+      (when (org-at-heading-p)
+        (outline-toggle-children)
+        (unless (outline-invisible-p (line-end-position))
+          (org-cycle-hide-drawers 'subtree))
+        t))))
 
 ;;;###autoload
 (defalias #'+org/toggle-fold #'+org|toggle-only-current-fold)

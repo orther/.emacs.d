@@ -4,42 +4,33 @@
   "The directory where org files are kept.")
 
 ;; Sub-modules
-(if (featurep! +attach)  (load! +attach))
-(if (featurep! +babel)   (load! +babel))
-(if (featurep! +capture) (load! +capture))
-(if (featurep! +export)  (load! +export))
-(if (featurep! +present) (load! +present))
-;; TODO (if (featurep! +publish) (load! +publish))
+(if (featurep! +attach)  (load! "+attach"))
+(if (featurep! +babel)   (load! "+babel"))
+(if (featurep! +capture) (load! "+capture"))
+(if (featurep! +export)  (load! "+export"))
+(if (featurep! +present) (load! "+present"))
+;; TODO (if (featurep! +publish) (load! "+publish"))
 
 
 ;;
 ;; Plugins
 ;;
 
-(def-package! toc-org
-  :commands toc-org-enable
-  :config (setq toc-org-hrefify-default "org"))
-
-(def-package! org-crypt ; built-in
-  :commands org-crypt-use-before-save-magic
-  :config
-  (setq org-tags-exclude-from-inheritance '("crypt")
-        org-crypt-key user-mail-address))
-
-(def-package! org-bullets
-  :commands org-bullets-mode)
+;; `toc-org'
+(setq toc-org-hrefify-default "org")
 
 (def-package! evil-org
   :when (featurep! :feature evil)
-  :commands evil-org-mode
+  :hook (org-mode . evil-org-mode)
+  :hook (org-load . evil-org-set-key-theme)
   :init
-  (add-hook 'org-load-hook #'+org|setup-evil)
-  (add-hook 'org-mode-hook #'evil-org-mode)
-  :config
-  (evil-org-set-key-theme '(navigation insert textobjects))
-  (after! org-agenda
-    (require 'evil-org-agenda)
-    (evil-org-agenda-set-keys)))
+  (setq evil-org-key-theme '(navigation insert textobjects))
+  (add-hook 'org-load-hook #'+org|setup-evil))
+
+(def-package! evil-org-agenda
+  :when (featurep! :feature evil)
+  :after org-agenda
+  :config (evil-org-agenda-set-keys))
 
 
 ;;
@@ -49,6 +40,7 @@
 (add-hook! 'org-load-hook
   #'(org-crypt-use-before-save-magic
      +org|setup-ui
+     +org|setup-popups-rules
      +org|setup-agenda
      +org|setup-keybinds
      +org|setup-hacks))
@@ -64,14 +56,10 @@
      +org|enable-auto-update-cookies
      +org|smartparens-compatibility-config
      +org|unfold-to-2nd-level-or-point
-     +org|show-paren-mode-compatibility
-     ))
+     +org|show-paren-mode-compatibility))
 
 (after! org
   (defvaralias 'org-directory '+org-dir))
-
-(when (featurep 'org)
-  (run-hooks 'org-load-hook))
 
 
 ;;
@@ -93,16 +81,16 @@ unfold to point on startup."
 
 (defun +org|smartparens-compatibility-config ()
   "Instruct `smartparens' not to impose itself in org-mode."
-  (defun +org-sp-point-in-checkbox-p (_id action _context)
-    (and (eq action 'insert)
-         (sp--looking-at-p "\\s-*]")))
-  (defun +org-sp-point-at-bol-p (_id action _context)
-    (and (eq action 'insert)
-         (eq (char-before) ?*)
-         (sp--looking-back-p "^\\**" (line-beginning-position))))
-
-  ;; make delimiter auto-closing a little more conservative
   (after! smartparens
+    (defun +org-sp-point-in-checkbox-p (_id action _context)
+      (and (eq action 'insert)
+           (sp--looking-at-p "\\s-*]")))
+    (defun +org-sp-point-at-bol-p (_id action _context)
+      (and (eq action 'insert)
+           (eq (char-before) ?*)
+           (sp--looking-back-p "^\\**" (line-beginning-position))))
+
+    ;; make delimiter auto-closing a little more conservative
     (sp-with-modes 'org-mode
       (sp-local-pair "*" nil :unless '(:add sp-point-before-word-p +org-sp-point-at-bol-p))
       (sp-local-pair "_" nil :unless '(:add sp-point-before-word-p))
@@ -111,9 +99,11 @@ unfold to point on startup."
       (sp-local-pair "=" nil :unless '(:add sp-point-before-word-p)))))
 
 (defun +org|enable-auto-reformat-tables ()
-  "Realign tables exiting insert mode (`evil-mode')."
+  "Realign tables & update formulas when exiting insert mode (`evil-mode')."
   (when (featurep 'evil)
-    (add-hook 'evil-insert-state-exit-hook #'+org|realign-table-maybe nil t)))
+    (add-hook 'evil-insert-state-exit-hook #'+org|realign-table-maybe nil t)
+    (add-hook 'evil-replace-state-exit-hook #'+org|realign-table-maybe nil t)
+    (advice-add #'evil-replace :after #'+org*realign-table-maybe)))
 
 (defun +org|enable-auto-update-cookies ()
   "Update statistics cookies when saving or exiting insert mode (`evil-mode')."
@@ -136,7 +126,29 @@ unfold to point on startup."
    org-agenda-dim-blocked-tasks nil
    org-agenda-files (ignore-errors (directory-files +org-dir t "\\.org$" t))
    org-agenda-inhibit-startup t
-   org-agenda-skip-unavailable-files t))
+   org-agenda-skip-unavailable-files t)
+  ;; Move the agenda to show the previous 3 days and the next 7 days for a bit
+  ;; better context instead of just the current week which is a bit confusing
+  ;; on, for example, a sunday
+  (setq org-agenda-span 10
+        org-agenda-start-on-weekday nil
+        org-agenda-start-day "-3d"))
+
+(defun +org|setup-popups-rules ()
+  "Defines popup rules for org-mode (does nothing if :ui popup is disabled)."
+  (set! :popups
+    '("^\\*\\(?:Agenda Com\\|Calendar\\|Org \\(?:Links\\|Export Dispatcher\\|Select\\)\\)"
+      ((slot . -1) (vslot . -1) (size . +popup-shrink-to-fit))
+      ((transient . 0)))
+    '("^\\*Org Agenda"
+      ((size . 0.35))
+      ((select . t) (transient)))
+    '("^\\*Org Src"
+      ((size . 0.3))
+      ((quit) (select . t)))
+    '("^CAPTURE.*\\.org$"
+      ((size . 0.2))
+      ((quit) (select . t)))))
 
 (defun +org|setup-ui ()
   "Configures the UI for `org-mode'."
@@ -210,15 +222,16 @@ unfold to point on startup."
            (unless (file-remote-p path)
              (if (file-exists-p path) 'org-link 'error))))
 
-  (defmacro def-org-file-link! (key dir)
-    `(org-link-set-parameters
-      ,key
-      :complete (lambda () (+org--relpath (+org-link-read-file ,key ,dir) ,dir))
-      :follow   (lambda (link) (find-file (expand-file-name link ,dir)))
-      :face     (lambda (link)
-                  (if (file-exists-p (expand-file-name link ,dir))
-                      'org-link
-                    'error))))
+  (eval-when-compile
+    (defmacro def-org-file-link! (key dir)
+      `(org-link-set-parameters
+        ,key
+        :complete (lambda () (+org--relpath (+org-link-read-file ,key ,dir) ,dir))
+        :follow   (lambda (link) (find-file (expand-file-name link ,dir)))
+        :face     (lambda (link)
+                    (if (file-exists-p (expand-file-name link ,dir))
+                        'org-link
+                      'error)))))
 
   (def-org-file-link! "org" +org-dir)
   (def-org-file-link! "doom" doom-emacs-dir)
@@ -266,6 +279,8 @@ between the two."
         :n [backtab] nil
         :n "C-j" nil
         :n "C-k" nil
+        :n "]" nil
+        :n "[" nil
 
         :map evil-org-mode-map
         :i [backtab] #'+org/dedent
@@ -285,12 +300,14 @@ between the two."
         :ni [M-return]   (λ! (+org/insert-item 'below))
         :ni [S-M-return] (λ! (+org/insert-item 'above))
         ;; more org-ish vim motion keys
-        :n  "]]"  (λ! (org-forward-heading-same-level nil) (org-beginning-of-line))
-        :n  "[["  (λ! (org-backward-heading-same-level nil) (org-beginning-of-line))
-        :n  "]l"  #'org-next-link
-        :n  "[l"  #'org-previous-link
-        :n  "]s"  #'org-babel-next-src-block
-        :n  "[s"  #'org-babel-previous-src-block
+        :m  "]]"  (λ! (org-forward-heading-same-level nil) (org-beginning-of-line))
+        :m  "[["  (λ! (org-backward-heading-same-level nil) (org-beginning-of-line))
+        :m  "]h"  #'org-next-visible-heading
+        :m  "[h"  #'org-previous-visible-heading
+        :m  "]l"  #'org-next-link
+        :m  "[l"  #'org-previous-link
+        :m  "]s"  #'org-babel-next-src-block
+        :m  "[s"  #'org-babel-previous-src-block
         :m  "^"   #'evil-org-beginning-of-line
         :m  "0"   (λ! (let ((visual-line-mode)) (org-beginning-of-line)))
         :n  "gQ"  #'org-fill-paragraph
@@ -303,12 +320,22 @@ between the two."
         :n  "zm"  (λ! (outline-hide-sublevels 1))
         :n  "zo"  #'outline-show-subtree
         :n  "zO"  #'outline-show-all
-        :n  "zr"  #'outline-show-all))
+        :n  "zr"  #'outline-show-all
+
+        :localleader
+        :n "d" #'org-deadline
+        :n "t" #'org-todo
+        (:desc "clock" :prefix "c"
+          :n "c" #'org-clock-in
+          :n "C" #'org-clock-out
+          :n "g" #'org-clock-goto
+          :n "G" (λ! (org-clock-goto 'select))
+          :n "x" #'org-clock-cancel)))
 
 (defun +org|setup-hacks ()
   "Getting org to behave."
   ;; Don't open separate windows
-  (map-put org-link-frame-setup 'file 'find-file)
+  (map-put org-link-frame-setup 'file #'find-file)
 
   ;; Let OS decide what to do with files when opened
   (setq org-file-apps
@@ -319,10 +346,38 @@ between the two."
           (t . ,(cond (IS-MAC "open -R \"%s\"")
                       (IS-LINUX "xdg-open \"%s\"")))))
 
-  (after! recentf
-    ;; Don't clobber recentf with agenda files
-    (defun +org-is-agenda-file (filename)
-      (cl-find (file-truename filename) org-agenda-files
-               :key #'file-truename
-               :test #'equal))
-    (push #'+org-is-agenda-file recentf-exclude)))
+  ;; Don't clobber recentf or current workspace with agenda files
+  (defun +org|exclude-agenda-buffers-from-workspace ()
+    (let (persp-autokill-buffer-on-remove)
+      (persp-remove-buffer org-agenda-new-buffers (get-current-persp) nil)))
+  (add-hook 'org-agenda-finalize-hook #'+org|exclude-agenda-buffers-from-workspace)
+
+  (defun +org*exclude-agenda-buffers-from-recentf (orig-fn &rest args)
+    (let ((recentf-exclude (list (lambda (_file) t))))
+      (apply orig-fn args)))
+  (advice-add #'org-get-agenda-file-buffer
+              :around #'+org*exclude-agenda-buffers-from-recentf))
+
+
+;;
+;; Built-in libraries
+;;
+
+(def-package! org-crypt ; built-in
+  :commands org-crypt-use-before-save-magic
+  :config
+  (setq org-tags-exclude-from-inheritance '("crypt")
+        org-crypt-key user-mail-address))
+
+(def-package! org-clock
+  :commands org-clock-save
+  :hook (org-mode . org-clock-load)
+  :init
+  (setq org-clock-persist 'history
+        org-clock-persist-file (concat doom-etc-dir "org-clock-save.el"))
+  :config
+  (add-hook 'kill-emacs-hook #'org-clock-save))
+
+;;
+(when (featurep 'org)
+  (run-hooks 'org-load-hook))

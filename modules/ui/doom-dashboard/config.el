@@ -114,15 +114,17 @@ Possible values:
 
 (defun +doom-dashboard|init ()
   "Initializes Doom's dashboard."
-  (add-hook 'window-configuration-change-hook #'+doom-dashboard|resize)
-  (add-hook 'kill-buffer-query-functions #'+doom-dashboard|reload-on-kill)
-  (add-hook 'doom-after-switch-buffer-hook #'+doom-dashboard|reload-on-kill)
-  (unless (daemonp)
-    (add-hook 'after-make-frame-functions #'+doom-dashboard|make-frame))
-  ;; `persp-mode' integration: update `default-directory' when switching
-  (add-hook 'persp-created-functions #'+doom-dashboard|record-project)
-  (add-hook 'persp-activated-functions #'+doom-dashboard|detect-project)
-  (add-hook 'persp-before-switch-functions #'+doom-dashboard|record-project)
+  (unless noninteractive
+    (add-hook 'window-configuration-change-hook #'+doom-dashboard|resize)
+    (add-hook 'window-size-change-functions #'+doom-dashboard|resize)
+    (add-hook 'kill-buffer-query-functions #'+doom-dashboard|reload-on-kill)
+    (add-hook 'doom-after-switch-buffer-hook #'+doom-dashboard|reload-on-kill)
+    (unless (daemonp)
+      (add-hook 'after-make-frame-functions #'+doom-dashboard|make-frame))
+    ;; `persp-mode' integration: update `default-directory' when switching
+    (add-hook 'persp-created-functions #'+doom-dashboard|record-project)
+    (add-hook 'persp-activated-functions #'+doom-dashboard|detect-project)
+    (add-hook 'persp-before-switch-functions #'+doom-dashboard|record-project))
   (+doom-dashboard-reload t))
 
 (defun +doom-dashboard|reload-on-kill ()
@@ -146,12 +148,35 @@ If this is the dashboard buffer, reload the dashboard."
 whose dimensions may not be fully initialized by the time this is run."
   (run-with-timer 0.1 nil #'+doom-dashboard/open frame))
 
-(defun +doom-dashboard|resize ()
-  "Resize the margins and fringes on dashboard windows."
-  (dolist (win (get-buffer-window-list (doom-fallback-buffer) nil t))
-    (set-window-fringes win 0 0)
-    (set-window-margins
-     win (max 0 (/ (- (window-total-width win) +doom-dashboard--width) 2)))))
+(defun +doom-dashboard|resize (&rest _)
+  "Recenter the dashboard, and reset its margins and fringes."
+  (let ((windows (get-buffer-window-list (doom-fallback-buffer) nil t)))
+    (dolist (win windows)
+      (set-window-start win 0)
+      (set-window-fringes win 0 0)
+      (set-window-margins
+       win (max 0 (/ (- (window-total-width win) +doom-dashboard--width) 2))))
+    (when windows
+      (with-current-buffer (doom-fallback-buffer)
+        (save-excursion
+          (with-silent-modifications
+            (goto-char (point-min))
+            (cond ((display-graphic-p)
+                   (delete-region (line-beginning-position) (1+ (line-end-position)))
+                   (insert (propertize
+                            (char-to-string ?\uE001)
+                            'display `((space :align-to 0
+                                              :height ,(max 0 (- (/ (window-height (get-buffer-window)) 2)
+                                                                 (/ (count-lines (point-min) (point-max)) 2.5))))))
+                           "\n"))
+                  (t
+                   (while (string-empty-p (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+                     (delete-region (line-beginning-position) (1+ (line-end-position))))
+                   (insert
+                    "\n"
+                    (make-string (max 0 (- (/ (window-height (get-buffer-window)) 2)
+                                           (/ (count-lines (point-min) (point-max)) 2)))
+                                 ?\n))))))))))
 
 (defun +doom-dashboard|detect-project (&rest _)
   "Check for a `last-project-root' parameter in the perspective, and set the
@@ -212,13 +237,10 @@ controlled by `+doom-dashboard-pwd-policy'."
           (unless (eq major-mode '+doom-dashboard-mode)
             (+doom-dashboard-mode))
           (erase-buffer)
-          (save-excursion (mapc #'funcall +doom-dashboard-functions))
-          (insert
-           (make-string (max 0 (- (/ (window-height (get-buffer-window)) 2)
-                                  (/ (count-lines (point-min) (point-max)) 2)))
-                        ?\n))))
-      (+doom-dashboard|detect-project)
+          (insert "\n")
+          (run-hooks '+doom-dashboard-functions)))
       (+doom-dashboard|resize)
+      (+doom-dashboard|detect-project)
       (+doom-dashboard-update-pwd)
       (current-buffer))))
 
@@ -286,7 +308,7 @@ controlled by `+doom-dashboard-pwd-policy'."
    (propertize
     (+doom-dashboard--center
      +doom-dashboard--width
-     (doom-packages--benchmark))
+     (doom|display-benchmark 'return))
     'face 'font-lock-comment-face)
    "\n\n"))
 
@@ -308,11 +330,11 @@ controlled by `+doom-dashboard-pwd-policy'."
                  "\n\n"))))
           `(("Homepage" "mark-github"
              (browse-url "https://github.com/hlissner/doom-emacs"))
-            ,(when (and (featurep! :feature workspaces)
+            ,(when (and (bound-and-true-p persp-mode)
                         (file-exists-p (expand-file-name persp-auto-save-fname persp-save-dir)))
                '("Reload last session" "history"
                  (+workspace/load-session)))
-            ,(when (featurep! :lang org)
+            ,(when (fboundp 'org-agenda-list)
                '("See agenda for this week" "calendar"
                  (call-interactively #'org-agenda-list)))
             ("Recently opened files" "file-text"

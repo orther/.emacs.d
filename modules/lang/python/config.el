@@ -16,7 +16,7 @@ is loaded.")
 ;;
 
 (def-package! python
-  :commands python-mode
+  :defer t
   :init
   (setq python-environment-directory doom-cache-dir
         python-indent-guess-indent-offset-verbose nil
@@ -73,7 +73,6 @@ environment variables."
 
 
 (def-package! anaconda-mode
-  :after python
   :hook python-mode
   :init
   (setq anaconda-mode-installation-directory (concat doom-etc-dir "anaconda/")
@@ -102,7 +101,6 @@ environment variables."
   :after anaconda-mode
   :config
   (map! :map anaconda-mode-map
-        :n "gf" nil
         :localleader
         :prefix "f"
         :nv "d" #'anaconda-mode-find-definitions
@@ -110,10 +108,6 @@ environment variables."
         :nv "a" #'anaconda-mode-find-assignments
         :nv "f" #'anaconda-mode-find-file
         :nv "u" #'anaconda-mode-find-references))
-
-
-(def-package! pip-requirements
-  :mode ("/requirements.txt$" . pip-requirements-mode))
 
 
 (def-package! nose

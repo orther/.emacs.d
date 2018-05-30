@@ -2,8 +2,6 @@
 
 (def-package! magit
   :defer t
-  :init
-  (load "magit-autoloads" nil t)
   :config
   (setq magit-completing-read-function
         (if (featurep! :completion ivy)
@@ -18,13 +16,11 @@
   (map! :map magit-status-mode-map [remap magit-mode-bury-buffer] #'+magit/quit))
 
 
-(def-package! magit-blame
-  :commands magit-blame
-  :after git-timemachine)
+(def-package! magit-blame :after git-timemachine)
 
 
 (def-package! magithub
-  :commands (magithub-clone magithub-feature-autoinject)
+  :commands magithub-feature-autoinject
   :after magit
   :preface
   (setq magithub-dir (concat doom-etc-dir "magithub/"))
@@ -32,14 +28,17 @@
   (setq magithub-clone-default-directory "~/"
         magithub-preferred-remote-method 'clone_url)
   :config
-  (load "magithub-autoloads" nil t)
   (magithub-feature-autoinject t))
+
+
+(def-package! magit-gitflow
+  :hook (magit-mode . turn-on-magit-gitflow))
 
 
 (def-package! evil-magit
   :when (featurep! :feature evil)
   :after magit
+  :init (setq evil-magit-state 'normal)
   :config
-  (setq evil-magit-state 'normal)
   (map! :map (magit-mode-map magit-blame-read-only-mode-map)
         doom-leader-key nil))

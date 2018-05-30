@@ -36,17 +36,38 @@ produces an url. Used by `+lookup/online'.")
 (defvar +lookup-definition-functions '(+lookup-xref-definitions)
   "Functions for `+lookup/definition' to try, before resorting to `dumb-jump'.
 Stops at the first function to return non-nil or change the current
-window/point.")
+window/point.
+
+If the argument is interactive (satisfies `commandp'), it is called with
+`call-interactively' (with no arguments). Otherwise, it is called with one
+argument: the identifier at point.")
 
 (defvar +lookup-references-functions '(+lookup-xref-references)
   "Functions for `+lookup/references' to try, before resorting to `dumb-jump'.
 Stops at the first function to return non-nil or change the current
-window/point.")
+window/point.
+
+If the argument is interactive (satisfies `commandp'), it is called with
+`call-interactively' (with no arguments). Otherwise, it is called with one
+argument: the identifier at point.")
 
 (defvar +lookup-documentation-functions ()
   "Functions for `+lookup/documentation' to try, before resorting to
 `dumb-jump'. Stops at the first function to return non-nil or change the current
-window/point.")
+window/point.
+
+If the argument is interactive (satisfies `commandp'), it is called with
+`call-interactively' (with no arguments). Otherwise, it is called with one
+argument: the identifier at point.")
+
+(defvar +lookup-file-functions ()
+  "Function for `+lookup/file' to try, before restoring to `find-file-at-point'.
+Stops at the first function to return non-nil or change the current
+window/point.
+
+If the argument is interactive (satisfies `commandp'), it is called with
+`call-interactively' (with no arguments). Otherwise, it is called with one
+argument: the identifier at point.")
 
 (def-setting! :lookup (modes &rest plist)
   "Defines a jump target for major MODES. PLIST accepts the following
@@ -61,9 +82,15 @@ properties:
   :documentation FN
     Run when looking up documentation for a symbol.
     Used by `+lookup/documentation'.
+  :file FN
+    Run when looking up the file for a symbol/string. Typically a file path.
+    Used by `+lookup/file'.
   :xref-backend FN
     Defines an xref backend for a major-mode. With this, :definition and
-    :references are unnecessary."
+    :references are unnecessary.
+
+Using this multiple times overwrites previous properties and unsets omitted
+ones."
   `(progn
      ,@(cl-loop for mode in (doom-enlist (doom-unquote modes))
                 for def-name = (intern (format "doom--init-lookup-%s" mode))
@@ -74,10 +101,12 @@ properties:
                      (let ((xref ,(plist-get plist :xref-backend))
                            (def ,(plist-get plist :definition))
                            (ref ,(plist-get plist :references))
+                           (fil ,(plist-get plist :file))
                            (doc ,(plist-get plist :documentation)))
                        (if xref (add-hook 'xref-backend-functions xref nil t))
                        (if def (add-hook '+lookup-definition-functions def nil t))
                        (if ref (add-hook '+lookup-references-functions ref nil t))
+                       (if fil (add-hook '+lookup-file-functions fil nil t))
                        (if doc (add-hook '+lookup-documentation-functions doc nil t)))))
                 collect `(add-hook! ,mode #',def-name))))
 
@@ -93,33 +122,29 @@ properties:
 ;;
 
 (def-package! dumb-jump
-  :commands (dumb-jump-go dumb-jump-quick-look
-             dumb-jump-back dumb-jump-result-follow)
+  :commands dumb-jump-result-follow
   :config
   (setq dumb-jump-default-project doom-emacs-dir
         dumb-jump-aggressive nil
         dumb-jump-selector
         (cond ((featurep! :completion ivy)  'ivy)
               ((featurep! :completion helm) 'helm)
-              (t 'popup))))
+              ('popup))))
 
 
 ;;
 ;; xref
 ;;
 
-(def-package! xref
-  :commands (xref-backend-identifier-at-point xref-find-definitions xref-find-references)
-  :config
-  ;; By default, `etags--xref-backend' is the default xref backend. No need.
-  ;; We'll set these up ourselves in other modules.
-  (setq-default xref-backend-functions '(t))
+;; By default, `etags--xref-backend' is the default xref backend. No need. We'll
+;; set these up ourselves in other modules.
+(setq-default xref-backend-functions '(t))
 
-  ;; ...however, it breaks `projectile-find-tag', unless we put it back.
-  (defun +lookup*projectile-find-tag (orig-fn)
-    (let ((xref-backend-functions '(etags--xref-backend t)))
-      (funcall orig-fn)))
-  (advice-add #'projectile-find-tag :around #'+lookup*projectile-find-tag))
+;; ...however, it breaks `projectile-find-tag', unless we put it back.
+(defun +lookup*projectile-find-tag (orig-fn)
+  (let ((xref-backend-functions '(etags--xref-backend t)))
+    (funcall orig-fn)))
+(advice-add #'projectile-find-tag :around #'+lookup*projectile-find-tag)
 
 
 (def-package! ivy-xref
@@ -139,52 +164,21 @@ properties:
 ;;
 
 (when (featurep! +docsets)
-  (def-setting! :docset (modes &rest docsets)
-    "Registers a list of DOCSETS (strings) for MODES (either one major mode
-symbol or a list of them).
-
-If MODES is a minor mode, you can use :add or :remove as the first element of
-DOCSETS, to instruct it to append (or remove) those from the docsets already set
-by a major-mode, if any.
-
-Used by `+lookup/in-docsets' and `+lookup/documentation'."
-    (let* ((modes (doom-unquote modes))
-           (ivy-p (featurep! :completion ivy))
-           (hook-sym (intern (format "+lookup|%s-docsets--%s"
-                                     (cond ((eq ',(car docsets) :add)    'add)
-                                           ((eq ',(car docsets) :remove) 'remove)
-                                           ('set))
-                                     (string-join docsets "-"))))
-           (var-sym (if ivy-p 'counsel-dash-docsets 'helm-dash-docsets)))
-      `(progn
-         (defun ,hook-sym ()
-           (make-variable-buffer-local ',var-sym)
-           ,(cond ((eq ',(car docsets) :add)
-                   `(setq ,var-sym (append ,var-sym (list ,@(cdr docsets)))))
-                  ((eq ',(car docsets) :remove)
-                   `(setq ,var-sym
-                          (cl-loop with to-delete = (list ,@(cdr docsets))
-                                   for docset in ,var-sym
-                                   unless (member docset to-delete)
-                                   collect docset)))
-                  (`(setq ,var-sym (list ,@docsets)))))
-         (add-hook! ,modes #',hook-sym))))
-
   ;; Both packages depend on helm-dash
   (def-package! helm-dash
-    :commands (helm-dash helm-dash-install-docset helm-dash-at-point
-               helm-dash-docset-installed-p helm-dash-installed-docsets)
+    :defer t
+    :init
+    (setq helm-dash-enable-debugging doom-debug-mode
+          helm-dash-browser-func #'eww)
     :config
     (unless (file-directory-p helm-dash-docsets-path)
       (setq helm-dash-docsets-path (concat doom-etc-dir "docsets/")))
     (unless (file-directory-p helm-dash-docsets-path)
-      (make-directory helm-dash-docsets-path t))
-    (setq helm-dash-enable-debugging doom-debug-mode))
+      (make-directory helm-dash-docsets-path t)))
 
   (def-package! counsel-dash
     :when (featurep! :completion ivy)
-    :commands (counsel-dash counsel-dash-install-docset)
-    :after helm-dash
+    :commands counsel-dash-install-docset
     :config (setq counsel-dash-min-length 2)))
 
 
@@ -193,22 +187,11 @@ Used by `+lookup/in-docsets' and `+lookup/documentation'."
 ;;
 
 (when (featurep! +devdocs)
-  (def-setting! :devdocs (modes docset)
-    "Map major MODES (one major-mode symbol or a list of them) to a devdocs
-DOCSET (a string).
-
-See `devdocs-alist' for the defaults. "
-    `(dolist (mode ',modes)
-       (push (cons mode ,docset) devdocs-alist)))
-
-  (def-package! devdocs
-    :defer t
-    :config
-    (setq devdocs-alist
-          (append '((rust-mode . "rust")
-                    (scss-mode . "scss")
-                    (gfm-mode . "markdown")
-                    (nim-mode . "nim")
-                    (typescript-mode . "typescript"))
-                  devdocs-alist))))
+  (after! devdocs-lookup
+    (unless (assoc "SCSS" devdocs-subjects)
+      (setq devdocs-subjects
+            (append '(("SCSS" "scss")
+                      ("GFM" "markdown")
+                      ("Typescript" "typescript"))
+                    devdocs-subjects)))))
 

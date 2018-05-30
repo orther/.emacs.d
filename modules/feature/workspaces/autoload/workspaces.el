@@ -3,11 +3,12 @@
 (defvar +workspace--last nil)
 (defvar +workspace--index 0)
 
-;;
+;;;###autoload
 (defface +workspace-tab-selected-face '((t (:inherit 'highlight)))
   "The face for selected tabs displayed by `+workspace/display'"
   :group 'persp-mode)
 
+;;;###autoload
 (defface +workspace-tab-face '((t (:inherit 'default)))
   "The face for selected tabs displayed by `+workspace/display'"
   :group 'persp-mode)
@@ -210,7 +211,7 @@ current workspace (by name) from session files."
       (completing-read
        "Workspace to load: "
        (persp-list-persp-names-in-file
-        (expand-file-name +workspace-data-file persp-save-dir))))))
+        (expand-file-name +workspaces-data-file persp-save-dir))))))
   (if (not (+workspace-load name))
       (+workspace-error (format "Couldn't load workspace %s" name))
     (+workspace/switch-to name)
@@ -288,8 +289,8 @@ workspace to delete."
                            nil nil current-name)
         current-name))))
   (condition-case-unless-debug ex
-      (let ((workspaces (length (+workspace-list-names))))
-        (cond ((> workspaces 1)
+      (let ((workspaces (+workspace-list-names)))
+        (cond ((> (length workspaces) 1)
                (+workspace-delete name)
                (+workspace-switch
                 (if (+workspace-exists-p +workspace--last)
@@ -423,6 +424,12 @@ the next."
                    (+workspace/delete current-persp-name))))
 
               (t (+workspace-error "Can't delete last workspace" t)))))))
+
+;;;###autoload
+(defun +workspace/restart-emacs-then-restore ()
+  "Restarts Emacs, then restores the session."
+  (interactive)
+  (restart-emacs (list "--restore")))
 
 
 ;;

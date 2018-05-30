@@ -2,6 +2,21 @@
 ;;;###if (featurep! :feature evil)
 
 ;;;###autoload
+(def-setting! :evil-state (modes state)
+  "Set the initialize STATE of MODE using `evil-set-initial-state'."
+  (let ((unquoted-modes (doom-unquote modes)))
+    (if (listp unquoted-modes)
+        `(progn
+           ,@(cl-loop for mode in unquoted-modes
+                      collect `(evil-set-initial-state ',mode ,state)))
+      `(evil-set-initial-state ,modes ,state))))
+
+
+;;
+;; Commands
+;;
+
+;;;###autoload
 (defun +evil/visual-indent ()
   "vnoremap < <gv"
   (interactive)
@@ -79,6 +94,11 @@ evil-window-move-* (e.g. `evil-window-move-far-left')"
 (defun +evil/window-move-up () "See `+evil--window-swap'"    (interactive) (+evil--window-swap 'up))
 ;;;###autoload
 (defun +evil/window-move-down () "See `+evil--window-swap'"  (interactive) (+evil--window-swap 'down))
+
+
+;;
+;; Evil commands/operators
+;;
 
 ;;;###autoload (autoload '+evil:apply-macro "feature/evil/autoload/evil" nil t)
 (evil-define-operator +evil:apply-macro (beg end)
@@ -229,15 +249,6 @@ the first match on each line)."
 (defun +evil*static-reindent (orig-fn &rest args)
   "Don't move cursor on indent."
   (save-excursion (apply orig-fn args)))
-
-;;;###autoload
-(defun +evil*restore-initial-state-on-windmove (orig-fn &rest args)
-  "Revert buffer to its initial state when switching to another window. This
-prevents states from bleeding into other modes across windows."
-  (let ((initial-state (evil-initial-state major-mode 'normal)))
-    (unless (eq evil-state initial-state)
-      (evil-change-state initial-state)))
-  (apply orig-fn args))
 
 ;;;###autoload
 (defun +evil*resolve-vim-path (file-name)

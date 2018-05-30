@@ -197,8 +197,10 @@
           :desc "Magit status"          :n  "g" #'magit-status
           :desc "List gists"            :n  "G" #'+gist:list
           :desc "Initialize repo"       :n  "i" #'magit-init
+          :desc "Browse issues tracker" :n  "I" #'+vcs/git-browse-issues
           :desc "Magit buffer log"      :n  "l" #'magit-log-buffer-file
           :desc "List repositories"     :n  "L" #'magit-list-repositories
+          :desc "Browse remote"         :n  "o" #'+vcs/git-browse
           :desc "Magit push popup"      :n  "p" #'magit-push-popup
           :desc "Magit pull popup"      :n  "P" #'magit-pull-popup
           :desc "Git revert hunk"       :n  "r" #'git-gutter:revert-hunk
@@ -213,9 +215,11 @@
         (:desc "help" :prefix "h"
           :n "h" help-map
           :desc "Apropos"               :n  "a" #'apropos
+          :desc "Open Bug Report"       :n  "b" #'doom/open-bug-report
           :desc "Describe char"         :n  "c" #'describe-char
           :desc "Describe DOOM module"  :n  "d" #'doom/describe-module
-          :desc "Open Doom manual"      :n  "D" #'doom/help
+          :desc "Open Doom manual"      :n  "D" #'doom//open-manual
+          :desc "Open vanilla sandbox"  :n  "E" #'doom/open-vanilla-sandbox
           :desc "Describe function"     :n  "f" #'describe-function
           :desc "Describe face"         :n  "F" #'describe-face
           :desc "Info"                  :n  "i" #'info-lookup-symbol
@@ -226,13 +230,14 @@
           :desc "Toggle Emacs log"      :n  "m" #'view-echo-area-messages
           :desc "Describe mode"         :n  "M" #'describe-mode
           :desc "Toggle profiler"       :n  "p" #'doom/toggle-profiler
-          :desc "Reload theme"          :n  "R" #'doom//reload-theme
+          :desc "Reload theme"          :n  "r" #'doom//reload-theme
+          :desc "Reload private config" :n  "R" #'doom//reload
           :desc "Describe DOOM setting" :n  "s" #'doom/describe-setting
           :desc "Describe variable"     :n  "v" #'describe-variable
           :desc "Print Doom version"    :n  "V" #'doom/version
           :desc "Describe at point"     :n  "." #'helpful-at-point
           :desc "What face"             :n  "'" #'doom/what-face
-          :desc "What minor modes"      :n  ";" #'doom/what-minor-mode)
+          :desc "What minor modes"      :n  ";" #'doom/describe-active-minor-mode)
 
         (:desc "insert" :prefix "i"
           :desc "From kill-ring"        :nv "y" #'counsel-yank-pop
@@ -250,15 +255,23 @@
           :desc "REPL"                  :n  "r" #'+eval/open-repl
                                         :v  "r" #'+eval:repl
           :desc "Neotree"               :n  "n" #'+neotree/open
-          :desc "Neotree: on this file" :n  "N" #'+neotree/find-this-file
+          :desc "Neotree: find file"    :n  "N" #'+neotree/find-this-file
           :desc "Imenu sidebar"         :nv "i" #'imenu-list-smart-toggle
-          :desc "Terminal"              :n  "t" #'+term/open-popup-in-project
+          :desc "Terminal"              :n  "t" #'+term/open
+          :desc "Terminal in popup"     :n  "T" #'+term/open-popup-in-project
+          :desc "Eshell"                :n  "e" #'+eshell/open
+          :desc "Eshell in popup"       :n  "E" #'+eshell/open-popup
 
-          ;; applications
-          :desc "APP: elfeed"           :n "E" #'=rss
-          :desc "APP: email"            :n "M" #'=email
-          :desc "APP: twitter"          :n "T" #'=twitter
-          :desc "APP: regex"            :n "X" #'=regex
+          (:when (featurep! :collab floobits)
+            :desc "floobits" :prefix "f"
+            :n "c" #'floobits-clear-highlights
+            :n "f" #'floobits-follow-user
+            :n "j" #'floobits-join-workspace
+            :n "l" #'floobits-leave-workspace
+            :n "R" #'floobits-share-dir-private
+            :n "s" #'floobits-summon
+            :n "t" #'floobits-follow-mode-toggle
+            :n "U" #'floobits-share-dir-public)
 
           ;; macos
           (:when IS-MAC
@@ -282,7 +295,8 @@
 
         (:desc "quit" :prefix "q"
           :desc "Save and quit"          :n "q" #'evil-save-and-quit
-          :desc "Quit (forget session)"  :n "Q" #'+workspace/kill-session-and-quit)
+          :desc "Quit (forget session)"  :n "Q" #'+workspace/kill-session-and-quit
+          :desc "Restart Doom Emacs"     :n "r" #'restart-emacs)
 
         (:when (featurep! :tools upload)
           (:desc "remote" :prefix "r"
@@ -293,11 +307,13 @@
             :desc "Browse remote files"    :n "." #'ssh-deploy-browse-remote-handler
             :desc "Detect remote changes"  :n ">" #'ssh-deploy-remote-changes-handler))
 
-        (:desc "snippets" :prefix "s"
-          :desc "New snippet"            :n  "n" #'yas-new-snippet
-          :desc "Insert snippet"         :nv "i" #'yas-insert-snippet
-          :desc "Find snippet for mode"  :n  "s" #'yas-visit-snippet-file
-          :desc "Find snippet"           :n  "S" #'+default/find-in-snippets)
+        (:when (featurep! :feature snippets)
+          (:desc "snippets" :prefix "s"
+            :desc "New snippet"           :n  "n" #'yas-new-snippet
+            :desc "Insert snippet"        :nv "i" #'yas-insert-snippet
+            :desc "Find snippet"          :n  "s" #'+default/find-in-snippets
+            :desc "Find snippet for mode" :n  "S" #'+default/browse-snippets
+            :desc "Find global snippet"   :n  "/" #'yas-visit-snippet-file))
 
         (:desc "toggle" :prefix "t"
           :desc "Flyspell"               :n "s" #'flyspell-mode
@@ -308,7 +324,7 @@
           :desc "Indent guides (column)" :n "I" #'highlight-indentation-current-column-mode
           :desc "Impatient mode"         :n "h" #'+impatient-mode/toggle
           :desc "Big mode"               :n "b" #'doom-big-font-mode
-          :desc "Evil goggles"           :n "g" #'+evil-goggles/toggle
+          :desc "Evil goggles"           :n "g" #'evil-goggles-mode
           :desc "org-tree-slide mode"    :n "p" #'+org-present/start))
 
 
@@ -316,6 +332,8 @@
       :nv "K"  #'+lookup/documentation
       :n  "zx" #'kill-this-buffer
       :n  "ZX" #'bury-buffer
+      :m  "]a" #'evil-forward-arg
+      :m  "[a" #'evil-backward-arg
       :n  "]b" #'next-buffer
       :n  "[b" #'previous-buffer
       :n  "]w" #'+workspace/switch-right
@@ -324,12 +342,12 @@
       :m  "gT" #'+workspace/switch-left
       :m  "gd" #'+lookup/definition
       :m  "gD" #'+lookup/references
+      :n  "gf" #'+lookup/file
       :n  "gp" #'+evil/reselect-paste
       :v  "gp" #'+evil/paste-preserve-register
       :n  "gr" #'+eval:region
       :n  "gR" #'+eval/buffer
       :v  "gR" #'+eval:replace-region
-      :m  "gs" #'+default/easymotion  ; lazy-load `evil-easymotion'
       :v  "@"  #'+evil:apply-macro
       :n  "g@" #'+evil:apply-macro
       ;; repeat in visual mode (FIXME buggy)
@@ -358,7 +376,7 @@
         :i "s"     #'company-ispell
         :i "C-s"   #'company-yasnippet
         :i "C-o"   #'company-capf
-        :i "C-n"   #'company-dabbrev-code
+        :i "C-n"   #'+company/dabbrev
         :i "C-p"   #'+company/dabbrev-code-previous)
       (:after company
         (:map company-active-map
@@ -383,19 +401,39 @@
           [escape]  #'company-search-abort))
 
       ;; counsel
-      (:after counsel
-        (:map counsel-ag-map
-          [backtab]  #'+ivy/wgrep-occur      ; search/replace on results
-          "C-SPC"    #'ivy-call-and-recenter ; preview
-          "M-RET"    (+ivy-do-action! #'+ivy-git-grep-other-window-action)))
+      (:when (featurep! :completion ivy)
+        (:after counsel
+          (:map counsel-ag-map
+            [backtab]  #'+ivy/wgrep-occur      ; search/replace on results
+            "C-SPC"    #'ivy-call-and-recenter ; preview
+            "M-RET"    (+ivy-do-action! #'+ivy-git-grep-other-window-action))))
+
+      ;; easymotion
+      :m "gs" #'+default/easymotion  ; lazy-load `evil-easymotion'
+      (:after evil-easymotion
+        :map evilem-map
+        "a" (evilem-create #'evil-forward-arg)
+        "A" (evilem-create #'evil-backward-arg)
+        "n" (evilem-create #'evil-ex-search-next)
+        "N" (evilem-create #'evil-ex-search-previous)
+        "s" (evilem-create #'evil-snipe-repeat
+                           :pre-hook (save-excursion (call-interactively #'evil-snipe-s))
+                           :bind ((evil-snipe-scope 'buffer)
+                                  (evil-snipe-enable-highlight)
+                                  (evil-snipe-enable-incremental-highlight)))
+        "S" (evilem-create #'evil-snipe-repeat-reverse
+                           :pre-hook (save-excursion (call-interactively #'evil-snipe-s))
+                           :bind ((evil-snipe-scope 'buffer)
+                                  (evil-snipe-enable-highlight)
+                                  (evil-snipe-enable-incremental-highlight))))
 
       ;; evil
       (:after evil
         :textobj "a" #'evil-inner-arg                    #'evil-outer-arg
         :textobj "B" #'evil-textobj-anyblock-inner-block #'evil-textobj-anyblock-a-block
         :textobj "i" #'evil-indent-plus-i-indent         #'evil-indent-plus-a-indent
-        :textobj "I" #'evil-indent-plus-i-indent-up      #'evil-indent-plus-a-indent-up
-        :textobj "J" #'evil-indent-plus-i-indent-up-down #'evil-indent-plus-a-indent-up-down
+        :textobj "k" #'evil-indent-plus-i-indent-up      #'evil-indent-plus-a-indent-up
+        :textobj "j" #'evil-indent-plus-i-indent-up-down #'evil-indent-plus-a-indent-up-down
 
         (:map evil-window-map ; prefix "C-w"
           ;; Navigation
@@ -743,23 +781,16 @@
 ;; Evil-collection fixes
 ;;
 
-(when (featurep 'evil-collection)
-  ;; don't interfere with leader key
-  (evil-define-key* '(normal visual) special-mode-map (kbd doom-leader-key) nil)
-  (after! dired
-    (evil-define-key* 'normal dired-mode-map (kbd doom-leader-key) nil))
+(defun +config|deal-with-evil-collections-bs (_feature keymaps)
+  "Unmap keys that conflict with Doom's defaults."
+  (dolist (map keymaps)
+    (evil-delay `(and (boundp ',map) (keymapp ,map))
+        `(evil-define-key* '(normal visual motion) ,map
+           (kbd doom-leader-key) nil
+           (kbd "C-j") nil (kbd "C-k") nil
+           "gd" nil "gf" nil "K"  nil
+           "]"  nil "["  nil)
+      'after-load-functions t nil
+      (format "+default-redefine-key-in-%s" map))))
 
-  ;; don't remap gd or K; Doom does this already
-  ;; TODO find a better way
-  (after! compile
-    (evil-define-key* '(normal visual) compilation-mode-map "gd" nil "K" nil))
-  (after! racer
-    (evil-define-key* 'normal racer-mode-map "gd" nil "K" nil))
-  (after! anaconda-mode
-    (evil-define-key* 'normal anaconda-mode-map "gd" nil "K" nil))
-  (after! alchemist
-    (evil-define-key* 'normal alchemist-mode-map "gd" nil "K" nil "gz" nil))
-  (after! go-mode
-    (evil-define-key* 'normal go-mode-map "gd" nil "K" nil))
-  (after! lua-mode
-    (evil-define-key* 'normal lua-mode-map "K" nil)))
+(add-hook 'evil-collection-setup-hook #'+config|deal-with-evil-collections-bs)

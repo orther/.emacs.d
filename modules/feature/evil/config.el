@@ -3,34 +3,39 @@
 ;; I'm a vimmer at heart. Its modal philosophy suits me better, and this module
 ;; strives to make Emacs a much better vim than vim was.
 
-(def-setting! :evil-state (modes state)
-  "Set the initialize STATE of MODE using `evil-set-initial-state'."
-  (let ((unquoted-modes (doom-unquote modes)))
-    (if (listp unquoted-modes)
-        `(progn
-           ,@(cl-loop for mode in unquoted-modes
-                      collect `(evil-set-initial-state ',mode ,state)))
-      `(evil-set-initial-state ,modes ,state))))
-
-
-;;
-;; evil-mode
-;;
-
-(autoload 'goto-last-change "goto-chg")
-(autoload 'goto-last-change-reverse "goto-chg")
+(defvar +evil-collection-disabled-list
+  '(kotlin-mode ; doesn't do anything useful
+    simple)     ; ditto
+  "A list of `evil-collection' modules to disable. See the definition of this
+variable for an explanation of the defaults (in comments). See
+`evil-collection-mode-list' for a list of available options.")
 
 
 (def-package! evil-collection
   :when (featurep! +everywhere)
-  :after evil
+  :defer 1
+  :after-call post-command-hook
   :preface
-  ;; must be set before evil/evil-collcetion is loaded
-  (setq evil-want-integration (not (featurep! +everywhere))
+  ;; must be set before evil/evil-collection is loaded
+  (setq evil-want-integration nil
         evil-collection-company-use-tng nil)
   :config
-  (delq 'kotlin-mode evil-collection-mode-list) ; doesn't do anything useful
-  (delq 'simple evil-collection-mode-list) ; breaks too much
+  ;; Until evil-collection#101 is resolved
+  (defun +evil*fix-evil-collection-fix-helm-bs ()
+    "Prevents `with-helm-buffer' void-function errors when loading helm."
+    (when (with-current-buffer (helm-buffer-get) helm-echo-input-in-header-line)
+      (let ((ov (make-overlay (point-min) (point-max) nil nil t)))
+        (overlay-put ov 'window (selected-window))
+        (overlay-put ov 'face (let ((bg-color (face-background 'default nil)))
+                                `(:background ,bg-color :foreground ,bg-color)))
+        (setq-local cursor-type nil))))
+  (advice-add #'evil-collection-helm-hide-minibuffer-maybe :override
+              #'+evil*fix-evil-collection-fix-helm-bs)
+
+  (dolist (sym +evil-collection-disabled-list)
+    (setq evil-collection-mode-list
+          (funcall (if (symbolp sym) #'delq #'delete)
+                   sym evil-collection-mode-list)))
   (evil-collection-init))
 
 
@@ -61,7 +66,7 @@
         evil-visual-state-cursor 'hollow)
 
   :config
-  (add-hook 'doom-init-hook #'evil-mode)
+  (add-hook 'doom-post-init-hook #'evil-mode)
   (evil-select-search-module 'evil-search-module 'evil-search)
 
   (set! :popup "^\\*evil-registers" '((size . 0.3)))
@@ -108,12 +113,11 @@
                (buffer-name))
              (count-lines (point-min) (point-max))
              (buffer-size)))
-  (setq save-silently t)
-  (add-hook 'after-save-hook #'+evil|save-buffer)
+  (unless noninteractive
+    (setq save-silently t)
+    (add-hook 'after-save-hook #'+evil|save-buffer))
   ;; Make ESC (from normal mode) the universal escaper. See `doom-escape-hook'.
   (advice-add #'evil-force-normal-state :after #'doom/escape)
-  ;; Ensure buffer is in initial mode when we leave it and return to it.
-  (advice-add #'windmove-do-window-select :around #'+evil*restore-initial-state-on-windmove)
   ;; Don't move cursor when indenting
   (advice-add #'evil-indent :around #'+evil*static-reindent)
   ;; monkey patch `evil-ex-replace-special-filenames' to improve support for
@@ -220,26 +224,26 @@
     (cons (format "(%s " (or (read-string "(") "")) ")"))
 
   ;; Add escaped-sequence support to embrace
-  (push (cons ?\\ (make-embrace-pair-struct
-                   :key ?\\
-                   :read-function #'+evil--embrace-escaped
-                   :left-regexp "\\[[{(]"
-                   :right-regexp "\\[]})]"))
-        (default-value 'embrace--pairs-list)))
+  (map-put (default-value 'embrace--pairs-list)
+           ?\\ (make-embrace-pair-struct
+                :key ?\\
+                :read-function #'+evil--embrace-escaped
+                :left-regexp "\\[[{(]"
+                :right-regexp "\\[]})]")))
 
 
 (def-package! evil-escape
-  :commands evil-escape-mode
+  :commands (evil-escape evil-escape-mode evil-escape-pre-command-hook)
   :init
   (setq evil-escape-excluded-states '(normal visual multiedit emacs motion)
         evil-escape-excluded-major-modes '(neotree-mode)
         evil-escape-key-sequence "jk"
         evil-escape-delay 0.25)
-  (add-hook 'doom-post-init-hook #'evil-escape-mode)
+  (add-hook 'pre-command-hook #'evil-escape-pre-command-hook)
+  (map! :irvo "C-g" #'evil-escape)
   :config
   ;; no `evil-escape' in minibuffer
-  (push #'minibufferp evil-escape-inhibit-functions)
-  (map! :irvo "C-g" #'evil-escape))
+  (add-hook 'evil-escape-inhibit-functions #'minibufferp))
 
 
 (def-package! evil-exchange
@@ -304,14 +308,21 @@ the new algorithm is confusing, like in python or ruby."
   :config
   (global-evil-mc-mode +1)
 
+  (after! smartparens
+    ;; Make evil-mc cooperate with smartparens better
+    (unless (memq (car sp--mc/cursor-specific-vars) (cdr (assq :default evil-mc-cursor-variables)))
+      (setcdr (assq :default evil-mc-cursor-variables)
+              (append (cdr (assq :default evil-mc-cursor-variables))
+                      sp--mc/cursor-specific-vars))))
+
   ;; Add custom commands to whitelisted commands
   (dolist (fn '(doom/backward-to-bol-or-indent doom/forward-to-last-non-comment-or-eol
                 doom/backward-kill-to-bol-and-indent))
-    (push (cons fn '((:default . evil-mc-execute-default-call)))
-          evil-mc-custom-known-commands))
+    (map-put evil-mc-custom-known-commands
+             fn '((:default . evil-mc-execute-default-call))))
 
   ;; disable evil-escape in evil-mc; causes unwanted text on invocation
-  (push 'evil-escape-mode evil-mc-incompatible-minor-modes)
+  (add-to-list 'evil-mc-incompatible-minor-modes 'evil-escape-mode nil #'eq)
 
   (defun +evil|escape-multiple-cursors ()
     "Clear evil-mc cursors and restore state."
@@ -325,14 +336,15 @@ the new algorithm is confusing, like in python or ruby."
 (def-package! evil-snipe
   :commands (evil-snipe-mode evil-snipe-override-mode
              evil-snipe-local-mode evil-snipe-override-local-mode)
-  :hook (doom-post-init . evil-snipe-mode)
+  :after-call pre-command-hook
   :init
   (setq evil-snipe-smart-case t
         evil-snipe-scope 'line
         evil-snipe-repeat-scope 'visible
-        evil-snipe-char-fold t
-        evil-snipe-aliases '((?\; "[;:]")))
+        evil-snipe-char-fold t)
   :config
+  (add-to-list 'evil-snipe-disabled-modes 'Info-mode nil #'eq)
+  (evil-snipe-mode +1)
   (evil-snipe-override-mode +1))
 
 
@@ -379,21 +391,9 @@ the new algorithm is confusing, like in python or ruby."
              evil-forward-arg evil-backward-arg
              evil-jump-out-args)
   :config
-  (push "<" evil-args-openers)
-  (push ">" evil-args-closers))
-
-
-(def-package! evil-indent-plus
-  :commands (evil-indent-plus-i-indent
-             evil-indent-plus-a-indent
-             evil-indent-plus-i-indent-up
-             evil-indent-plus-a-indent-up
-             evil-indent-plus-i-indent-up-down
-             evil-indent-plus-a-indent-up-down))
-
-
-(def-package! evil-textobj-anyblock
-  :commands (evil-textobj-anyblock-inner-block evil-textobj-anyblock-a-block))
+  (unless (member "<" evil-args-openers)
+    (push "<" evil-args-openers)
+    (push ">" evil-args-closers)))
 
 
 ;;
@@ -409,13 +409,9 @@ the new algorithm is confusing, like in python or ruby."
   (defvar +evil--mc-compat-evil-prev-state nil)
   (defvar +evil--mc-compat-mark-was-active nil)
 
-  (defsubst +evil--visual-or-normal-p ()
-    "True if evil mode is enabled, and we are in normal or visual mode."
-    (and (bound-and-true-p evil-mode)
-         (not (memq evil-state '(insert emacs)))))
-
   (defun +evil|mc-compat-switch-to-emacs-state ()
-    (when (+evil--visual-or-normal-p)
+    (when (and (bound-and-true-p evil-mode)
+               (not (memq evil-state '(insert emacs))))
       (setq +evil--mc-compat-evil-prev-state evil-state)
       (when (region-active-p)
         (setq +evil--mc-compat-mark-was-active t))
@@ -442,7 +438,8 @@ the new algorithm is confusing, like in python or ruby."
   ;; When running edit-lines, point will return (position + 1) as a
   ;; result of how evil deals with regions
   (defun +evil*mc/edit-lines (&rest _)
-    (when (+evil--visual-or-normal-p)
+    (when (and (bound-and-true-p evil-mode)
+               (not (memq evil-state '(insert emacs))))
       (if (> (point) (mark))
           (goto-char (1- (point)))
         (push-mark (1- (mark))))))

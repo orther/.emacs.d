@@ -8,7 +8,7 @@ Since spellchecking can be slow in some buffers, this can be disabled with:
   (setq-hook! 'LaTeX-mode-hook +spellcheck-immediately nil)")
 
 (def-package! flyspell ; built-in
-  :commands flyspell-mode
+  :defer t
   :init
   (add-hook 'flyspell-mode-hook #'+spellcheck|immediately)
   :config
@@ -30,8 +30,6 @@ Since spellchecking can be slow in some buffers, this can be disabled with:
          (require 'flyspell-correct-helm))
         ((featurep! :completion ivy)
          (require 'flyspell-correct-ivy))
-        (t
-         (require 'flyspell-correct-popup)
+        ((require 'flyspell-correct-popup)
          (setq flyspell-popup-correct-delay 0.8)
          (define-key popup-menu-keymap [escape] #'keyboard-quit))))
-

@@ -24,10 +24,10 @@ immediately runs it on the current candidate (ending the ivy session)."
 ;;
 
 (def-package! ivy
-  :init
-  (add-hook 'doom-init-hook #'ivy-mode)
+  :defer 1
+  :after-call pre-command-hook
   :config
-  (setq ivy-height 12
+  (setq ivy-height 15
         ivy-do-completion-in-region nil
         ivy-wrap t
         ivy-fixed-height-minibuffer t
@@ -44,24 +44,18 @@ immediately runs it on the current candidate (ending the ivy session)."
         ;; ...but if that ever changes, show their full path
         ivy-virtual-abbreviate 'full
         ;; don't quit minibuffer on delete-error
-        ivy-on-del-error-function nil)
+        ivy-on-del-error-function nil
+        ;; enable ability to select prompt (alternative to `ivy-immediate-done')
+        ivy-use-selectable-prompt t)
 
   (after! magit     (setq magit-completing-read-function #'ivy-completing-read))
-  (after! yasnippet (push #'+ivy-yas-prompt yas-prompt-functions))
+  (after! yasnippet (add-to-list 'yas-prompt-functions #'+ivy-yas-prompt nil #'eq))
 
   (map! [remap switch-to-buffer]       #'ivy-switch-buffer
         [remap persp-switch-to-buffer] #'+ivy/switch-workspace-buffer
         [remap imenu-anywhere]         #'ivy-imenu-anywhere)
 
-  (nconc ivy-sort-functions-alist
-         '((persp-kill-buffer   . nil)
-           (persp-remove-buffer . nil)
-           (persp-add-buffer    . nil)
-           (persp-switch        . nil)
-           (persp-window-switch . nil)
-           (persp-frame-switch  . nil)
-           (+workspace/switch-to . nil)
-           (+workspace/delete . nil))))
+  (ivy-mode +1))
 
 
 ;; Show more buffer information in switch-buffer commands
@@ -73,16 +67,8 @@ immediately runs it on the current candidate (ending the ivy session)."
     (ivy-set-display-transformer cmd '+ivy-buffer-transformer)))
 
 
-(def-package! swiper :commands (swiper swiper-all))
-
-
 (def-package! counsel
-  :commands (counsel-ag counsel-rg counsel-pt counsel-apropos counsel-bookmark
-             counsel-describe-function counsel-describe-variable
-             counsel-describe-face counsel-M-x counsel-file-jump
-             counsel-find-file counsel-find-library counsel-info-lookup-symbol
-             counsel-imenu counsel-recentf counsel-yank-pop
-             counsel-descbinds counsel-org-capture counsel-grep-or-swiper)
+  :commands counsel-describe-face
   :init
   (map! [remap apropos]                  #'counsel-apropos
         [remap bookmark-jump]            #'counsel-bookmark
@@ -100,7 +86,12 @@ immediately runs it on the current candidate (ending the ivy session)."
   :config
   (set! :popup "^\\*ivy-occur" '((size . 0.35)) '((transient . 0) (quit)))
 
-  (setq counsel-find-file-ignore-regexp "\\(?:^[#.]\\)\\|\\(?:[#~]$\\)\\|\\(?:^Icon?\\)")
+  (setq counsel-find-file-ignore-regexp "\\(?:^[#.]\\)\\|\\(?:[#~]$\\)\\|\\(?:^Icon?\\)"
+        ;; Add smart-casing and compressed archive searching (-zS) to default
+        ;; command arguments:
+        counsel-rg-base-command "rg -zS --no-heading --line-number --color never %s ."
+        counsel-ag-base-command "ag -zS --nocolor --nogroup %s"
+        counsel-pt-base-command "pt -zS --nocolor --nogroup -e %s")
 
   ;; Dim recentf entries that are not in the current project.
   (ivy-set-display-transformer #'counsel-recentf #'+ivy-recentf-transformer)
@@ -128,9 +119,7 @@ immediately runs it on the current candidate (ending the ivy session)."
 
 
 ;; Used by `counsel-M-x'
-(def-package! smex
-  :commands (smex smex-major-mode-commands)
-  :config
+(after! smex
   (setq smex-save-file (concat doom-cache-dir "/smex-items"))
   (smex-initialize))
 
@@ -138,11 +127,12 @@ immediately runs it on the current candidate (ending the ivy session)."
 (def-package! ivy-hydra
   :commands (+ivy@coo/body ivy-dispatching-done-hydra)
   :init
-  (map! :map ivy-minibuffer-map
+  (map! :after ivy
+        :map ivy-minibuffer-map
         "C-o" #'+ivy@coo/body
         "M-o" #'ivy-dispatching-done-hydra)
   :config
-  (def-hydra! +ivy@coo (:hint nil :color pink)
+  (defhydra +ivy@coo (:hint nil :color pink)
     "
  Move     ^^^^^^^^^^ | Call         ^^^^ | Cancel^^ | Options^^ | Action _w_/_s_/_a_: %s(ivy-action-name)
 ----------^^^^^^^^^^-+--------------^^^^-+-------^^-+--------^^-+---------------------------------
@@ -185,13 +175,12 @@ immediately runs it on the current candidate (ending the ivy session)."
 
 
 (def-package! wgrep
-  :commands (wgrep-setup wgrep-change-to-wgrep-mode)
+  :commands wgrep-change-to-wgrep-mode
   :config (setq wgrep-auto-save-buffer t))
 
 
 (def-package! ivy-posframe
-  :when EMACS26+
-  :when (featurep! +childframe)
+  :when (and EMACS26+ (featurep! +childframe))
   :hook (ivy-mode . ivy-posframe-enable)
   :preface
   ;; This function searches the entire `obarray' just to populate
@@ -199,6 +188,12 @@ immediately runs it on the current candidate (ending the ivy session)."
   ;; wasteful, so...
   (advice-add #'ivy-posframe-setup :override #'ignore)
   :config
+  (setq ivy-height 16
+        ivy-fixed-height-minibuffer nil
+        ivy-posframe-parameters `((min-width . 90)
+                                  (min-height . ,ivy-height)
+                                  (internal-border-width . 10)))
+
   ;; ... let's do it manually
   (dolist (fn (list 'ivy-posframe-display-at-frame-bottom-left
                     'ivy-posframe-display-at-frame-center
@@ -208,16 +203,23 @@ immediately runs it on the current candidate (ending the ivy session)."
                     'ivy-posframe-display-at-window-bottom-left
                     'ivy-posframe-display-at-window-center
                     '+ivy-display-at-frame-center-near-bottom))
-    (push (list fn :cleanup 'ivy-posframe-cleanup) ivy-display-functions-props))
+    (map-put ivy-display-functions-props fn '(:cleanup ivy-posframe-cleanup)))
 
-  (push '(t . +ivy-display-at-frame-center-near-bottom) ivy-display-functions-alist)
+  (map-put ivy-display-functions-alist 't '+ivy-display-at-frame-center-near-bottom)
 
   ;; posframe doesn't work well with async sources
   (dolist (fn '(swiper counsel-rg counsel-ag counsel-pt counsel-grep counsel-git-grep))
-    (push (cons fn nil) ivy-display-functions-alist))
+    (map-put ivy-display-functions-alist fn nil)))
 
-  (setq ivy-height 16
-        ivy-fixed-height-minibuffer nil
-        ivy-posframe-parameters `((min-width . 90)
-                                  (min-height . ,ivy-height)
-                                  (internal-border-width . 10))))
+
+(def-package! flx
+  :when (featurep! +fuzzy)
+  :defer t  ; is loaded by ivy
+  :init
+  (setq ivy-re-builders-alist
+        '((counsel-ag . ivy--regex-plus)
+          (counsel-rg . ivy--regex-plus)
+          (counsel-pt . ivy--regex-plus)
+          (counsel-grep-or-swiper . ivy--regex-plus)
+          (t . ivy--regex-fuzzy))
+        ivy-initial-inputs-alist nil))

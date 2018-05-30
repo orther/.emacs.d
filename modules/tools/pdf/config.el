@@ -1,8 +1,7 @@
 ;;; tools/pdf/config.el -*- lexical-binding: t; -*-
 
 (def-package! pdf-tools
-  :mode ("\\.pdf$" . pdf-view-mode)
-  :init (load "pdf-tools-autoloads" nil t)
+  :mode ("\\.pdf\\'" . pdf-view-mode)
   :config
   (unless noninteractive
     (pdf-tools-install))
@@ -16,7 +15,7 @@
   (add-hook! 'pdf-view-mode-hook (cua-mode 0))
   ;; Custom modeline that removes useless info and adds page numbers
   (when (featurep! :ui doom-modeline)
-    (load! +modeline)
+    (load! "+modeline")
     (add-hook! pdf-tools-enabled (doom-set-modeline 'pdf-tools-modeline)))
   ;; Handle PDF-tools related popups better
   (set! :popup "^\\*Outline*" '((side . right) (size . 40)) '((select)))
