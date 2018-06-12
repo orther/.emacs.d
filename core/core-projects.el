@@ -25,11 +25,11 @@
                       "node_modules" "flow-typed"))
         projectile-other-file-alist
         (append projectile-other-file-alist
-                '(("css"  . ("scss" "sass" "less" "styl"))
-                  ("scss" . ("css"))
-                  ("sass" . ("css"))
-                  ("less" . ("css"))
-                  ("styl" . ("css")))))
+                '(("css"  "scss" "sass" "less" "styl")
+                  ("scss" "css")
+                  ("sass" "css")
+                  ("less" "css")
+                  ("styl" "css"))))
 
   ;; Projectile root-searching functions can cause an infinite loop on TRAMP
   ;; connections, so disable them.
@@ -99,7 +99,7 @@ If NOCACHE, don't fetch a cached answer."
 Paths are relative to the project root, unless they start with ./ or ../ (in
 which case they're relative to `default-directory'). If they start with a slash,
 they are absolute."
-  (doom--resolve-path-forms files '(doom-project-root)))
+  `(file-exists-p! ,files (doom-project-root)))
 
 (defun doom-project-find-file (dir)
   "Fuzzy-find a file under DIR."

@@ -16,6 +16,11 @@
 ;; Config
 ;;
 
+;; Don't store authinfo in non-encrypted files!
+(defvar auth-sources
+  (list (expand-file-name "authinfo.gpg" doom-etc-dir)
+        "~/.authinfo.gpg"))
+
 (after! epa
   (setq epa-file-encrypt-to (or epa-file-encrypt-to user-mail-address)
         ;; With GPG 2.1, this forces gpg-agent to use the Emacs minibuffer to
@@ -40,8 +45,8 @@
                  :pre-handlers '(:rem sp-ruby-prehandler)
                  :post-handlers '(:rem sp-ruby-posthandler))
   ;; sp's default rules for these modes are obnoxious, so disable them
-  (provide 'smartparens-latex)
   (provide 'smartparens-elixir)
+  (provide 'smartparens-latex)
   (provide 'smartparens-lua)
 
   ;; Expand {|} => { | }
@@ -93,8 +98,9 @@ customized by changing `+default-repeat-forward-key' and
         (let ((fn-sym (intern (format "+evil*repeat-%s" (doom-unquote command)))))
           `(progn
              (defun ,fn-sym (&rest _)
-               (define-key evil-motion-state-map +default-repeat-forward-key #',next-func)
-               (define-key evil-motion-state-map +default-repeat-backward-key #',prev-func))
+               (define-key! evil-motion-state-map
+                 +default-repeat-forward-key #',next-func
+                 +default-repeat-backward-key #',prev-func))
              (advice-add #',command :before #',fn-sym)))))
 
     ;; n/N

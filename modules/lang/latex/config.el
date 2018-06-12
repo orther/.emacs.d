@@ -6,7 +6,7 @@
 (defvar +latex-bibtex-dir ""
   "Where bibtex files are kept.")
 
-(defvar +latex-indent-level-item-continuation 8
+(defvar +latex-indent-level-item-continuation 4
   "Custom indentation level for items in enumeration-type environments")
 
 
@@ -52,7 +52,7 @@
         LaTeX-fill-break-at-separators nil
         LaTeX-item-indent 0) ; item indentation.
 
-  (map! :map LaTeX-mode-map "C-j" nil)
+  (define-key LaTeX-mode-map "\C-j" nil)
 
   ;; Do not prompt for Master files, this allows auto-insert to add templates
   ;; to .tex files
@@ -61,16 +61,14 @@
   ;; Adding useful things for latex
   (add-hook! 'LaTeX-mode-hook
     #'(LaTeX-math-mode
-        TeX-source-correlate-mode
-        TeX-global-PDF-mode
-        TeX-PDF-mode
-        visual-line-mode))
+       TeX-source-correlate-mode
+       TeX-global-PDF-mode
+       TeX-PDF-mode
+       visual-line-mode))
   ;; Enable rainbow mode after applying styles to the buffer
   (add-hook 'TeX-update-style-hook #'rainbow-delimiters-mode)
   (when (featurep! :feature spellcheck)
     (add-hook 'LaTeX-mode-hook #'flyspell-mode))
-  ;; Default language setting.
-  (setq ispell-dictionary "english")
   ;; Use chktex to search for errors in a latex file.
   (setcar (cdr (assoc "Check" TeX-command-list)) "chktex -v6 %s")
   ;; Set a custom item indentation
@@ -122,10 +120,10 @@
   :config
   (map-put TeX-view-program-list "preview-pane" '(latex-preview-pane-mode))
   (map-put TeX-view-program-selection 'output-pdf '("preview-pane"))
-  (map! :map doc-view-mode-map
-        "ESC" #'delete-window
-        "q"   #'delete-window
-        "k" (λ! (quit-window) (delete-window))))
+  (define-key! doc-view-mode-map
+    (kbd "ESC") #'delete-window
+    "q" #'delete-window
+    "k" (λ! (quit-window) (delete-window))))
 
 
 (def-package! reftex
@@ -154,8 +152,7 @@
           :e "j"   #'next-line
           :e "k"   #'previous-line
           :e "q"   #'kill-buffer-and-window
-          :e "ESC" #'kill-buffer-and-window
-          "C-g"    #'reftex-toc-quit)))
+          :e "ESC" #'kill-buffer-and-window)))
 
 
 (def-package! bibtex
@@ -172,7 +169,7 @@
           bibtex-completion-notes-path (expand-file-name "notes.org" +latex-bibtex-dir)
           bibtex-completion-pdf-open-function
           (lambda (fpath) (async-start-process "open-pdf" "/usr/bin/xdg-open" nil fpath))))
-  (map! :map bibtex-mode-map "C-c \\" #'bibtex-fill-entry))
+  (define-key bibtex-mode-map (kbd "C-c \\") #'bibtex-fill-entry))
 
 
 (def-package! auctex-latexmk

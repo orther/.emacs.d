@@ -4,8 +4,15 @@
 ;; strives to make Emacs a much better vim than vim was.
 
 (defvar +evil-collection-disabled-list
-  '(kotlin-mode ; doesn't do anything useful
-    simple)     ; ditto
+  '(kotlin-mode     ; doesn't do anything useful
+    simple
+    ;; we'll do these ourselves
+    anaconda-mode
+    dired
+    helm
+    ivy
+    minibuffer
+    ruby-mode)
   "A list of `evil-collection' modules to disable. See the definition of this
 variable for an explanation of the defaults (in comments). See
 `evil-collection-mode-list' for a list of available options.")
@@ -20,18 +27,6 @@ variable for an explanation of the defaults (in comments). See
   (setq evil-want-integration nil
         evil-collection-company-use-tng nil)
   :config
-  ;; Until evil-collection#101 is resolved
-  (defun +evil*fix-evil-collection-fix-helm-bs ()
-    "Prevents `with-helm-buffer' void-function errors when loading helm."
-    (when (with-current-buffer (helm-buffer-get) helm-echo-input-in-header-line)
-      (let ((ov (make-overlay (point-min) (point-max) nil nil t)))
-        (overlay-put ov 'window (selected-window))
-        (overlay-put ov 'face (let ((bg-color (face-background 'default nil)))
-                                `(:background ,bg-color :foreground ,bg-color)))
-        (setq-local cursor-type nil))))
-  (advice-add #'evil-collection-helm-hide-minibuffer-maybe :override
-              #'+evil*fix-evil-collection-fix-helm-bs)
-
   (dolist (sym +evil-collection-disabled-list)
     (setq evil-collection-mode-list
           (funcall (if (symbolp sym) #'delq #'delete)
@@ -69,6 +64,8 @@ variable for an explanation of the defaults (in comments). See
   (add-hook 'doom-post-init-hook #'evil-mode)
   (evil-select-search-module 'evil-search-module 'evil-search)
 
+  (put 'evil-define-key* 'lisp-indent-function 'defun)
+
   (set! :popup "^\\*evil-registers" '((size . 0.3)))
   (set! :popup "^\\*Command Line" '((size . 8)))
 
@@ -81,20 +78,26 @@ variable for an explanation of the defaults (in comments). See
     (setq +evil--default-cursor-color (face-background 'cursor)))
   (add-hook 'doom-load-theme-hook #'+evil|update-cursor-color)
 
+  (defun +evil|update-shift-width ()
+    (setq evil-shift-width tab-width))
+  (add-hook 'after-change-major-mode-hook #'+evil|update-shift-width t)
+
 
   ;; --- keybind fixes ----------------------
-  (map! (:after wgrep
-          ;; A wrapper that invokes `wgrep-mark-deletion' across lines you use
-          ;; `evil-delete' in wgrep buffers.
-          :map wgrep-mode-map [remap evil-delete] #'+evil-delete)
+  (after! wgrep
+    ;; A wrapper that invokes `wgrep-mark-deletion' across lines you use
+    ;; `evil-delete' in wgrep buffers.
+    (define-key! wgrep-mode-map
+      [remap evil-delete] #'+evil-delete))
 
-        ;; replace native folding commands
-        [remap evil-toggle-fold]   #'+evil:fold-toggle
-        [remap evil-close-fold]    #'+evil:fold-close
-        [remap evil-open-fold]     #'+evil:fold-open
-        [remap evil-open-fold-rec] #'+evil:fold-open
-        [remap evil-close-folds]   #'+evil:fold-close-all
-        [remap evil-open-folds]    #'+evil:fold-open-all)
+  ;; replace native folding commands
+  (define-key! 'global
+    [remap evil-toggle-fold]   #'+evil:fold-toggle
+    [remap evil-close-fold]    #'+evil:fold-close
+    [remap evil-open-fold]     #'+evil:fold-open
+    [remap evil-open-fold-rec] #'+evil:fold-open
+    [remap evil-close-folds]   #'+evil:fold-close-all
+    [remap evil-open-folds]    #'+evil:fold-open-all)
 
   (defun +evil|disable-highlights ()
     "Disable ex search buffer highlights."
@@ -117,7 +120,7 @@ variable for an explanation of the defaults (in comments). See
     (setq save-silently t)
     (add-hook 'after-save-hook #'+evil|save-buffer))
   ;; Make ESC (from normal mode) the universal escaper. See `doom-escape-hook'.
-  (advice-add #'evil-force-normal-state :after #'doom/escape)
+  (advice-add #'evil-force-normal-state :after #'+evil*escape)
   ;; Don't move cursor when indenting
   (advice-add #'evil-indent :around #'+evil*static-reindent)
   ;; monkey patch `evil-ex-replace-special-filenames' to improve support for
@@ -236,11 +239,11 @@ variable for an explanation of the defaults (in comments). See
   :commands (evil-escape evil-escape-mode evil-escape-pre-command-hook)
   :init
   (setq evil-escape-excluded-states '(normal visual multiedit emacs motion)
-        evil-escape-excluded-major-modes '(neotree-mode)
+        evil-escape-excluded-major-modes '(neotree-mode treemacs-mode)
         evil-escape-key-sequence "jk"
         evil-escape-delay 0.25)
   (add-hook 'pre-command-hook #'evil-escape-pre-command-hook)
-  (map! :irvo "C-g" #'evil-escape)
+  (evil-define-key* '(insert replace visual operator) 'global "\C-g" #'evil-escape)
   :config
   ;; no `evil-escape' in minibuffer
   (add-hook 'evil-escape-inhibit-functions #'minibufferp))
@@ -265,8 +268,9 @@ variable for an explanation of the defaults (in comments). See
              evilmi-outer-text-object evilmi-inner-text-object)
   :config (global-evil-matchit-mode 1)
   :init
-  (map! [remap evil-jump-item] #'evilmi-jump-items
-        :textobj "%" #'evilmi-inner-text-object #'evilmi-outer-text-object)
+  (define-key! 'global [remap evil-jump-item] #'evilmi-jump-items)
+  (define-key evil-inner-text-objects-map "%" #'evilmi-inner-text-object)
+  (define-key evil-outer-text-objects-map "%" #'evilmi-outer-text-object)
   :config
   ;; Fixes #519 where d% wouldn't leave a dangling end-parenthesis
   (evil-set-command-properties 'evilmi-jump-items :type 'inclusive :jump t)
@@ -310,16 +314,20 @@ the new algorithm is confusing, like in python or ruby."
 
   (after! smartparens
     ;; Make evil-mc cooperate with smartparens better
-    (unless (memq (car sp--mc/cursor-specific-vars) (cdr (assq :default evil-mc-cursor-variables)))
-      (setcdr (assq :default evil-mc-cursor-variables)
-              (append (cdr (assq :default evil-mc-cursor-variables))
-                      sp--mc/cursor-specific-vars))))
+    (let ((vars (cdr (assq :default evil-mc-cursor-variables))))
+      (unless (memq (car sp--mc/cursor-specific-vars) vars)
+        (setcdr (assq :default evil-mc-cursor-variables)
+                (append vars sp--mc/cursor-specific-vars)))))
 
   ;; Add custom commands to whitelisted commands
   (dolist (fn '(doom/backward-to-bol-or-indent doom/forward-to-last-non-comment-or-eol
                 doom/backward-kill-to-bol-and-indent))
     (map-put evil-mc-custom-known-commands
              fn '((:default . evil-mc-execute-default-call))))
+
+  ;; Activate evil-mc cursors upon switching to insert mode
+  (defun +evil-mc|resume-cursors () (setq evil-mc-frozen nil))
+  (add-hook 'evil-insert-state-entry-hook #'+evil-mc|resume-cursors)
 
   ;; disable evil-escape in evil-mc; causes unwanted text on invocation
   (add-to-list 'evil-mc-incompatible-minor-modes 'evil-escape-mode nil #'eq)
@@ -376,8 +384,9 @@ the new algorithm is confusing, like in python or ruby."
              evil-visualstar/begin-search-forward
              evil-visualstar/begin-search-backward)
   :init
-  (map! :v "*" #'evil-visualstar/begin-search-forward
-        :v "#" #'evil-visualstar/begin-search-backward)
+  (evil-define-key* 'visual 'global
+    "*" #'evil-visualstar/begin-search-forward
+    "#" #'evil-visualstar/begin-search-backward)
   :config
   (global-evil-visualstar-mode 1))
 
@@ -404,7 +413,7 @@ the new algorithm is confusing, like in python or ruby."
 ;; so that any plugins that depend on multiple-cursors (which I have no control
 ;; over) can still use it in relative safety.
 (after! multiple-cursors-core
-  (map! :map mc/keymap :ne "<escape>" #'mc/keyboard-quit)
+  (evil-define-key* '(normal emacs) mc/keymap [escape] #'mc/keyboard-quit)
 
   (defvar +evil--mc-compat-evil-prev-state nil)
   (defvar +evil--mc-compat-mark-was-active nil)

@@ -17,10 +17,9 @@ ALIST also supports the `size' parameter, which will be translated to
 `window-width' or `window-height' depending on `side'.
 
 PARAMETERS is an alist of window parameters. See `+popup-window-parameters' for
-a list of custom parameters provided by the popup module.
-
-If certain attributes/parameters are omitted, the ones from
-`+popup-default-alist' and `+popup-default-parameters' will be used.
+a list of custom parameters provided by the popup module. If certain
+attributes/parameters are omitted, the ones from `+popup-default-alist' and
+`+popup-default-parameters' will be used.
 
 The buffers of new windows displayed by `pop-to-buffer' and `display-buffer'
 will be tested against CONDITION, which is either a) a regexp string (which is
@@ -42,8 +41,8 @@ returns a boolean."
 each individual rule.
 
  (set! :popups
-   (\"^ \\*\" '((slot . 1) (vslot . -1) (size . +popup-shrink-to-fit)))
-   (\"^\\*\"  '((slot . 1) (vslot . -1)) '((select . t))))"
+   '(\"^ \\*\" ((slot . 1) (vslot . -1) (size . +popup-shrink-to-fit)))
+   '(\"^\\*\"  ((slot . 1) (vslot . -1)) ((select . t))))"
   `(progn
      (dolist (rule (nreverse (list ,@rules)))
        (when after-init-time
@@ -263,7 +262,13 @@ Uses `shrink-window-if-larger-than-buffer'."
 `+popup-mode'.")
 
 ;;;###autoload
-(defvar +popup-buffer-mode-map (make-sparse-keymap)
+(defvar +popup-buffer-mode-map
+  (let ((map (make-sparse-keymap)))
+    (when (featurep! :feature evil)
+      ;; for maximum escape coverage in emacs state buffers
+      (define-key map [escape] #'doom/escape)
+      (define-key map (kbd "ESC") #'doom/escape))
+    map)
   "Active keymap in popup windows. See `+popup-buffer-mode'.")
 
 ;;;###autoload
@@ -291,7 +296,8 @@ Uses `shrink-window-if-larger-than-buffer'."
                window--sides-inhibit-check nil)
          (+popup|cleanup-rules)
          (dolist (prop +popup-window-parameters)
-           (map-delete window-persistent-parameters prop)))))
+           (setq window-persistent-parameters
+                 (map-delete window-persistent-parameters prop))))))
 
 ;;;###autoload
 (define-minor-mode +popup-buffer-mode
@@ -482,7 +488,7 @@ should match the arguments of `+popup-define' or the :popup setting."
   (declare (indent defun))
   `(let ((+popup--display-buffer-alist +popup--old-display-buffer-alist)
          display-buffer-alist)
-     ,@(cl-loop for rule in rules collect `(+popup-define ,@rule))
+     ,@(cl-loop for rule in rules collect `(set! :popup ,@rule))
      (when (bound-and-true-p +popup-mode)
        (setq display-buffer-alist +popup--display-buffer-alist))
      ,@body))

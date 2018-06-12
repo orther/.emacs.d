@@ -175,6 +175,16 @@ regex PATTERN. Returns the number of killed buffers."
 
 
 ;;
+;; Hooks
+;;
+
+;;;###autoload
+(defun doom|mark-buffer-as-real ()
+  "Hook function that marks the current buffer as real."
+  (doom-set-buffer-real (current-buffer) t))
+
+
+;;
 ;; Interactive commands
 ;;
 
@@ -244,8 +254,11 @@ ALL-P (universal argument), clean them up globally."
   (interactive)
   (let ((buffers (doom-buried-buffers buffer-list))
         (n 0))
-    (mapc #'kill-buffer buffers)
-    (setq n (+ n (length buffers) (doom/cleanup-buffer-processes)))
+    (dolist (buf buffers)
+      (unless (buffer-modified-p buf)
+        (kill-buffer buf)
+        (cl-incf n)))
+    (setq n (+ n (doom/cleanup-buffer-processes)))
     (dolist (hook doom-cleanup-hook)
       (let ((m (funcall hook)))
         (when (integerp m)

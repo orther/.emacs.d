@@ -1,28 +1,5 @@
 ;;; completion/company/config.el -*- lexical-binding: t; -*-
 
-(def-setting! :company-backend (modes &rest backends)
-  "Prepends BACKENDS to `company-backends' in major MODES.
-
-MODES should be one major-mode symbol or a list of them."
-  `(progn
-     ,@(cl-loop for mode in (doom-enlist (doom-unquote modes))
-                for def-name = (intern (format "doom--init-company-%s" mode))
-                collect
-                `(defun ,def-name ()
-                   (when (and (or (eq major-mode ',mode)
-                                  (bound-and-true-p ,mode))
-                              ,(not (eq backends '(nil))))
-                     (require 'company)
-                     (make-variable-buffer-local 'company-backends)
-                     (dolist (backend (list ,@(reverse backends)))
-                       (cl-pushnew backend company-backends :test #'equal))))
-                collect `(add-hook! ,mode #',def-name))))
-
-
-;;
-;; Packages
-;;
-
 (def-package! company
   :commands (company-complete-common company-manual-begin company-grab-line)
   :init
@@ -39,7 +16,7 @@ MODES should be one major-mode symbol or a list of them."
         '(company-pseudo-tooltip-frontend
           company-echo-metadata-frontend)
         company-backends
-        '(company-capf company-dabbrev company-ispell company-yasnippet)
+        '((:separate company-capf company-yasnippet))
         company-transformers '(company-sort-by-occurrence))
   :config
   (global-company-mode +1))
@@ -48,14 +25,8 @@ MODES should be one major-mode symbol or a list of them."
 (def-package! company
   :when (featurep! +auto)
   :defer 2
-  :after-call pre-command-hook
+  :after-call post-self-insert-hook
   :config (setq company-idle-delay 0.2))
-
-
-(def-package! company-statistics
-  :hook (company-mode . company-statistics-mode)
-  :init (advice-add #'company-statistics-mode :around #'doom*shut-up)
-  :config (setq company-statistics-file (concat doom-cache-dir "company-stats-cache.el")))
 
 
 (def-package! company-box

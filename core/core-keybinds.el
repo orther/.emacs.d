@@ -35,11 +35,11 @@ If any hook returns non-nil, all hooks after it are ignored.")
          ;; quit the minibuffer if open.
          (abort-recursive-edit))
         ;; Run all escape hooks. If any returns non-nil, then stop there.
-        ((run-hook-with-args-until-success 'doom-escape-hook))
+        ((cl-find-if #'funcall doom-escape-hook))
         ;; don't abort macros
         ((or defining-kbd-macro executing-kbd-macro) nil)
         ;; Back to the default
-        (t (keyboard-quit))))
+        ((keyboard-quit))))
 
 (global-set-key [remap keyboard-quit] #'doom/escape)
 
@@ -51,11 +51,12 @@ If any hook returns non-nil, all hooks after it are ignored.")
         which-key-sort-uppercase-first nil
         which-key-add-column-padding 1
         which-key-max-display-columns nil
-        which-key-min-display-lines 5
+        which-key-min-display-lines 6
         which-key-side-window-slot -10)
   ;; embolden local bindings
   (set-face-attribute 'which-key-local-map-description-face nil :weight 'bold)
   (which-key-setup-side-window-bottom)
+  (setq-hook! 'which-key-init-buffer-hook line-spacing 3)
   (add-hook 'doom-post-init-hook #'which-key-mode))
 
 
@@ -286,7 +287,6 @@ Example
                            forms)
                      (throw 'skip 'local))
                     ((and doom--keymaps states)
-
                      (dolist (keymap doom--keymaps)
                        (when (memq 'global states)
                          (push `(define-key ,keymap ,key ,def) forms))

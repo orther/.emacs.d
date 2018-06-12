@@ -148,13 +148,6 @@ deleted.")
      +popup|set-modeline-on-enable
      +popup|unset-modeline-on-disable))
 
-(let ((map +popup-buffer-mode-map))
-  (when (featurep! :feature evil)
-    ;; for maximum escape coverage in emacs state buffers
-    (define-key map [escape] #'doom/escape)
-    (define-key map (kbd "ESC") #'doom/escape))
-  map)
-
 
 ;;
 ;; Hacks

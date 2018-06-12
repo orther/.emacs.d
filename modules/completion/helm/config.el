@@ -14,21 +14,19 @@
   :defer 1
   :after-call pre-command-hook
   :init
-  (map! :map global-map
-        [remap apropos]                   #'helm-apropos
-        [remap bookmark-jump]             #'helm-bookmarks
-        [remap bookmark-jump]             #'helm-bookmarks
-        [remap execute-extended-command]  #'helm-M-x
-        [remap find-file]                 #'helm-find-files
-        [remap imenu-anywhere]            #'helm-imenu-anywhere
-        [remap imenu-anywhere]            #'helm-imenu-anywhere
-        [remap imenu]                     #'helm-semantic-or-imenu
-        [remap noop-show-kill-ring]       #'helm-show-kill-ring
-        [remap projectile-find-file]      #'helm-projectile-find-file
-        [remap projectile-recentf]        #'helm-projectile-recentf
-        [remap projectile-switch-project] #'helm-projectile-switch-project
-        [remap projectile-switch-to-buffer] #'helm-projectile-switch-to-buffer
-        [remap recentf-open-files]        #'helm-recentf)
+  (define-key! 'global
+    [remap apropos]                   #'helm-apropos
+    [remap bookmark-jump]             #'helm-bookmarks
+    [remap execute-extended-command]  #'helm-M-x
+    [remap find-file]                 #'helm-find-files
+    [remap imenu-anywhere]            #'helm-imenu-anywhere
+    [remap imenu]                     #'helm-semantic-or-imenu
+    [remap noop-show-kill-ring]       #'helm-show-kill-ring
+    [remap projectile-find-file]      #'helm-projectile-find-file
+    [remap projectile-recentf]        #'helm-projectile-recentf
+    [remap projectile-switch-project] #'helm-projectile-switch-project
+    [remap projectile-switch-to-buffer] #'helm-projectile-switch-to-buffer
+    [remap recentf-open-files]        #'helm-recentf)
   :config
   (helm-mode +1)
   ;; helm is too heavy for find-file-at-point
@@ -101,14 +99,13 @@
   (helm-flx-mode +1))
 
 
-(def-package! helm-locate
-  :defer t
-  :init (defvar helm-generic-files-map (make-sparse-keymap))
-  :config (set-keymap-parent helm-generic-files-map helm-map))
+;; `helm-locate'
+(defvar helm-generic-files-map (make-sparse-keymap))
+(after! helm-locate (set-keymap-parent helm-generic-files-map helm-map))
 
 
-(after! helm-bookmark
-  (setq-default helm-bookmark-show-location t))
+;; `helm-bookmark'
+(setq helm-bookmark-show-location t)
 
 
 (after! helm-files
@@ -118,13 +115,16 @@
 
 
 ;; `helm-ag'
-(map! :after helm-ag
-      :map helm-ag-edit-map [remap quit-window] #'helm-ag--edit-abort)
+(after! helm-ag
+  (define-key helm-ag-edit-map [remap quit-window] #'helm-ag--edit-abort)
+  (set! :popup "^\\*helm-ag-edit"
+    '((size . 0.35))
+    '((transient . 0) (quit))))
 
 
-(after! helm-css-scss ; https://github.com/ShingoFukuyama/helm-css-scss
-  (setq helm-css-scss-split-direction #'split-window-vertically
-        helm-css-scss-split-with-multiple-windows t))
+;; `helm-css-scss' -- https://github.com/ShingoFukuyama/helm-css-scss
+(setq helm-css-scss-split-direction #'split-window-vertically
+      helm-css-scss-split-with-multiple-windows t)
 
 
 (def-package! helm-swoop ; https://github.com/ShingoFukuyama/helm-swoop
@@ -139,3 +139,89 @@
 (def-package! wgrep
   :commands wgrep-change-to-wgrep-mode
   :config (setq wgrep-auto-save-buffer t))
+
+
+(def-package! posframe
+  :when (and EMACS26+ (featurep! +childframe))
+  :after helm
+  :config
+  (defvar +helm--posframe-buffer nil)
+
+  (defun +helm-posframe-display (buffer &optional _resume)
+    (posframe-show
+      (setq +helm--posframe-buffer buffer)
+      :poshandler #'posframe-poshandler-frame-bottom-left-corner
+      :left-fringe 10
+      :width (frame-width)
+      :height 16 ;; ivy/+childframe uses 16
+      :respect-header-line t))
+
+  (defun +helm|posframe-cleanup ()
+    (posframe-hide +helm--posframe-buffer))
+
+  (add-hook 'helm-cleanup-hook #'+helm|posframe-cleanup)
+  (setq helm-display-function #'+helm-posframe-display))
+
+
+;;
+;; Evil integration
+;;
+
+(when (featurep! :feature evil +everywhere)
+  (setq helm-default-prompt-display-function #'+helm--set-prompt-display)
+
+  (map! (:after helm
+          :map helm-map
+          :ni "M-[" #'helm-previous-source
+          :ni "M-]" #'helm-next-source
+          :ni "M-l" #'helm-execute-persistent-action
+          :ni "M-j" #'helm-next-line
+          :ni "M-k" #'helm-previous-line
+          :ni "C-f" #'helm-next-page
+          :ni "C-b" #'helm-previous-page
+          :n  "<tab>" #'helm-select-action  ; TODO: Ivy has "ga".
+          :n  "["  #'helm-previous-source
+          :n  "]"  #'helm-next-source
+          :n  "gk" #'helm-previous-source
+          :n  "gj" #'helm-next-source
+          :n  "("  #'helm-prev-visible-mark
+          :n  ")"  #'helm-next-visible-mark
+          :n  "j"  #'helm-next-line
+          :n  "k"  #'helm-previous-line
+          :n  "gg" #'helm-beginning-of-buffer
+          :n  "G"  #'helm-end-of-buffer
+          :n  "/"  #'helm-quit-and-find-file
+          :n  "gr" #'helm-refresh
+          :n  "yp" #'helm-yank-selection
+          :n  "yP" #'helm-copy-to-buffer
+          :n  "yy" #'helm-kill-selection-and-quit)
+        (:after helm-files
+          :map (helm-find-files-map helm-read-file-map)
+          :n  "go" #'helm-ff-run-switch-other-window
+          :n  "/"  #'helm-ff-run-find-sh-command
+          :ni "S-<return>" #'helm-ff-run-switch-other-window
+          :ni "M-h" #'helm-find-files-up-one-level
+          :n  "="  #'helm-ff-run-ediff-file
+          :n  "%"  #'helm-ff-run-query-replace-regexp
+          :n  "D"  #'helm-ff-run-delete-file) ; Ivy has "D".
+        (:after helm-locate
+          :map helm-generic-files-map
+          :n  "go" #'helm-ff-run-switch-other-window
+          :ni "S-<return>" #'helm-ff-run-switch-other-window)
+        (:after helm-buffers
+          :map helm-buffer-map
+          :n  "go" #'helm-buffer-switch-other-window
+          :n  "gO" #'display-buffer
+          :ni "S-<return>" #'helm-buffer-switch-other-window
+          :ni "M-<return>" #'display-buffer
+          :n  "=" #'helm-buffer-run-ediff
+          :n  "%" #'helm-buffer-run-query-replace-regexp
+          :n  "D" #'helm-buffer-run-kill-persistent) ; Ivy has "D".
+        (:after helm-regexp
+          :map helm-moccur-map
+          :n  "go" #'helm-moccur-run-goto-line-ow
+          :ni "S-<return>" #'helm-moccur-run-goto-line-ow)
+        (:after helm-grep
+          :map helm-grep-map
+          :n  "go" #'helm-grep-run-other-window-action
+          :ni "S-<return>" #'helm-grep-run-other-window-action)))

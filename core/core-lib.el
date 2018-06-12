@@ -30,9 +30,10 @@ For example
 
 Returns
 
-  '(or (file-exists-p (expand-file-name \"some-file\" \"~\"))
-       (and (file-exists-p (expand-file-name path-var \"~\"))
-            (file-exists-p \"/an/absolute/path\")))
+  '(let ((_directory \"~\"))
+     (or (file-exists-p (expand-file-name \"some-file\" _directory))
+         (and (file-exists-p (expand-file-name path-var _directory))
+              (file-exists-p \"/an/absolute/path\"))))
 
 This is used by `associate!', `file-exists-p!' and `project-file-exists-p!'."
   (cond ((stringp spec)
@@ -41,9 +42,11 @@ This is used by `associate!', `file-exists-p!' and `project-file-exists-p!'."
                 spec
               `(expand-file-name ,spec ,directory))))
         ((symbolp spec)
-         `(file-exists-p ,(if directory
+         `(file-exists-p ,(if (and directory
+                                   (or (not (stringp directory))
+                                       (file-name-absolute-p directory)))
                               `(expand-file-name ,spec ,directory)
-                            path)))
+                            spec)))
         ((and (listp spec)
               (memq (car spec) '(or and)))
          `(,(car spec)
@@ -61,6 +64,16 @@ This is used by `associate!', `file-exists-p!' and `project-file-exists-p!'."
            else if quoted-p
             collect hook
            else collect (intern (format "%s-hook" (symbol-name hook)))))
+
+(defun doom--assert-stage-p (stage macro)
+  (cl-assert (eq stage doom--stage)
+             nil
+             "Found %s call in non-%s.el file (%s)"
+             macro (symbol-name stage)
+             (let ((path (FILE!)))
+               (if (file-in-directory-p path doom-emacs-dir)
+                   (file-relative-name path doom-emacs-dir)
+                 (abbreviate-file-name path)))))
 
 
 ;;
@@ -175,6 +188,18 @@ MATCH is a string regexp. Only entries that match it will be included."
 ;; Macros
 ;;
 
+(defmacro FILE! ()
+  "Return the emacs lisp file this macro is called from."
+  `(cond ((bound-and-true-p byte-compile-current-file))
+         ((stringp (car-safe current-load-list)) (car current-load-list))
+         (load-file-name)
+         (buffer-file-name)))
+
+(defmacro DIR! ()
+  "Returns the directory of the emacs lisp file this macro is called from."
+  `(let ((file (FILE!)))
+     (and file (file-name-directory file))))
+
 (defmacro λ! (&rest body)
   "A shortcut for inline interactive lambdas."
   (declare (doc-string 1))
@@ -187,7 +212,7 @@ MATCH is a string regexp. Only entries that match it will be included."
 compilation. This will no-op on features that have been disabled by the user."
   (declare (indent defun) (debug t))
   (unless (and (symbolp targets)
-               (memq targets doom-disabled-packages))
+               (memq targets (bound-and-true-p doom-disabled-packages)))
     (list (if (or (not (bound-and-true-p byte-compile-current-file))
                   (dolist (next (doom-enlist targets))
                     (if (symbolp next)
@@ -301,7 +326,7 @@ Body forms can access the hook's arguments through the let-bound variable
                     `(remove-hook ',hook ,fn ,local-p)
                   `(add-hook ',hook ,fn ,append-p ,local-p))
                 forms)))
-      `(progn ,@forms))))
+      `(progn ,@(if append-p (nreverse forms) forms)))))
 
 (defmacro remove-hook! (&rest args)
   "Convenience macro for `remove-hook'. Takes the same arguments as
@@ -353,18 +378,22 @@ The available conditions are:
                (user-error "associate! :files expects a string or list of strings"))
              (let ((hook-name (intern (format "doom--init-mode-%s" mode))))
                `(progn
-                  (defun ,hook-name ()
-                    (when (and (fboundp ',mode)
+                  (fset ',hook-name
+                        (lambda ()
+                          (and (fboundp ',mode)
                                (not (bound-and-true-p ,mode))
                                (and buffer-file-name (not (file-remote-p buffer-file-name)))
                                ,(if match `(if buffer-file-name (string-match-p ,match buffer-file-name)) t)
-                               ,(if files (doom--resolve-path-forms files '(doom-project-root)) t)
-                               ,(or pred-form t))
-                      (,mode 1)))
+                               ,(or (not files)
+                                    (doom--resolve-path-forms
+                                     (if (stringp (car files)) (cons 'and files) files)
+                                     '(doom-project-root)))
+                               ,(or pred-form t)
+                               (,mode 1))))
                   ,@(if (and modes (listp modes))
                         (cl-loop for hook in (doom--resolve-hook-forms modes)
                                  collect `(add-hook ',hook #',hook-name))
-                      `((add-hook 'after-change-major-mode-hook ',hook-name))))))
+                      `((add-hook 'after-change-major-mode-hook #',hook-name))))))
             (match
              `(map-put doom-auto-minor-mode-alist ,match ',mode))
             (t (user-error "associate! invalid rules for mode [%s] (modes %s) (match %s) (files %s)"
@@ -381,8 +410,57 @@ doesn't apply to variables, however.
 
 For example:
 
-  (file-exists-p (or doom-core-dir \"~/.config\" \"some-file\") \"~\")"
-  (doom--resolve-path-forms spec directory))
+  (file-exists-p! (or doom-core-dir \"~/.config\" \"some-file\") \"~\")"
+  (if directory
+      `(let ((--directory-- ,directory))
+         ,(doom--resolve-path-forms spec '--directory--))
+    (doom--resolve-path-forms spec)))
+
+(defmacro define-key! (keymaps key def &rest rest)
+  "Like `define-key', but accepts a variable number of KEYMAPS and/or KEY+DEFs.
+
+KEYMAPS can also be (or contain) 'global or 'local, to make this equivalent to
+using `global-set-key' and `local-set-key'.
+
+KEY is a key string or vector. It is *not* piped through `kbd'."
+  (declare (indent defun))
+  (or (cl-evenp (length rest))
+      (signal 'wrong-number-of-arguments (list 'evenp (length rest))))
+  (if (and (listp keymaps)
+           (not (eq (car-safe keymaps) 'quote)))
+      `(dolist (map (list ,@keymaps))
+         ,(macroexpand `(define-key! map ,key ,def ,@rest)))
+    (when (eq (car-safe keymaps) 'quote)
+      (pcase (cadr keymaps)
+        (`global (setq keymaps '(current-global-map)))
+        (`local  (setq keymaps '(current-local-map)))
+        (x (error "%s is not a valid keymap" x))))
+    `(let ((map ,keymaps))
+       (define-key map ,key ,def)
+       ,@(let (forms)
+           (while rest
+             (let ((key (pop rest))
+                   (def (pop rest)))
+               (push `(define-key map ,key ,def) forms)))
+           (nreverse forms)))))
+
+(defmacro load! (filename &optional path noerror)
+  "Load a file relative to the current executing file (`load-file-name').
+
+FILENAME is either a file path string or a form that should evaluate to such a
+string at run time. PATH is where to look for the file (a string representing a
+directory path). If omitted, the lookup is relative to either `load-file-name',
+`byte-compile-current-file' or `buffer-file-name' (checked in that order).
+
+If NOERROR is non-nil, don't throw an error if the file doesn't exist."
+  (unless path
+    (setq path (or (DIR!)
+                   (error "Could not detect path to look for '%s' in"
+                          filename))))
+  `(load ,(if path
+              `(expand-file-name ,filename ,path)
+            filename)
+         ,noerror ,(not doom-debug-mode)))
 
 (provide 'core-lib)
 ;;; core-lib.el ends here
