@@ -10,17 +10,15 @@
   (setq omnisharp-auto-complete-want-documentation nil
         omnisharp-cache-directory (concat doom-cache-dir "omnisharp"))
   :config
-  (add-hook 'csharp-mode-hook #'flycheck-mode)
-
   (defun +csharp|cleanup-omnisharp-server ()
     "Clean up the omnisharp server once you kill the last csharp-mode buffer."
     (unless (doom-buffers-in-mode 'csharp-mode (buffer-list))
       (omnisharp-stop-server)))
   (add-hook! csharp-mode (add-hook 'kill-buffer-hook #'omnisharp-stop-server nil t))
 
-  (set! :company-backend 'csharp-mode '(company-omnisharp))
+  (set-company-backend! 'csharp-mode '(company-omnisharp))
 
-  (set! :lookup 'csharp-mode
+  (set-lookup-handlers! 'csharp-mode
     :definition #'omnisharp-go-to-definition
     :references #'omnisharp-find-usages
     :documentation #'omnisharp-current-type-documentation)

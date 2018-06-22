@@ -1,12 +1,10 @@
 ;;; lang/lua/config.el -*- lexical-binding: t; -*-
 
 (after! lua-mode
-  (add-hook 'lua-mode-hook #'flycheck-mode)
-
-  (set! :lookup 'lua-mode :documentation 'lua-search-documentation)
-  (set! :electric 'lua-mode :words '("else" "end"))
-  (set! :repl 'lua-mode #'+lua/repl)
-  (set! :company-backend 'lua-mode '(company-lua company-yasnippet))
+  (set-lookup-handlers! 'lua-mode :documentation 'lua-search-documentation)
+  (set-electric! 'lua-mode :words '("else" "end"))
+  (set-repl-handler! 'lua-mode #'+lua/repl)
+  (set-company-backend! 'lua-mode '(company-lua company-yasnippet))
 
   (def-menu! +lua/build-menu
     "Build/compilation commands for `lua-mode' buffers."

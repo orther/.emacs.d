@@ -14,15 +14,13 @@
 (def-package! ruby-mode
   :mode "\\.\\(?:pry\\|irb\\)rc\\'"
   :config
-  (set! :company-backend 'ruby-mode 'company-dabbrev-code)
-  (set! :electric 'ruby-mode :words '("else" "end" "elseif"))
-  (set! :env "RBENV_ROOT")
-  (set! :repl 'ruby-mode #'inf-ruby) ; `inf-ruby'
+  (set-company-backend! 'ruby-mode 'company-dabbrev-code)
+  (set-electric! 'ruby-mode :words '("else" "end" "elseif"))
+  (set-env! "RBENV_ROOT")
+  (set-repl-handler! 'ruby-mode #'inf-ruby) ; `inf-ruby'
   (setq ruby-deep-indent-paren t)
   ;; Don't interfere with my custom RET behavior
   (define-key ruby-mode-map [?\n] nil)
-
-  (add-hook 'ruby-mode-hook #'flycheck-mode)
 
   ;; Version management with rbenv
   (defun +ruby|add-version-to-modeline ()
@@ -74,7 +72,7 @@ environment variables."
   :mode ("/\\.rspec\\'" . text-mode)
   :init
   (associate! rspec-mode :match "/\\.rspec$")
-  (associate! rspec-mode :in (ruby-mode yaml-mode) :files ("spec/"))
+  (associate! rspec-mode :modes (ruby-mode yaml-mode) :files ("spec/"))
 
   (defvar evilmi-ruby-match-tags
     '((("unless" "if") ("elsif" "else") "end")
@@ -104,7 +102,7 @@ environment variables."
 (def-package! company-inf-ruby
   :when (featurep! :completion company)
   :after inf-ruby
-  :config (set! :company-backend 'inf-ruby-mode 'company-inf-ruby))
+  :config (set-company-backend! 'inf-ruby-mode 'company-inf-ruby))
 
 
 ;; `rake'

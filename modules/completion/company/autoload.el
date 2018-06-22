@@ -1,23 +1,45 @@
 ;;; completion/company/autoload.el -*- lexical-binding: t; -*-
 
+;;;###autodef
+(defun set-company-backend! (modes &rest backends)
+  "Prepends BACKENDS (in order) to `company-backends' in MODES.
+
+MODES should be one symbol or a list of them, representing major or minor modes.
+This will overwrite backends for MODES on consecutive uses.
+
+If the car of BACKENDS is nil, unset the backends for MODES.
+
+Examples:
+
+  (set-company-backend! 'js2-mode 'company-tide 'company-yasnippet)
+  (set-company-backend! 'sh-mode
+    '(company-shell :with company-yasnippet))
+  (set-company-backend! 'js2-mode
+    '(:separate company-irony-c-headers company-irony))
+  (set-company-backend! 'sh-mode nil)"
+  (declare (indent defun))
+  (dolist (mode (doom-enlist modes))
+    (let ((hook (intern (format "%s-hook" mode)))
+          (fn   (intern (format "+company|init-%s" mode))))
+      (cond ((null (car-safe backends))
+             (remove-hook hook fn)
+             (unintern fn nil))
+            ((fset fn
+                   (lambda ()
+                     (when (or (eq major-mode mode)
+                               (and (boundp mode) (symbol-value mode)))
+                       (require 'company)
+                       (make-local-variable 'company-backends)
+                       (dolist (backend (reverse backends))
+                         (cl-pushnew backend company-backends
+                                     :test (if (symbolp backend) #'eq #'equal))))))
+             (add-hook hook fn))))))
+
+;; FIXME obsolete :company-backend
 ;;;###autoload
 (def-setting! :company-backend (modes &rest backends)
-  "Prepends BACKENDS to `company-backends' in major MODES.
-
-MODES should be one major-mode symbol or a list of them."
-  `(progn
-     ,@(cl-loop for mode in (doom-enlist (doom-unquote modes))
-                for def-name = (intern (format "doom--init-company-%s" mode))
-                collect
-                `(defun ,def-name ()
-                   (when (and (or (eq major-mode ',mode)
-                                  (bound-and-true-p ,mode))
-                              ,(not (eq backends '(nil))))
-                     (require 'company)
-                     (make-variable-buffer-local 'company-backends)
-                     (dolist (backend (list ,@(reverse backends)))
-                       (cl-pushnew backend company-backends :test #'equal))))
-                collect `(add-hook! ,mode #',def-name))))
+  :obsolete set-company-backend!
+  `(set-company-backend! ,modes ,@backends))
 
 ;;;###autoload
 (defun +company/toggle-auto-completion ()

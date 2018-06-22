@@ -33,7 +33,7 @@
         font-latex-fontify-sectioning 1.15)
   (setq-default TeX-master nil)
   ;; Display the output of the latex commands in a popup.
-  (set! :popup " output\\*$" '((size . 15)))
+  (set-popup-rule! " output\\*$" :size 15)
 
   ;; TeX Font Styling
   ;; (def-package! tex-style :defer t)
@@ -54,10 +54,12 @@
 
   (define-key LaTeX-mode-map "\C-j" nil)
 
-  ;; Do not prompt for Master files, this allows auto-insert to add templates
-  ;; to .tex files
-  (add-hook! '(LaTeX-mode TeX-mode)
-    (remove-hook 'find-file-hook (car find-file-hook) 'local))
+  ;; Do not prompt for Master files, this allows auto-insert to add templates to
+  ;; .tex files
+  (add-hook! '(LaTeX-mode-hook TeX-mode-hook)
+    (remove-hook 'find-file-hook
+                 (cl-find-if #'byte-code-function-p find-file-hook)
+                 'local))
   ;; Adding useful things for latex
   (add-hook! 'LaTeX-mode-hook
     #'(LaTeX-math-mode
@@ -68,7 +70,7 @@
   ;; Enable rainbow mode after applying styles to the buffer
   (add-hook 'TeX-update-style-hook #'rainbow-delimiters-mode)
   (when (featurep! :feature spellcheck)
-    (add-hook 'LaTeX-mode-hook #'flyspell-mode))
+    (add-hook 'LaTeX-mode-hook #'flyspell-mode :append))
   ;; Use chktex to search for errors in a latex file.
   (setcar (cdr (assoc "Check" TeX-command-list)) "chktex -v6 %s")
   ;; Set a custom item indentation
@@ -90,6 +92,10 @@
     (map-put TeX-view-program-list
               "Skim" '("/Applications/Skim.app/Contents/SharedSupport/displayline -b -g %n %o %b"))
     (map-put TeX-view-program-selection 'output-pdf '("Skim")))
+
+  ;; Or Zathura
+  (when (featurep! +zathura)
+    (map-put TeX-view-program-selection 'output-pdf '("Zathura")))
 
   ;; Or PDF-tools, but only if the module is also loaded
   (when (and (featurep! :tools pdf)
@@ -200,11 +206,11 @@
   :when (featurep! :completion company)
   :commands (company-auctex-init)
   :init
-  ;; We can't use the (set! :company-backend ...) because Auctex reports its
+  ;; We can't use the `set-company-backend!' because Auctex reports its
   ;; major-mode as `latex-mode', but uses LaTeX-mode-hook for its mode, which is
-  ;; not anticipated by :company-backend (and shouldn't have to!)
+  ;; not something `set-company-backend!' anticipates (and shouldn't have to!)
   (add-hook! LaTeX-mode
-    (make-variable-buffer-local 'company-backends)
+    (make-local-variable 'company-backends)
     (company-auctex-init)))
 
 

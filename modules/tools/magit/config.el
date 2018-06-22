@@ -22,10 +22,11 @@ load everything.")
             #'ivy-completing-read
           #'magit-builtin-completing-read)
         magit-revision-show-gravatars '("^Author:     " . "^Commit:     ")
-        magit-diff-refine-hunk t ;; Show word-granularity on the currently selected hunk
-        magit-display-buffer-function #'+magit-display-buffer-fullscreen)
+        magit-diff-refine-hunk t  ; show word-granularity on selected hunk
+        magit-display-buffer-function #'+magit-display-buffer-fullscreen
+        magit-popup-display-buffer-action '((display-buffer-in-side-window)))
 
-  (set! :popup "^\\(?:\\*magit\\|magit:\\)" :ignore)
+  (set-popup-rule! "^\\(?:\\*magit\\|magit:\\)" :ignore t)
   ;; Consider magit buffers real (so they can switched to)
   (add-hook 'magit-mode-hook #'doom|mark-buffer-as-real)
   ;; no mode-line in magit popups
@@ -55,7 +56,8 @@ load everything.")
     ;; more so.
     (advice-add #'magithub-settings--format-magithub.enabled
                 :override #'+magit*hub-settings--format-magithub.enabled))
-  (magithub-feature-autoinject +magit-hub-features))
+  (when +magit-hub-features
+    (magithub-feature-autoinject +magit-hub-features)))
 
 
 (def-package! magit-gitflow
@@ -65,7 +67,21 @@ load everything.")
 (def-package! evil-magit
   :when (featurep! :feature evil +everywhere)
   :after magit
-  :init (setq evil-magit-state 'normal)
+  :init
+  (setq evil-magit-state 'normal
+        evil-magit-use-z-for-folds t)
   :config
+  (define-key! magit-mode-map
+    (kbd "M-1") nil
+    (kbd "M-2") nil
+    (kbd "M-3") nil
+    (kbd "M-4") nil)
+  (after! git-rebase
+    (dolist (key '(("M-k" . "gk") ("M-j" . "gj")))
+      (setcar (assoc (car key) evil-magit-rebase-commands-w-descriptions)
+              (cdr key)))
+    (evil-define-key* evil-magit-state git-rebase-mode-map
+      "gj" #'git-rebase-move-line-down
+      "gk" #'git-rebase-move-line-up))
   (map! :map (magit-mode-map magit-blame-read-only-mode-map)
         doom-leader-key nil))

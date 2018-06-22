@@ -5,6 +5,10 @@
        (error "Detected Emacs %s. Doom only supports Emacs 25.1 and higher"
               emacs-version)))
 
+(defvar doom-debug-mode (or (getenv "DEBUG") init-file-debug)
+  "If non-nil, all doom functions will be verbose. Set DEBUG=1 in the command
+line or use --debug-init to enable this.")
+
 
 ;;
 ;; Constants
@@ -12,10 +16,6 @@
 
 (defconst doom-version "2.0.9"
   "Current version of DOOM emacs.")
-
-(defconst doom-debug-mode (or (getenv "DEBUG") init-file-debug)
-  "If non-nil, all doom functions will be verbose. Set DEBUG=1 in the command
-line or use --debug-init to enable this.")
 
 (defconst EMACS26+
   (eval-when-compile (not (version< emacs-version "26"))))
@@ -57,6 +57,9 @@ Use this for files that change often, like cache files.")
 (defconst doom-packages-dir (concat doom-local-dir "packages/")
   "Where package.el and quelpa plugins (and their caches) are stored.")
 
+(defconst doom-docs-dir (concat doom-emacs-dir "docs/")
+  "Where the Doom manual is stored.")
+
 (defconst doom-private-dir
   (eval-when-compile
     (or (getenv "DOOMDIR")
@@ -70,15 +73,15 @@ Use this for files that change often, like cache files.")
 XDG directory conventions if ~/.config/doom exists.")
 
 (defconst doom-autoload-file (concat doom-local-dir "autoloads.el")
-  "Where `doom//reload-doom-autoloads' will generate its core autoloads file.")
+  "Where `doom-reload-doom-autoloads' will generate its core autoloads file.")
 
 (defconst doom-package-autoload-file (concat doom-local-dir "autoloads.pkg.el")
-  "Where `doom//reload-package-autoloads' will generate its package.el autoloads
+  "Where `doom-reload-package-autoloads' will generate its package.el autoloads
 file.")
 
 
 ;;
-;; State variables
+;; Doom core variables
 ;;
 
 (defvar doom-init-p nil
@@ -94,14 +97,6 @@ Doom was setup, which can cause problems.")
 (defvar doom-site-load-path load-path
   "The starting load-path, before it is altered by `doom-initialize'.")
 
-(defvar doom--refreshed-p nil)
-(defvar doom--stage 'init)
-
-
-;;
-;; Doom hooks
-;;
-
 (defvar doom-init-hook nil
   "Hooks run after all init.el files are loaded, including your private and all
 module init.el files, but before their config.el files are loaded.")
@@ -114,31 +109,22 @@ else (except for `window-setup-hook').")
 (defvar doom-reload-hook nil
   "A list of hooks to run when `doom//reload-load-path' is called.")
 
+(defvar doom--last-emacs-file (concat doom-local-dir "emacs-version.el"))
+(defvar doom--last-emacs-version nil)
+(defvar doom--refreshed-p nil)
+(defvar doom--stage 'init)
+
 
 ;;
-;; Optimize startup
+;; Custom error types
 ;;
 
-(defvar doom--file-name-handler-alist file-name-handler-alist)
-(unless (or after-init-time noninteractive)
-  ;; A big contributor to long startup times is the garbage collector, so we up
-  ;; its memory threshold, temporarily and reset it later in `doom|finalize'.
-  (setq gc-cons-threshold 402653184
-        gc-cons-percentage 1.0
-        ;; consulted on every `require', `load' and various file reading
-        ;; functions. You get a minor speed up by nooping this.
-        file-name-handler-alist nil))
-
-(defun doom|finalize ()
-  "Resets garbage collection settings to reasonable defaults (if you don't do
-this, you'll get stuttering and random freezes) and resets
-`file-name-handler-alist'."
-  (setq file-name-handler-alist doom--file-name-handler-alist
-        gc-cons-threshold 16777216
-        gc-cons-percentage 0.2))
-
-(add-hook 'emacs-startup-hook #'doom|finalize)
-(add-hook 'doom-reload-hook   #'doom|finalize)
+(define-error 'doom-error "Error in Doom Emacs core")
+(define-error 'doom-hook-error "Error in a Doom startup hook" 'doom-error)
+(define-error 'doom-autoload-error "Error in an autoloads file" 'doom-error)
+(define-error 'doom-module-error "Error in a Doom module" 'doom-error)
+(define-error 'doom-private-error "Error in private config" 'doom-error)
+(define-error 'doom-package-error "Error with packages" 'doom-error)
 
 
 ;;
@@ -176,9 +162,6 @@ this, you'll get stuttering and random freezes) and resets
  create-lockfiles nil
  history-length 500
  make-backup-files nil  ; don't create backup~ files
- ;; `use-package'
- use-package-verbose doom-debug-mode
- use-package-minimum-reported-time (if doom-debug-mode 0 0.1)
  ;; byte compilation
  byte-compile-verbose doom-debug-mode
  byte-compile-warnings '(not free-vars unresolved noruntime lexical make-local)
@@ -241,6 +224,13 @@ with functions that require it (like modeline segments)."
     buffer))
 (advice-add #'make-indirect-buffer :around #'doom*set-indirect-buffer-filename)
 
+(defun doom*symbol-file (orig-fn symbol &optional type)
+  "If a `doom-file' symbol property exists on SYMBOL, use that instead of the
+original value of `symbol-file'."
+  (or (if (symbolp symbol) (get symbol 'doom-file))
+      (funcall orig-fn symbol type)))
+(advice-add #'symbol-file :around #'doom*symbol-file)
+
 ;; Truly silence startup message
 (fset #'display-startup-echo-area-message #'ignore)
 
@@ -249,11 +239,23 @@ with functions that require it (like modeline segments)."
 ;; Bootstrap helpers
 ;;
 
-(defvar doom--last-emacs-file (concat doom-local-dir "emacs-version.el"))
-(defvar doom--last-emacs-version nil)
+(defun doom-try-run-hook (hook)
+  "Run HOOK (a hook function), but marks thrown errors to make it a little
+easier to tell where the came from.
+
+Meant to be used with `run-hook-wrapped'."
+  (when doom-debug-mode
+    (message "Running doom hook: %s" hook))
+  (condition-case e
+      (funcall hook)
+    ((debug error)
+     (signal 'doom-hook-error (list hook e))))
+  ;; return nil so `run-hook-wrapped' won't short circuit
+  nil)
 
 (defun doom-ensure-same-emacs-version-p ()
-  "Do an Emacs version check and set `doom-emacs-changed-p' if it has changed."
+  "Check if the running version of Emacs has changed and set
+`doom-emacs-changed-p' if it has."
   (if (load doom--last-emacs-file 'noerror 'nomessage 'nosuffix)
       (setq doom-emacs-changed-p
             (not (equal emacs-version doom--last-emacs-version)))
@@ -264,7 +266,8 @@ with functions that require it (like modeline segments)."
         ((y-or-n-p
           (format
            (concat "Your version of Emacs has changed from %s to %s, which may cause incompatibility\n"
-                   "issues. Please run `bin/doom compile :plugins` afterwards to resolve any problems.\n\n"
+                   "issues. If you run into errors, run `bin/doom compile :plugins` or reinstall your\n"
+                   "plugins to resolve them.\n\n"
                    "Continue?")
            doom--last-emacs-version
            emacs-version))
@@ -293,16 +296,17 @@ If RETURN-P, return the message as a string instead of displaying it."
 
 (defun doom|post-init ()
   "Run `doom-post-init-hook'. That's all."
-  (run-hooks 'doom-post-init-hook))
+  (run-hook-wrapped 'doom-post-init-hook #'doom-try-run-hook))
 
 (defun doom|run-all-startup-hooks ()
   "Run all startup Emacs hooks. Meant to be executed after starting Emacs with
 -q or -Q, for example:
 
   emacs -Q -l init.el -f doom|run-all-startup-hooks"
-  (run-hooks 'after-init-hook 'delayed-warnings-hook
-             'emacs-startup-hook 'term-setup-hook
-             'window-setup-hook))
+  (dolist (hook (list 'after-init-hook 'delayed-warnings-hook
+                      'emacs-startup-hook 'term-setup-hook
+                      'window-setup-hook))
+    (run-hook-wrapped hook #'doom-try-run-hook)))
 
 
 ;;
@@ -361,14 +365,23 @@ to least)."
                 noninteractive)
       (user-error "Your package autoloads are missing! Run `bin/doom refresh' to regenerate them")))
   ;; Initialize Doom core
+  (require 'core-os)
   (unless noninteractive
     (add-hook! 'emacs-startup-hook
       #'(doom|post-init doom|display-benchmark))
-    (require 'core-os)
     (require 'core-ui)
     (require 'core-editor)
     (require 'core-projects)
     (require 'core-keybinds)))
+
+(defun doom-initialize-autoloads (file)
+  "Tries to load FILE (an autoloads file). Return t on success, nil otherwise."
+  (condition-case e
+      (load (file-name-sans-extension file) 'noerror 'nomessage)
+    ((debug error)
+     (if noninteractive
+         (message "Autoload file warning: %s -> %s" (car e) (error-message-string e))
+       (signal 'doom-autoload-error (list (file-name-nondirectory file) e))))))
 
 
 ;;
@@ -381,7 +394,7 @@ to least)."
 (require 'core-lib)
 (require 'core-modules)
 (when noninteractive
-  (require 'core-dispatcher))
+  (require 'core-cli))
 
 (doom-initialize noninteractive)
 (unless noninteractive

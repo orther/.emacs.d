@@ -58,7 +58,23 @@ compilation database is present in the project.")
                 c-default-style "doom")
 
   :config
-  (set! :electric '(c-mode c++-mode objc-mode java-mode) :chars '(?\n ?\}))
+  (set-electric! '(c-mode c++-mode objc-mode java-mode) :chars '(?\n ?\}))
+
+  (set-pretty-symbols! '(c-mode-hook c++-mode-hook)
+    ;; Functional
+    ;; :def "void "
+    ;; Types
+    :null "nullptr"
+    :true "true" :false "false"
+    :int "int" :float "float"
+    :str "std::string"
+    :bool "bool"
+    ;; Flow
+    :not "!"
+    :and "&&" :or "||"
+    :for "for"
+    :return "return"
+    :yield "#require")
 
   ;;; Better fontification (also see `modern-cpp-font-lock')
   (add-hook 'c-mode-common-hook #'rainbow-delimiters-mode)
@@ -149,14 +165,12 @@ compilation database is present in the project.")
 
   (def-package! flycheck-irony
     :when (featurep! :feature syntax-checker)
-    :config
-    (add-hook 'irony-mode-hook #'flycheck-mode)
-    (flycheck-irony-setup))
+    :config (flycheck-irony-setup))
 
   (def-package! company-irony
     :when (featurep! :completion company)
     :init
-    (set! :company-backend
+    (set-company-backend!
       '(c-mode c++-mode objc-mode)
       '(:separate company-irony-c-headers company-irony))
     :config
@@ -168,7 +182,8 @@ compilation database is present in the project.")
 ;;
 
 ;; `cmake-mode'
-(set! :company-backend 'cmake-mode '(company-cmake company-yasnippet))
+(after! cmake-mode
+  (set-company-backend! 'cmake-mode '(company-cmake company-yasnippet)))
 
 (def-package! company-cmake
   :when (featurep! :completion company)
@@ -183,7 +198,7 @@ compilation database is present in the project.")
 (def-package! company-glsl
   :when (featurep! :completion company)
   :after glsl-mode
-  :config (set! :company-backend 'glsl-mode '(company-glsl)))
+  :config (set-company-backend! 'glsl-mode '(company-glsl)))
 
 
 ;;
@@ -191,6 +206,7 @@ compilation database is present in the project.")
 ;;
 
 (def-package! rtags
+  :when (featurep! +rtags)
   :commands rtags-executable-find
   :preface
   (setq rtags-install-path (concat doom-etc-dir "rtags/"))
@@ -211,7 +227,7 @@ compilation database is present in the project.")
         ;; ...and don't auto-jump to first match before making a selection.
         rtags-jump-to-first-match nil)
 
-  (set! :lookup '(c-mode c++-mode)
+  (set-lookup-handlers! '(c-mode c++-mode)
     :definition #'rtags-find-symbol-at-point
     :references #'rtags-find-references-at-point)
 

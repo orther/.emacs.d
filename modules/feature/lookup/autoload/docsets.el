@@ -1,6 +1,35 @@
 ;;; feature/lookup/autoload/docsets.el -*- lexical-binding: t; -*-
 ;;;###if (featurep! +docsets)
 
+(defvar-local helm-dash-docsets nil
+  "Docsets to use for this buffer.")
+
+(defvar-local counsel-dash-docsets nil
+  "Docsets to use for this buffer.")
+
+;;;###autodef
+(defun set-docset! (modes &rest docsets)
+  "Registers a list of DOCSETS (strings) for MODES (either one major mode
+symbol or a list of them).
+
+Used by `+lookup/in-docsets' and `+lookup/documentation'."
+  (declare (indent defun))
+  (dolist (mode (doom-enlist modes))
+    (let ((fn   (intern (format "+lookup|init-docsets--%s" mode)))
+          (hook (intern (format "%s-hook" mode))))
+      (cond ((null (car-safe docsets))
+             (remove-hook hook fn)
+             (unintern fn nil))
+            ((fset fn
+                   (lambda ()
+                     (let ((var-sym (if (featurep! :completion ivy)
+                                        'counsel-dash-docsets
+                                      'helm-dash-docsets)))
+                       (set var-sym
+                            (append (symbol-value var-sym)
+                                    docsets)))))
+             (add-hook hook fn))))))
+
 ;;;###autoload
 (def-setting! :docset (modes &rest docsets)
   "Registers a list of DOCSETS (strings) for MODES (either one major mode
@@ -11,27 +40,8 @@ DOCSETS, to instruct it to append (or remove) those from the docsets already set
 by a major-mode, if any.
 
 Used by `+lookup/in-docsets' and `+lookup/documentation'."
-  (let* ((modes (doom-unquote modes))
-         (ivy-p (featurep! :completion ivy))
-         (hook-sym (intern (format "+lookup|%s-docsets--%s"
-                                   (cond ((eq ',(car docsets) :add)    'add)
-                                         ((eq ',(car docsets) :remove) 'remove)
-                                         ('set))
-                                   (string-join docsets "-"))))
-         (var-sym (if ivy-p 'counsel-dash-docsets 'helm-dash-docsets)))
-    `(progn
-       (defun ,hook-sym ()
-         (make-variable-buffer-local ',var-sym)
-         ,(cond ((eq ',(car docsets) :add)
-                 `(setq ,var-sym (append ,var-sym (list ,@(cdr docsets)))))
-                ((eq ',(car docsets) :remove)
-                 `(setq ,var-sym
-                        (cl-loop with to-delete = (list ,@(cdr docsets))
-                                 for docset in ,var-sym
-                                 unless (member docset to-delete)
-                                 collect docset)))
-                (`(setq ,var-sym (list ,@docsets)))))
-       (add-hook! ,modes #',hook-sym))))
+  :obsolete set-docset!
+  `(set-docset! ,modes ,@docsets))
 
 ;;;###autoload
 (autoload 'helm-dash-installed-docsets "helm-dash")

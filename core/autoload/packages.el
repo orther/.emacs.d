@@ -41,15 +41,14 @@
     (doom--refresh-pkg-cache))
   (unless (or (doom-cache-get 'last-pkg-refresh)
               doom--refreshed-p)
-    (condition-case-unless-debug ex
+    (condition-case e
         (progn
           (message "Refreshing package archives")
           (package-refresh-contents)
           (doom-cache-set 'last-pkg-refresh t 1200))
-    ('error
+    ((debug error)
      (doom--refresh-pkg-cache)
-     (message "Failed to refresh packages: (%s) %s"
-              (car ex) (error-message-string ex))))))
+     (signal 'doom-error e)))))
 
 ;;;###autoload
 (defun doom-package-backend (name &optional noerror)
@@ -189,6 +188,23 @@ files."
            collect (cons sym plist)))
 
 ;;;###autoload
+(defun doom-get-package-alist ()
+  "Returns a list of all desired packages, their dependencies and their desc
+objects, in the order of their `package! blocks.'"
+  (doom-initialize-packages)
+  (cl-remove-duplicates
+   (let (packages)
+     (dolist (name (append (mapcar #'car doom-packages) doom-core-packages))
+       (when-let* ((desc (cadr (assq name package-alist))))
+         (push (cons name desc) packages)
+         (cl-loop for dep in (package--get-deps name)
+                  if (assq dep package-alist)
+                  do (push (cons dep (cadr it)) packages))))
+     packages)
+   :key #'car
+   :from-end t))
+
+;;;###autoload
 (defun doom-get-depending-on (name)
   "Return a list of packages that depend on the package named NAME."
   (cl-check-type name symbol)
@@ -213,7 +229,7 @@ containing (PACKAGE-SYMBOL OLD-VERSION-LIST NEW-VERSION-LIST).
 
 If INCLUDE-FROZEN-P is non-nil, check frozen packages as well.
 
-Used by `doom//packages-update'."
+Used by `doom-packages-update'."
   (doom-initialize-packages t)
   (doom-refresh-packages-maybe doom-debug-mode)
   (require 'async)
@@ -262,9 +278,9 @@ Used by `doom//packages-update'."
   "Return a list of symbols representing packages that are no longer needed or
 depended on.
 
-Used by `doom//packages-autoremove'."
+Used by `doom-packages-autoremove'."
   (let ((package-selected-packages
-         (mapcar #'car (doom-get-packages :disabled nil))))
+         (mapcar #'car (doom-get-packages :ignored nil :disabled nil))))
     (append (package--removable-packages)
             (cl-loop for pkg in package-selected-packages
                      if (and (doom-package-different-backend-p pkg)
@@ -272,7 +288,7 @@ Used by `doom//packages-autoremove'."
                      collect pkg))))
 
 ;;;###autoload
-(cl-defun doom-get-missing-packages (&key (ignored 'any))
+(defun doom-get-missing-packages (&optional include-ignored-p)
   "Return a list of requested packages that aren't installed or built-in, but
 are enabled (with a `package!' directive). Each element is a list whose CAR is
 the package symbol, and whose CDR is a plist taken from that package's
@@ -281,10 +297,10 @@ the package symbol, and whose CDR is a plist taken from that package's
 If INCLUDE-IGNORED-P is non-nil, includes missing packages that are ignored,
 i.e. they have an :ignore property.
 
-Used by `doom//packages-install'."
+Used by `doom-packages-install'."
   (doom-initialize-packages)
   (cl-loop for (name . plist)
-           in (doom-get-packages :ignored ignored :disabled nil)
+           in (doom-get-packages :ignored (if include-ignored-p 'any) :disabled nil)
            if (and (or (plist-get plist :pin)
                        (not (assq name package--builtins)))
                    (or (not (assq name package-alist))
@@ -323,8 +339,9 @@ example; the package name can be omitted)."
         (condition-case e
             (let (quelpa-upgrade-p)
               (quelpa recipe))
-          ('error (doom--delete-package-files name)
-                  (signal (car e) (cdr e))))
+          ((debug error)
+           (doom--delete-package-files name)
+           (signal (car e) (cdr e))))
       (package-install name))
     (if (not (package-installed-p name))
         (doom--delete-package-files name)
@@ -349,8 +366,9 @@ package.el as appropriate."
          (condition-case e
              (let ((quelpa-upgrade-p t))
                (quelpa (assq name quelpa-cache)))
-           ('error (doom--delete-package-files name)
-                   (signal (car e) (cdr e)))))
+           ((debug error)
+            (doom--delete-package-files name)
+            (signal (car e) (cdr e)))))
         (`elpa
          (let* ((archive (cadr (assq name package-archive-contents)))
                 (packages
@@ -433,9 +451,8 @@ calls."
 ;;
 
 ;;;###autoload
-(defun doom//packages-install (&optional auto-accept-p)
+(defun doom-packages-install (&optional auto-accept-p)
   "Interactive command for installing missing packages."
-  (interactive "P")
   (print! "Looking for packages to install...")
   (let ((packages (reverse (doom-get-missing-packages))))
     (cond ((not packages)
@@ -488,13 +505,14 @@ calls."
                             (`failure (red "✕ FAILED")))
                           (or pin-label "")))))
              (print! (bold (green "Finished!")))
-             (if success (doom-delete-autoloads-file doom-package-autoload-file))
+             (when success
+               (set-file-times doom-packages-dir)
+               (doom-delete-autoloads-file doom-package-autoload-file))
              success)))))
 
 ;;;###autoload
-(defun doom//packages-update (&optional auto-accept-p)
+(defun doom-packages-update (&optional auto-accept-p)
   "Interactive command for updating packages."
-  (interactive "P")
   (print! "Looking for outdated packages...")
   (let ((packages (cl-sort (cl-copy-list (doom-get-outdated-packages)) #'string-lessp
                            :key #'car)))
@@ -530,13 +548,14 @@ calls."
                    (color (if result 'green 'red)
                           (if result "✓ DONE" "✕ FAILED"))))))
              (print! (bold (green "Finished!")))
-             (if success (doom-delete-autoloads-file doom-package-autoload-file))
+             (when success
+               (set-file-times doom-packages-dir)
+               (doom-delete-autoloads-file doom-package-autoload-file))
              success)))))
 
 ;;;###autoload
-(defun doom//packages-autoremove (&optional auto-accept-p)
+(defun doom-packages-autoremove (&optional auto-accept-p)
   "Interactive command for auto-removing orphaned packages."
-  (interactive "P")
   (print! "Looking for orphaned packages...")
   (let ((packages (doom-get-orphaned-packages)))
     (cond ((not packages)
@@ -572,7 +591,9 @@ calls."
                                  (if result "✓ Removed" "✕ Failed to remove")
                                  pkg)))))
              (print! (bold (green "Finished!")))
-             (if success (doom-delete-autoloads-file doom-package-autoload-file))
+             (when success
+               (set-file-times doom-packages-dir)
+               (doom-delete-autoloads-file doom-package-autoload-file))
              success)))))
 
 
@@ -586,7 +607,8 @@ calls."
 
 ;; Replace with Doom variants
 ;;;###autoload
-(advice-add #'package-autoremove :override #'doom//packages-autoremove)
+(advice-add #'package-autoremove :override (λ! (doom-packages-autoremove current-prefix-arg)))
+
 ;;;###autoload
-(advice-add #'package-install-selected-packages :override #'doom//packages-install)
+(advice-add #'package-install-selected-packages :override (λ! (doom-packages-install current-prefix-arg)))
 

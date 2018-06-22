@@ -35,12 +35,12 @@
           "~$"
           "^#.*#$"))
 
-  (set! :popup "^ ?\\*NeoTree"
-    `((side . ,neo-window-position) (size . ,neo-window-width))
-    '((quit . current) (select . t)))
+  (set-popup-rule! "^ ?\\*NeoTree"
+    :side neo-window-position :size neo-window-width
+    :quit 'current :select t)
 
   (after! winner
-    (cl-pushnew neo-buffer-name winner-boring-buffers))
+    (add-to-list 'winner-boring-buffers neo-buffer-name))
 
   ;; The cursor always sits at bol. `+neotree*fix-cursor' and
   ;; `+neotree*indent-cursor' change that behavior, so that the cursor is always

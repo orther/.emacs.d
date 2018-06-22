@@ -10,6 +10,19 @@
   (list (expand-file-name "modules/" doom-private-dir) doom-modules-dir)
   "A list of module root directories. Order determines priority.")
 
+(defconst doom-obsolete-modules
+  '(((:tools rotate-text)       (:editor rotate-text))
+    ((:emacs electric-indent)   (:emacs electric))
+    ((:feature version-control) (:emacs vc) (:ui vc-gutter)))
+  "An alist of deprecated modules, mapping deprecated modules to an optional new
+location (which will create an alias). Each CAR and CDR is a (CATEGORY .
+MODULES). E.g.
+
+  ((:emacs . electric-indent) . (:emacs electric))
+  ((:feature . version-control) (:emacs vc) (:ui . vc-gutter))
+
+A warning will be put out if these deprecated modules are used.")
+
 (defvar doom--current-module nil)
 
 
@@ -26,16 +39,11 @@ non-nil."
     ;; recurse by accident if any of them need `doom-initialize-modules'.
     (setq doom-init-modules-p t)
     (when doom-private-dir
-      (load (expand-file-name "init" doom-private-dir)
-            'noerror 'nomessage))))
-
-(defun doom-initialize-autoloads (file)
-  "Tries to load FILE (an autoloads file). Return t on success, nil otherwise."
-  (condition-case-unless-debug e
-      (load (file-name-sans-extension file) 'noerror 'nomessage)
-    ('error
-     (message "Autoload error: %s -> %s"
-              (car e) (error-message-string e)))))
+      (condition-case e
+          (load (expand-file-name "init" doom-private-dir)
+                'noerror 'nomessage)
+        ((debug doom-error) (signal (car e) (cdr e)))
+        ((debug error) (signal 'doom-private-error (list "init.el" e)))))))
 
 
 ;;
@@ -85,8 +93,9 @@ Example:
       (unless (plist-member plist :path)
         (plist-put plist :path (or (plist-get old-plist :path)
                                    (doom-module-locate-path category module))))))
-  (let ((key (cons category module)))
-    (puthash key plist doom-modules)))
+  (puthash (cons category module)
+           plist
+           doom-modules))
 
 (defun doom-module-path (category module &optional file)
   "Like `expand-file-name', but expands FILE relative to CATEGORY (keywordp) and
@@ -119,19 +128,26 @@ This doesn't require modules to be enabled. For enabled modules us
 (defun doom-module-from-path (&optional path)
   "Returns a cons cell (CATEGORY . MODULE) derived from PATH (a file path)."
   (or doom--current-module
-      (when path
+      (let ((path (or path (FILE!))))
         (save-match-data
           (setq path (file-truename path))
-          (when (string-match "/modules/\\([^/]+\\)/\\([^/]+\\)/.*$" path)
-            (when-let* ((module (match-string 1 path))
-                        (submodule (match-string 2 path)))
-              (cons (intern (concat ":" module))
-                    (intern submodule))))))))
+          (when (string-match "/modules/\\([^/]+\\)/\\([^/]+\\)\\(?:/.*\\)?$" path)
+            (when-let* ((category (match-string 1 path))
+                        (module   (match-string 2 path)))
+              (cons (doom-keyword-intern category)
+                    (intern module))))))))
 
-(defun doom-module-load-path ()
-  "Return a list of absolute file paths to activated modules."
-  (append (cl-loop for plist being the hash-values of (doom-modules)
-                   collect (plist-get plist :path))
+(defun doom-module-load-path (&optional all-p)
+  "Return a list of absolute file paths to activated modules. If ALL-P is
+non-nil, return paths of possible modules, activated or otherwise."
+  (append (if all-p
+              (doom-files-in doom-modules-dirs
+                             :type 'dirs
+                             :mindepth 1
+                             :depth 1
+                             :full t)
+            (cl-loop for plist being the hash-values of (doom-modules)
+                     collect (plist-get plist :path)))
           (list doom-private-dir)))
 
 (defun doom-modules (&optional refresh-p)
@@ -141,6 +157,11 @@ This doesn't require modules to be enabled. For enabled modules us
             doom-init-modules-p)
         (message "Initializing modules")
         (doom-initialize-modules t)
+        (unless doom-modules
+          (setq doom-modules
+                (make-hash-table :test #'equal
+                                 :size 20
+                                 :rehash-threshold 1.0)))
         doom-modules)))
 
 
@@ -150,9 +171,14 @@ This doesn't require modules to be enabled. For enabled modules us
 
 (autoload 'use-package "use-package-core" nil nil t)
 
+(setq use-package-compute-statistics doom-debug-mode
+      use-package-verbose doom-debug-mode
+      use-package-minimum-reported-time (if doom-debug-mode 0 0.1)
+      use-package-expand-minimally (not noninteractive))
+
 ;; Adds the :after-call custom keyword to `use-package' (and consequently,
 ;; `def-package!'). :after-call takes a symbol or list of symbols. These symbols
-;; can be functions to hook variables.
+;; can be functions or hook variables.
 ;;
 ;;   (use-package X :after-call find-file-hook)
 ;;
@@ -161,36 +187,36 @@ This doesn't require modules to be enabled. For enabled modules us
 (defvar doom--deferred-packages-alist ())
 (after! use-package-core
   (add-to-list 'use-package-deferring-keywords :after-call nil #'eq)
-
   (setq use-package-keywords
         (use-package-list-insert :after-call use-package-keywords :after))
 
-  (defalias 'use-package-normalize/:after-call
-    'use-package-normalize-symlist)
-
-  (defun use-package-handler/:after-call (name-symbol _keyword hooks rest state)
-    (let ((fn (intern (format "doom|transient-hook--load-%s" name-symbol)))
+  (defalias 'use-package-normalize/:after-call 'use-package-normalize-symlist)
+  (defun use-package-handler/:after-call (name _keyword hooks rest state)
+    (let ((fn (intern (format "doom|transient-hook--load-%s" name)))
           (hooks (delete-dups hooks)))
       (if (plist-get state :demand)
           (use-package-process-keywords name rest state)
         (use-package-concat
          `((fset ',fn
                  (lambda (&rest _)
-                   (require ',name-symbol)
-                   (dolist (hook (cdr (assq ',name-symbol doom--deferred-packages-alist)))
+                   (when doom-debug-mode
+                     (message "Loading deferred package %s from %s" ',name ',fn))
+                   (condition-case e (require ',name)
+                     ((debug error)
+                      (message "Failed to load deferred package %s: %s" ',name e)))
+                   (dolist (hook (cdr (assq ',name doom--deferred-packages-alist)))
                      (if (functionp hook)
                          (advice-remove hook #',fn)
                        (remove-hook hook #',fn)))
-                   (map-delete doom--deferred-packages-alist ',name-symbol)
+                   (map-delete doom--deferred-packages-alist ',name)
                    (fmakunbound ',fn))))
-         (cl-mapcan (lambda (hook)
-                      (if (functionp hook)
-                          `((advice-add #',hook :before #',fn))
-                        `((add-hook ',hook #',fn))))
-                    hooks)
+         (cl-loop for hook in hooks
+                  collect (if (functionp hook)
+                              `(advice-add #',hook :before #',fn)
+                            `(add-hook ',hook #',fn)))
          `((map-put doom--deferred-packages-alist
-                    ',name-symbol
-                    '(,@hooks ,@(cdr (assq name-symbol doom--deferred-packages-alist)))))
+                    ',name
+                    '(,@hooks ,@(cdr (assq name doom--deferred-packages-alist)))))
          (use-package-process-keywords name rest state))))))
 
 
@@ -230,48 +256,51 @@ to least)."
          (make-hash-table :test #'equal
                           :size (if modules (length modules) 100)
                           :rehash-threshold 1.0))
-        category
-        init-forms config-forms)
-    (dolist (m modules)
-      (cond ((keywordp m) (setq category m))
-            ((not category) (error "No module category specified for %s" m))
-            ((let* ((module (if (listp m) (car m) m))
-                    (flags  (if (listp m) (cdr m)))
-                    (path (doom-module-locate-path category module)))
-               (if (not path)
-                   (message "Couldn't find the %s %s module" category module)
-                 (let ((key (cons category module)))
-                   (doom-module-set category module :flags flags :path path)
-                   (push `(let ((doom--current-module ',key))
-                            (load! "init" ,path t))
-                         init-forms)
-                   (push `(let ((doom--current-module ',key))
-                            (load! "config" ,path t))
-                         config-forms)))))))
+        category init-forms config-forms)
+    (while modules
+      (let ((m (pop modules)))
+        (cond ((keywordp m) (setq category m))
+              ((not category) (error "No module category specified for %s" m))
+              ((catch 'doom-modules
+                 (let* ((module (if (listp m) (car m) m))
+                        (flags  (if (listp m) (cdr m))))
+                   (when-let* ((new (assoc (list category module) doom-obsolete-modules)))
+                     (let ((newkeys (cdr new)))
+                       (if (null newkeys)
+                           (message "Warning: the %s module is deprecated" key)
+                         (message "Warning: the %s module is deprecated. Use %s instead."
+                                  (list category module) newkeys)
+                         (push category modules)
+                         (dolist (key newkeys)
+                           (setq modules (append key modules)))
+                         (throw 'doom-modules t))))
+                   (let ((path (doom-module-locate-path category module)))
+                     (if (not path)
+                         (message "Couldn't find the %s %s module" category module)
+                       (let ((key (cons category module)))
+                         (doom-module-set category module :flags flags :path path)
+                         (push `(let ((doom--current-module ',key))
+                                  (load! "init" ,path t))
+                               init-forms)
+                         (push `(let ((doom--current-module ',key))
+                                  (load! "config" ,path t))
+                               config-forms))))))))))
     `(let (file-name-handler-alist)
        (setq doom-modules ',doom-modules)
        ,@(nreverse init-forms)
-       (run-hooks 'doom-init-hook)
+       (run-hook-wrapped 'doom-init-hook #'doom-try-run-hook)
        (unless noninteractive
          (let ((doom--stage 'config))
            ,@(nreverse config-forms)
            (when doom-private-dir
-             (load ,(expand-file-name "config" doom-private-dir)
-                   t (not doom-debug-mode))))))))
+             (load! "config" doom-private-dir t)))))))
 
+(defvar doom-disabled-packages)
 (defmacro def-package! (name &rest plist)
-  "A thin wrapper around `use-package'."
-  ;; Ignore package if NAME is in `doom-disabled-packages'
-  (when (and (memq name (bound-and-true-p doom-disabled-packages))
-             (not (memq :disabled plist)))
-    (setq plist `(:disabled t ,@plist)))
-  ;; If byte-compiling, ignore this package if it doesn't meet the condition.
-  ;; This avoids false-positive load errors.
-  (unless (and (bound-and-true-p byte-compile-current-file)
-               (or (and (plist-member plist :if)     (not (eval (plist-get plist :if) t)))
-                   (and (plist-member plist :when)   (not (eval (plist-get plist :when) t)))
-                   (and (plist-member plist :unless) (eval (plist-get plist :unless) t))))
-    `(use-package ,name ,@plist)))
+  "This is a thin wrapper around `use-package'."
+  `(use-package ,name
+     ,@(append (if (memq name doom-disabled-packages) `(:disabled t))
+               plist)))
 
 (defmacro def-package-hook! (package when &rest body)
   "Reconfigures a package's `def-package!' block.
@@ -346,7 +375,7 @@ omitted. eg. (featurep! +flag1)"
 
 
 ;;
-;; Cross-module configuration
+;; FIXME Cross-module configuration (deprecated)
 ;;
 
 ;; I needed a way to reliably cross-configure modules without littering my
@@ -364,8 +393,24 @@ Do not use this for configuring Doom core."
   (declare (indent defun) (doc-string 3))
   (or (keywordp keyword)
       (signal 'wrong-type-argument (list 'keywordp keyword)))
-  `(fset ',(intern (format "doom--set%s" keyword))
-         (lambda ,arglist ,docstring ,@forms)))
+  (unless (stringp docstring)
+    (push docstring forms)
+    (setq docstring nil))
+  (let ((alias (plist-get forms :obsolete)))
+    (when alias
+      (setq forms (plist-put forms :obsolete 'nil)))
+    `(fset ',(intern (format "doom--set%s" keyword))
+           (lambda ,arglist
+             ,(if (and (not docstring) (fboundp alias))
+                  (documentation alias t)
+                docstring)
+             ,(when alias
+                `(declare (obsolete ,alias "2.1.0")))
+             (prog1 (progn ,@forms)
+               ,(when alias
+                  `(unless noninteractive
+                     (message ,(format "The `%s' setting is deprecated, use `%s' instead"
+                                       keyword alias)))))))))
 
 (defmacro set! (keyword &rest values)
   "Set an option defined by `def-setting!'. Skip if doesn't exist. See
@@ -376,7 +421,7 @@ VALUES doesn't get evaluated if the KEYWORD setting doesn't exist."
   (let ((fn (intern-soft (format "doom--set%s" keyword))))
     (if (and fn (fboundp fn))
         (apply fn values)
-      (when doom-debug-mode
+      (when (or doom-debug-mode after-init-time)
         (message "No setting found for %s" keyword)
         nil))))
 

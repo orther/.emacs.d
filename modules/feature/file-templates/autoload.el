@@ -1,7 +1,12 @@
 ;;; feature/file-templates/autoload.el -*- lexical-binding: t; -*-
 
-;;;###autoload
-(def-setting! :file-template (pred &rest plist)
+(defun +file-templates--set (pred plist)
+  (if (null (car-safe plist))
+      (setq +file-templates-alist (map-delete +file-templates-alist pred))
+    (push `(,pred ,@plist) +file-templates-alist)))
+
+;;;###autodef
+(defun set-file-template! (pred &rest plist)
   "Register a file template.
 
 PRED can either be a regexp string or a major mode symbol. PLIST may contain
@@ -22,12 +27,28 @@ these properties:
   :ignore BOOL
     If non-nil, don't expand any template for this file and don't test any other
     file template rule against this buffer."
-  `(push (list ,pred ,@plist) +file-templates-alist))
+  (declare (indent defun))
+  (after! (:when (boundp '+file-templates-alist))
+    (+file-templates--set pred plist)))
 
+;;;###autodef
+(defun set-file-templates! (&rest templates)
+  "Like `set-file-templates!', but register many file templates at once."
+  (after! (:when (boundp '+file-templates-alist))
+    (dolist (template templates)
+      (+file-templates--set (car template) (cdr template)))))
+
+;; FIXME obsolete :file-template
+;;;###autoload
+(def-setting! :file-template (pred &rest plist)
+  :obsolete set-file-template!
+  `(set-file-template! ,pred ,@plist))
+
+;; FIXME obsolete :file-templates
 ;;;###autoload
 (def-setting! :file-templates (&rest templates)
-  "Like `doom--set:file-template', but register many file templates at once."
-  `(setq +file-templates-alist (append (list ,@templates) +file-templates-alist)))
+  :obsolete set-file-templates!
+  `(set-file-templates! ,@templates))
 
 
 ;;
@@ -35,33 +56,30 @@ these properties:
 ;;
 
 ;;;###autoload
-(defun +file-templates--expand (pred &rest plist)
+(cl-defun +file-templates--expand (pred &key project mode trigger ignore)
   "Auto insert a yasnippet snippet into current file and enter insert mode (if
 evil is loaded and enabled)."
-  (when (and pred (not (plist-get plist :ignore)))
-    (let ((project (plist-get plist :project))
-          (mode    (plist-get plist :mode))
-          (trigger (plist-get plist :trigger)))
-      (when (if project (doom-project-p) t)
-        (unless mode
-          (setq mode (if (symbolp pred) pred major-mode)))
-        (unless mode
-          (user-error "Couldn't determine mode for %s file template" pred))
-        (unless trigger
-          (setq trigger +file-templates-default-trigger))
-        (require 'yasnippet)
-        (unless yas-minor-mode
-          (yas-minor-mode-on))
-        (when (and yas-minor-mode
-                   (yas-expand-snippet
-                    (yas--template-content
-                     (cl-find trigger (yas--all-templates (yas--get-snippet-tables mode))
-                              :key #'yas--template-key :test #'equal)))
-                   (and (featurep 'evil) evil-mode)
-                   (and yas--active-field-overlay
-                        (overlay-buffer yas--active-field-overlay)
-                        (overlay-get yas--active-field-overlay 'yas--field)))
-          (evil-initialize-state 'insert))))))
+  (when (and pred (not ignore))
+    (when (if project (doom-project-p) t)
+      (unless mode
+        (setq mode (if (symbolp pred) pred major-mode)))
+      (unless mode
+        (user-error "Couldn't determine mode for %s file template" pred))
+      (unless trigger
+        (setq trigger +file-templates-default-trigger))
+      (require 'yasnippet)
+      (unless yas-minor-mode
+        (yas-minor-mode-on))
+      (when (and yas-minor-mode
+                 (yas-expand-snippet
+                  (yas--template-content
+                   (cl-find trigger (yas--all-templates (yas--get-snippet-tables mode))
+                            :key #'yas--template-key :test #'equal)))
+                 (and (featurep 'evil) evil-mode)
+                 (and yas--active-field-overlay
+                      (overlay-buffer yas--active-field-overlay)
+                      (overlay-get yas--active-field-overlay 'yas--field)))
+        (evil-initialize-state 'insert)))))
 
 ;;;###autoload
 (defun +file-templates-get-short-path ()

@@ -9,6 +9,7 @@
     (doom-nova . nil)
     (doom-one . t)
     (doom-one-light . t)
+    (doom-opera . t)
     (doom-solarized-light . nil)
     (doom-spacegrey . nil)
     (doom-vibrant . nil))
@@ -29,7 +30,7 @@
   :config
   ;; Reload common faces when reloading doom-themes live
   (defun +doom*reload-common (&rest _) (load "doom-themes-common.el" nil t))
-  (advice-add #'doom//reload-theme :before #'+doom*reload-common)
+  (advice-add #'doom/reload-theme :before #'+doom*reload-common)
 
   ;; improve integration w/ org-mode
   (add-hook 'doom-load-theme-hook #'doom-themes-org-config)
@@ -80,26 +81,3 @@
        ov 'display (propertize "  [...]  " 'face '+doom-folded-face))))
   (setq hs-set-up-overlay #'+doom-set-up-overlay))
 
-
-;; NOTE Adjust these bitmaps if you change `doom-fringe-size'
-(after! flycheck
-  ;; because git-gutter is in the left fringe
-  (setq flycheck-indication-mode 'right-fringe)
-  ;; A non-descript, left-pointing arrow
-  (define-fringe-bitmap 'flycheck-fringe-bitmap-double-arrow
-    [16 48 112 240 112 48 16] nil nil 'center))
-
-;; subtle diff indicators in the fringe
-(after! git-gutter-fringe
-  ;; places the git gutter outside the margins.
-  (setq-default fringes-outside-margins t)
-  ;; thin fringe bitmaps
-  (define-fringe-bitmap 'git-gutter-fr:added [224]
-    nil nil '(center repeated))
-  (define-fringe-bitmap 'git-gutter-fr:modified [224]
-    nil nil '(center repeated))
-  (define-fringe-bitmap 'git-gutter-fr:deleted [128 192 224 240]
-    nil nil 'bottom))
-
-;; standardize default fringe width
-(if (fboundp 'fringe-mode) (fringe-mode '4))

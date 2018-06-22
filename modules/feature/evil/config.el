@@ -8,11 +8,13 @@
     simple
     ;; we'll do these ourselves
     anaconda-mode
+    company
     dired
     helm
     ivy
     minibuffer
-    ruby-mode)
+    ruby-mode
+    slime)
   "A list of `evil-collection' modules to disable. See the definition of this
 variable for an explanation of the defaults (in comments). See
 `evil-collection-mode-list' for a list of available options.")
@@ -66,8 +68,9 @@ variable for an explanation of the defaults (in comments). See
 
   (put 'evil-define-key* 'lisp-indent-function 'defun)
 
-  (set! :popup "^\\*evil-registers" '((size . 0.3)))
-  (set! :popup "^\\*Command Line" '((size . 8)))
+  (set-popup-rules!
+    '(("^\\*evil-registers" :size 0.3)
+      ("^\\*Command Line"   :size 8)))
 
   ;; Change the cursor color in emacs mode
   (defvar +evil--default-cursor-color "#ffffff")
@@ -87,8 +90,7 @@ variable for an explanation of the defaults (in comments). See
   (after! wgrep
     ;; A wrapper that invokes `wgrep-mark-deletion' across lines you use
     ;; `evil-delete' in wgrep buffers.
-    (define-key! wgrep-mode-map
-      [remap evil-delete] #'+evil-delete))
+    (define-key wgrep-mode-map [remap evil-delete] #'+evil-delete))
 
   ;; replace native folding commands
   (define-key! 'global
@@ -140,32 +142,34 @@ variable for an explanation of the defaults (in comments). See
   (advice-add #'evil-window-split  :override #'+evil*window-split)
   (advice-add #'evil-window-vsplit :override #'+evil*window-vsplit)
 
-  ;; By default :g[lobal] doesn't highlight matches in the current buffer. I've
-  ;; got to write my own argument type and interactive code to get it to do so.
-  (evil-ex-define-argument-type global-delim-match :runner +evil-ex-global-delim-match)
-  (dolist (sym '(evil-ex-global evil-ex-global-inverted))
-    (evil-set-command-property sym :ex-arg 'global-delim-match))
+  ;; Ensure jump points are created
+  (defun +evil*set-jump (&rest _)
+    (evil-set-jump))
+  (advice-add #'counsel-git-grep-action :before #'+evil*set-jump)
 
+  ;; --- custom interactive codes -----------
   ;; These arg types will highlight matches in the current buffer
   (evil-ex-define-argument-type buffer-match :runner +evil-ex-buffer-match)
   (evil-ex-define-argument-type global-match :runner +evil-ex-global-match)
   ;; Other commands can make use of this
   (evil-define-interactive-code "<//>"
     :ex-arg buffer-match (list (if (evil-ex-p) evil-ex-argument)))
-  (evil-define-interactive-code "<//g>"
-    :ex-arg global-match (list (if (evil-ex-p) evil-ex-argument)))
+  (macroexpand '
+   (evil-define-interactive-code "<//g>"
+     :ex-arg global-match (list (if (evil-ex-p) evil-ex-argument))))
+
+  ;; By default :g[lobal] doesn't highlight matches in the current buffer. I've
+  ;; got to write my own argument type and interactive code to get it to do so.
+  (evil-ex-define-argument-type global-delim-match :runner +evil-ex-global-delim-match)
+  (dolist (sym '(evil-ex-global evil-ex-global-inverted))
+    (evil-set-command-property sym :ex-arg 'global-delim-match))
 
   ;; Forward declare these so that ex completion works, even if the autoloaded
   ;; functions aren't loaded yet.
   (evil-set-command-properties
    '+evil:align :move-point t :ex-arg 'buffer-match :ex-bang t :evil-mc t :keep-visual t :suppress-operator t)
   (evil-set-command-properties
-   '+evil:mc :move-point nil :ex-arg 'global-match :ex-bang t :evil-mc t)
-
-  ;; Ensure jump points are created
-  (defun +evil*set-jump (&rest _)
-    (evil-set-jump))
-  (advice-add #'counsel-git-grep-action :before #'+evil*set-jump))
+   '+evil:mc :move-point nil :ex-arg 'global-match :ex-bang t :evil-mc t))
 
 
 ;;
@@ -245,6 +249,12 @@ variable for an explanation of the defaults (in comments). See
   (add-hook 'pre-command-hook #'evil-escape-pre-command-hook)
   (evil-define-key* '(insert replace visual operator) 'global "\C-g" #'evil-escape)
   :config
+  ;; TODO PR this upstream
+  (defun +evil*escape-func (ret)
+    (if (eq evil-state 'multiedit-insert)
+        #'evil-multiedit-state
+      ret))
+  (advice-add #'evil-escape-func :filter-return #'+evil*escape-func)
   ;; no `evil-escape' in minibuffer
   (add-hook 'evil-escape-inhibit-functions #'minibufferp))
 
@@ -403,6 +413,9 @@ the new algorithm is confusing, like in python or ruby."
   (unless (member "<" evil-args-openers)
     (push "<" evil-args-openers)
     (push ">" evil-args-closers)))
+
+(def-package! exato
+  :commands (evil-outer-xml-attr evil-inner-xml-attr))
 
 
 ;;

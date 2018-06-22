@@ -1,5 +1,28 @@
 ;;; lang/javascript/config.el -*- lexical-binding: t; -*-
 
+(after! (:any js2-mode web-mode)
+  (set-pretty-symbols! '(js2-mode web-mode)
+    ;; Functional
+    :def "function"
+    :lambda "() =>"
+    :composition "compose"
+    ;; Types
+    :null "null"
+    :true "true" :false "false"
+    ;; Flow
+    :not "!"
+    :and "&&" :or "||"
+    :for "for"
+    :return "return"
+    ;; Other
+    :yield "import"))
+
+(after! smartparens
+  (sp-with-modes '(js2-mode typescript-mode rjsx-mode)
+    (sp-local-pair "/**" ""  :post-handlers '(("| " "SPC") ("|\n*/[i][d-2]" "RET")))
+    (sp-local-pair "/*" "*/" :post-handlers '(("| " "SPC") ("|\n*/[i][d-2]" "RET")))))
+
+
 ;;
 ;; Major modes
 ;;
@@ -7,6 +30,7 @@
 (def-package! js2-mode
   :mode "\\.js\\'"
   :interpreter "node"
+  :commands js2-line-break
   :config
   (setq js2-skip-preprocessor-directives t
         js2-highlight-external-variables nil
@@ -19,16 +43,12 @@
         js2-strict-trailing-comma-warning nil
         js2-strict-missing-semi-warning nil)
 
-  (add-hook! 'js2-mode-hook #'(flycheck-mode rainbow-delimiters-mode))
+  (add-hook 'js2-mode-hook #'rainbow-delimiters-mode)
+  ;; Indent switch-case another step
+  (setq-hook! 'js2-mode-hook js-switch-indent-offset js2-basic-offset)
 
-  (set! :electric 'js2-mode :chars '(?\} ?\) ?. ?:))
-  (set! :repl 'js2-mode #'+javascript/repl)
-
-  ;; Conform switch-case indentation to js2 normal indent
-  (defvaralias 'js-switch-indent-offset 'js2-basic-offset)
-
-  (sp-with-modes '(js2-mode rjsx-mode)
-    (sp-local-pair "/*" "*/" :post-handlers '(("| " "SPC"))))
+  (set-electric! 'js2-mode :chars '(?\} ?\) ?. ?:))
+  (set-repl-handler! 'js2-mode #'+javascript/repl)
 
   (map! :map js2-mode-map
         :localleader
@@ -48,7 +68,7 @@
                 (not (sp-point-in-string-or-comment)))))
   (map-put magic-mode-alist #'+javascript-jsx-file-p 'rjsx-mode)
   :config
-  (set! :electric 'rjsx-mode :chars '(?\} ?\) ?. ?>))
+  (set-electric! 'rjsx-mode :chars '(?\} ?\) ?. ?>))
   (add-hook! 'rjsx-mode-hook
     ;; jshint doesn't know how to deal with jsx
     (push 'javascript-jshint flycheck-disabled-checkers))
@@ -64,9 +84,27 @@
 
 
 (after! typescript-mode
-  (add-hook! 'typescript-mode-hook #'(flycheck-mode rainbow-delimiters-mode))
-  (set! :electric 'typescript-mode
-    :chars '(?\} ?\)) :words '("||" "&&")))
+  (add-hook 'typescript-mode-hook #'rainbow-delimiters-mode)
+  (setq-hook! 'typescript-mode-hook
+    comment-line-break-function #'js2-line-break)
+  (set-electric! 'typescript-mode
+    :chars '(?\} ?\)) :words '("||" "&&"))
+  (set-pretty-symbols! 'typescript-mode
+    ;; Functional
+    :def "function"
+    :lambda "() =>"
+    :composition "compose"
+    ;; Types
+    :null "null"
+    :true "true" :false "false"
+    :int "number"
+    :str "string"
+    :bool "boolean"
+    ;; Flow
+    :not "!"
+    :and "&&" :or "||"
+    :for "for"
+    :return "return" :yield "import"))
 
 
 ;; `coffee-mode'
@@ -78,9 +116,16 @@
 ;;
 
 (def-package! tide
-  :hook (js2-mode . tide-setup)
-  :hook (typescript-mode . tide-setup)
+  :defer t
   :init
+  ;; Don't let hard errors stop the user from opening js files.
+  (defun +javascript|init-tide ()
+    "Enable `tide-mode' if node is available."
+    (if (executable-find "node")
+        (tide-setup)
+      (message "Couldn't find `node', aborting tide server")))
+  (add-hook! (js2-mode typescript-mode) #'+javascript|init-tide)
+
   (defun +javascript|init-tide-in-web-mode ()
     "Enable `tide-mode' if in a *.tsx file."
     (when (string= (file-name-extension (or buffer-file-name "")) "tsx")
@@ -89,15 +134,16 @@
   :config
   (setq tide-completion-detailed t
         tide-always-show-documentation t)
+
   ;; code completion
   (after! company
     ;; tide affects the global `company-backends', undo this so doom can handle
     ;; it buffer-locally
     (setq-default company-backends (delq 'company-tide (default-value 'company-backends))))
-  (set! :company-backend 'tide-mode 'company-tide)
+  (set-company-backend! 'tide-mode 'company-tide)
 
   ;; navigation
-  (set! :lookup 'tide-mode
+  (set-lookup-handlers! 'tide-mode
     :definition #'tide-jump-to-definition
     :references #'tide-references
     :documentation #'tide-documentation-at-point)
@@ -150,7 +196,7 @@
 (def-package! xref-js2
   :when (featurep! :feature lookup)
   :commands xref-js2-xref-backend
-  :init (set! :lookup 'js2-mode :xref-backend #'xref-js2-xref-backend))
+  :init (set-lookup-handlers! 'js2-mode :xref-backend #'xref-js2-xref-backend))
 
 
 (def-package! js2-refactor

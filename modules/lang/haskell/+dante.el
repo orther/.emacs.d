@@ -5,8 +5,7 @@
   :after haskell-mode
   :hook (haskell-mode . dante-mode)
   :config
-  (add-hook 'haskell-mode-hook #'interactive-haskell-mode)
-  (add-hook 'dante-mode-hook #'flycheck-mode))
+  (add-hook 'haskell-mode-hook #'interactive-haskell-mode))
 
 
 (def-package! company-ghc
@@ -16,4 +15,4 @@
   (add-hook 'haskell-mode-hook #'ghc-comp-init)
   :config
   (setq company-ghc-show-info 'oneline)
-  (set! :company-backend 'haskell-mode #'company-ghc))
+  (set-company-backend! 'haskell-mode #'company-ghc))

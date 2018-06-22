@@ -6,12 +6,9 @@
 ;;
 ;; The three key commands are:
 ;;
-;; + `bin/doom install` or `doom//packages-install': Installs packages that are
-;;   wanted, but not installed.
-;; + `bin/doom update` or `doom//packages-update': Updates packages that are
-;;   out-of-date.
-;; + `bin/doom autoremove` or `doom//packages-autoremove': Uninstalls packages
-;;   that are no longer needed.
+;; + `bin/doom install`: Installs packages that are wanted, but not installed.
+;; + `bin/doom update`: Updates packages that are out-of-date.
+;; + `bin/doom autoremove`: Uninstalls packages that are no longer needed.
 ;;
 ;; This system reads packages.el files located in each activated module (and one
 ;; in `doom-core-dir'). These contain `package!' blocks that tell DOOM what
@@ -53,6 +50,7 @@ missing) and shouldn't be deleted.")
 
 (setq package--init-file-ensured t
       package-user-dir (expand-file-name "elpa" doom-packages-dir)
+      package-gnupghome-dir (expand-file-name "gpg" doom-packages-dir)
       package-enable-at-startup nil
       package-archives
       '(("gnu"   . "https://elpa.gnu.org/packages/")
@@ -96,13 +94,11 @@ them."
       ;; the current session, but if you change an packages.el file in a module,
       ;; there's no non-trivial way to detect that, so we give you a way to
       ;; reload only doom-packages (by passing 'internal as FORCE-P).
-      ;; `doom-packages'
       (unless (eq force-p 'internal)
         ;; `package-alist'
         (when (or force-p (not (bound-and-true-p package-alist)))
           (setq load-path (cons doom-core-dir doom-site-load-path))
           (doom-ensure-packages-initialized 'force))
-
         ;; `quelpa-cache'
         (when (or force-p (not (bound-and-true-p quelpa-cache)))
           ;; ensure un-byte-compiled version of quelpa is loaded
@@ -111,33 +107,32 @@ them."
           (setq quelpa-initialized-p nil)
           (or (quelpa-setup-p)
               (error "Could not initialize quelpa"))))
-
+      ;; `doom-packages'
       (when (or force-p (not doom-packages))
-        (let ((doom-modules (doom-modules)))
-          (setq doom-packages nil)
-          (cl-flet
-              ((_load
-                (file &optional noerror)
-                (condition-case-unless-debug ex
-                    (load file noerror 'nomessage 'nosuffix)
-                  ('error
-                   (lwarn 'doom-initialize-packages :warning
-                          "%s in %s: %s"
-                          (car ex)
-                          (file-relative-name file doom-emacs-dir)
-                          (error-message-string ex))))))
-            (let ((doom--stage 'packages)
-                  (noninteractive t))
-              (_load (expand-file-name "packages.el" doom-core-dir))
-              ;; We load the private packages file twice to ensure disabled
-              ;; packages are seen ASAP, and a second time to ensure privately
-              ;; overridden packages are properly overwritten.
-              (let ((private-packages (expand-file-name "packages.el" doom-private-dir)))
-                (_load private-packages t)
-                (cl-loop for key being the hash-keys of doom-modules
-                         for path = (doom-module-path (car key) (cdr key) "packages.el")
-                         do (let ((doom--current-module key)) (_load path t)))
-                (_load private-packages t)))))))))
+        (cl-flet
+            ((_load
+              (lambda (file &optional noerror)
+                (condition-case e
+                    (load file noerror t t)
+                  ((debug error)
+                   (signal 'doom-package-error
+                           (list (or (doom-module-from-path file)
+                                     '(:private . packages))
+                                 e)))))))
+          (let ((doom-modules (doom-modules))
+                (doom--stage 'packages)
+                (noninteractive t))
+            (setq doom-packages nil)
+            (_load (expand-file-name "packages.el" doom-core-dir))
+            ;; We load the private packages file twice to ensure disabled
+            ;; packages are seen ASAP, and a second time to ensure privately
+            ;; overridden packages are properly overwritten.
+            (let ((private-packages (expand-file-name "packages.el" doom-private-dir)))
+              (_load private-packages t)
+              (cl-loop for key being the hash-keys of doom-modules
+                       for path = (doom-module-path (car key) (cdr key) "packages.el")
+                       do (let ((doom--current-module key)) (_load path t)))
+              (_load private-packages t))))))))
 
 
 ;;
@@ -227,8 +222,7 @@ elsewhere."
                                doom-private-dir)
       (setq plist (plist-put plist :private t)))
     `(progn
-       ,(when (and pkg-pin t)
-          `(map-put package-pinned-packages ',name ,pkg-pin))
+       ,(if pkg-pin `(map-put package-pinned-packages ',name ,pkg-pin))
        (map-put doom-packages ',name ',plist)
        (not (memq ',name doom-disabled-packages)))))
 

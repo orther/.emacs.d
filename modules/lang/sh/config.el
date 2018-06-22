@@ -15,9 +15,9 @@
   :mode ("\\.zunit\\'" . sh-mode)
   :mode ("/bspwmrc\\'" . sh-mode)
   :config
-  (add-hook! sh-mode #'(flycheck-mode highlight-numbers-mode))
-  (set! :electric 'sh-mode :words '("else" "elif" "fi" "done" "then" "do" "esac" ";;"))
-  (set! :repl 'sh-mode #'+sh/repl)
+  (add-hook 'sh-mode-hook #'highlight-numbers-mode)
+  (set-electric! 'sh-mode :words '("else" "elif" "fi" "done" "then" "do" "esac" ";;"))
+  (set-repl-handler! 'sh-mode #'+sh/repl)
 
   (setq sh-indent-after-continuation 'always)
 
@@ -59,6 +59,6 @@
   :when (featurep! :completion company)
   :after sh-script
   :config
-  (set! :company-backend 'sh-mode '(company-shell company-files))
+  (set-company-backend! 'sh-mode '(company-shell company-files))
   (setq company-shell-delete-duplicates t))
 

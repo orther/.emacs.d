@@ -62,11 +62,11 @@ don't have a :trigger property in `+file-templates-alist'.")
     ;; Markdown
     (markdown-mode)
     ;; Org
-    ("\\.org$" :trigger "__" :mode org-mode)
     ("/README\\.org$"
      :when +file-templates-in-emacs-dirs-p
      :trigger "__doom-readme"
      :mode org-mode)
+    ("\\.org$" :trigger "__" :mode org-mode)
     ;; PHP
     ("\\.class\\.php$" :trigger "__.class.php" :mode php-mode)
     (php-mode)
@@ -91,10 +91,12 @@ don't have a :trigger property in `+file-templates-alist'.")
     ;; Shell scripts
     ("\\.zunit$" :trigger "__zunit" :mode sh-mode)
     (fish-mode)
-    (sh-mode))
+    (sh-mode)
+    ;; Solidity
+    (solidity-mode :trigger "__sol"))
   "An alist of file template rules. The CAR of each rule is either a major mode
-symbol or regexp string. The CDR is a plist. See `doom--set:file-template' for
-more information.")
+symbol or regexp string. The CDR is a plist. See `set-file-template!' for more
+information.")
 
 
 ;;
@@ -112,6 +114,7 @@ must be non-read-only, empty, and there must be a rule in
 `+file-templates-alist' that applies to it."
   (when (and (not buffer-read-only)
              (bobp) (eobp)
+             (get-buffer-window)
              (not (string-match-p "^ *\\*" (buffer-name))))
     (when-let* ((rule (cl-find-if #'+file-template-p +file-templates-alist)))
       (apply #'+file-templates--expand rule))))

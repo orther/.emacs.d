@@ -5,9 +5,9 @@
 ;;
 
 (after! go-mode
-  (set! :env "GOPATH" "GOROOT")
-  (set! :repl 'go-mode #'gorepl-run)
-  (set! :lookup 'go-mode
+  (set-env! "GOPATH" "GOROOT")
+  (set-repl-handler! 'go-mode #'gorepl-run)
+  (set-lookup-handlers! 'go-mode
     :definition #'go-guru-definition
     :references #'go-guru-referrers
     :documentation #'godoc-at-point)
@@ -16,8 +16,7 @@
     (setq gofmt-command goimports))
 
   (when (featurep! :feature syntax-checker)
-    (setq gofmt-show-errors nil) ; Leave it to flycheck
-    (add-hook 'go-mode-hook #'flycheck-mode))
+    (setq gofmt-show-errors nil)) ; Leave it to flycheck
 
   (add-hook 'go-mode-hook #'go-eldoc-setup)
   (add-hook! go-mode
@@ -78,5 +77,5 @@
   :when (featurep! :completion company)
   :after go-mode
   :config
-  (set! :company-backend 'go-mode 'company-go)
+  (set-company-backend! 'go-mode 'company-go)
   (setq company-go-show-annotation t))

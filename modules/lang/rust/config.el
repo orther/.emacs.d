@@ -1,8 +1,8 @@
 ;;; lang/rust/config.el -*- lexical-binding: t; -*-
 
 (after! rust-mode
-  (set! :env "RUST_SRC_PATH")
-  (set! :docset 'rust-mode "Rust")
+  (set-env! "RUST_SRC_PATH")
+  (set-docset! 'rust-mode "Rust")
   (setq rust-indent-method-chain t)
 
   (map! :map rust-mode-map
@@ -21,7 +21,7 @@
   :after rust-mode
   :config
   (add-hook 'rust-mode-hook #'racer-mode)
-  (set! :lookup 'rust-mode
+  (set-lookup-handlers! 'rust-mode
     :definition #'racer-find-definition
     :documentation #'racer-describe))
 
@@ -29,11 +29,11 @@
 (def-package! company-racer
   :when (featurep! :completion company)
   :after racer
-  :config (set! :company-backend 'rust-mode '(company-racer)))
+  :config (set-company-backend! 'rust-mode '(company-racer)))
 
 
 (def-package! flycheck-rust
   :when (featurep! :feature syntax-checker)
   :after rust-mode
-  :config (add-hook! 'rust-mode-hook #'(flycheck-mode flycheck-rust-setup)))
+  :config (add-hook 'rust-mode-hook #'flycheck-rust-setup))
 

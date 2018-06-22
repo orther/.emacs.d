@@ -86,7 +86,7 @@ immediately runs it on the current candidate (ending the ivy session)."
     [remap swiper]                   #'counsel-grep-or-swiper)
 
   :config
-  (set! :popup "^\\*ivy-occur" '((size . 0.35)) '((transient . 0) (quit)))
+  (set-popup-rule! "^\\*ivy-occur" :size 0.35 :ttl 0 :quit nil)
 
   (setq counsel-find-file-ignore-regexp "\\(?:^[#.]\\)\\|\\(?:[#~]$\\)\\|\\(?:^Icon?\\)"
         ;; Add smart-casing and compressed archive searching (-zS) to default
@@ -119,12 +119,6 @@ immediately runs it on the current candidate (ending the ivy session)."
   :config
   ;; Highlight entries that have been visited
   (ivy-set-display-transformer #'counsel-projectile-find-file #'+ivy-projectile-find-file-transformer))
-
-
-;; Used by `counsel-M-x'
-(after! smex
-  (setq smex-save-file (concat doom-cache-dir "/smex-items"))
-  (smex-initialize))
 
 
 (def-package! ivy-hydra
@@ -225,6 +219,10 @@ immediately runs it on the current candidate (ending the ivy session)."
           (counsel-grep-or-swiper . ivy--regex-plus)
           (t . ivy--regex-fuzzy))
         ivy-initial-inputs-alist nil))
+
+
+;; Used by `counsel-M-x'
+(setq amx-save-file (concat doom-cache-dir "/smex-items"))
 
 
 ;;
